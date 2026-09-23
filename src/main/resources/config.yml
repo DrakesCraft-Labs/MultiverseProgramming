@@ -1,0 +1,5 @@
+# Bloque que actúa como computadora (al hacer click derecho se abre el GUI).
+computer-block: LECTERN
+
+# Tiempo máximo de ejecución de un programa (ms).
+execution-timeout-ms: 3000

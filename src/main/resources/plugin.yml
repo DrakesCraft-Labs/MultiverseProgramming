@@ -1,0 +1,16 @@
+name: MultiverseProgramming
+version: 1.0.0
+main: com.multiverse.programming.MultiverseProgrammingPlugin
+api-version: '1.21'
+description: Computadoras con Lua y disquetes.
+
+commands:
+  pc:
+    description: Computadora y disquetes
+    aliases: [computador, computadora, disco]
+    usage: /pc <disco|run|help>
+
+permissions:
+  multiverseprogramming.use:
+    description: Permite usar computadoras
+    default: true
