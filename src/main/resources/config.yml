@@ -1,5 +1,5 @@
-# Bloque que actúa como computadora (al hacer click derecho se abre el GUI).
+# Block that acts as a computer (right-click opens the GUI).
 computer-block: LECTERN
 
-# Tiempo máximo de ejecución de un programa (ms).
+# Maximum execution time of a program, in milliseconds.
 execution-timeout-ms: 3000

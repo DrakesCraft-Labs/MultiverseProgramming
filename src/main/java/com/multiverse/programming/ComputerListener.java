@@ -60,7 +60,7 @@ public final class ComputerListener implements Listener {
             if (DiskManager.esDisco(cursor)) {
                 evento.setCancelled(false);
             } else {
-                jugador.sendMessage(plugin.getPrefijo() + " §cSolo puedes insertar un " + DiskManager.NOMBRE + ".");
+                jugador.sendMessage(plugin.getPrefijo() + " §cOnly a " + DiskManager.NOMBRE + " can be inserted here.");
             }
         } else if (raw == ComputerGUI.SLOT_BOTON) {
             ComputerGUI.pulsarBoton(jugador, evento.getInventory(), plugin.getPrefijo());

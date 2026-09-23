@@ -21,7 +21,7 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(CommandSender emisor, Command comando, String etiqueta, String[] args) {
         if (!(emisor instanceof Player jugador)) {
-            emisor.sendMessage("Solo jugadores.");
+            emisor.sendMessage("Players only.");
             return true;
         }
 
@@ -31,35 +31,53 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
         }
 
         switch (args[0].toLowerCase()) {
-            case "disco", "disk", "nuevo" -> {
-                jugador.getInventory().addItem(DiskManager.crearDisquete());
-                jugador.sendMessage(plugin.getPrefijo() + " §7Recibiste un " + DiskManager.NOMBRE
-                        + ". Edítalo y colócalo en la computadora.");
-            }
             case "run", "ejecutar" -> ejecutar(jugador);
+            case "give" -> dar(jugador, args);
             default -> ayuda(jugador);
         }
         return true;
     }
 
+    private void dar(Player jugador, String[] args) {
+        if (!jugador.hasPermission("multiverseprogramming.admin")) {
+            jugador.sendMessage(plugin.getPrefijo() + " §cYou don't have permission to use this command.");
+            return;
+        }
+        if (args.length < 2) {
+            jugador.sendMessage(plugin.getPrefijo() + " §cUsage: /pc give <floppydisk|computer>");
+            return;
+        }
+        ItemStack objeto;
+        switch (args[1].toLowerCase()) {
+            case "floppydisk", "disk", "disco", "disquete" -> objeto = DiskManager.crearDisquete();
+            case "computer", "computadora", "pc" -> objeto = DiskManager.crearComputadora();
+            default -> {
+                jugador.sendMessage(plugin.getPrefijo() + " §cUnknown item. Available: floppydisk, computer");
+                return;
+            }
+        }
+        jugador.getInventory().addItem(objeto);
+        jugador.sendMessage(plugin.getPrefijo() + " §7You received a " + objeto.getItemMeta().getDisplayName() + ".");
+    }
+
     private void ejecutar(Player jugador) {
         ItemStack disco = jugador.getInventory().getItemInMainHand();
         if (!DiskManager.esDisco(disco)) {
-            jugador.sendMessage(plugin.getPrefijo() + " §cDebes sujetar un " + DiskManager.NOMBRE + " en la mano.");
+            jugador.sendMessage(plugin.getPrefijo() + " §cYou must hold a " + DiskManager.NOMBRE + " in your hand.");
             return;
         }
 
         String codigo = DiskManager.leerPrograma(disco);
         String error = LuaRunner.validar(codigo);
         if (error != null) {
-            jugador.sendMessage(plugin.getPrefijo() + " §cError en el código:");
+            jugador.sendMessage(plugin.getPrefijo() + " §cError in the code:");
             for (String linea : error.split("\n")) {
                 jugador.sendMessage(" §4✘ " + linea);
             }
             return;
         }
 
-        jugador.sendMessage(plugin.getPrefijo() + " §7Ejecutando programa…");
+        jugador.sendMessage(plugin.getPrefijo() + " §7Running program…");
         LuaRunner.Resultado resultado = LuaRunner.ejecutar(codigo, plugin.getTimeoutMs());
 
         if (!resultado.salida().isEmpty()) {
@@ -67,20 +85,23 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
                 jugador.sendMessage("§f" + linea);
             }
         } else if (resultado.ok()) {
-            jugador.sendMessage(plugin.getPrefijo() + " §7(sin salida)");
+            jugador.sendMessage(plugin.getPrefijo() + " §7(no output)");
         }
     }
 
     private void ayuda(Player jugador) {
-        jugador.sendMessage(plugin.getPrefijo() + " §7Comandos:");
-        jugador.sendMessage(" §e/pc disco §8- §7obtener un disquete vacío");
-        jugador.sendMessage(" §e/pc run §8- §7ejecutar el programa del disquete en la mano");
+jugador.sendMessage(plugin.getPrefijo() + " §7Commands:");
+        jugador.sendMessage(" §e/pc run §8- §7run the program on the disk in your hand");
+        jugador.sendMessage(" §e/pc give <item> §8- §7admin: give yourself a custom item");
     }
 
     @Override
     public List<String> onTabComplete(CommandSender emisor, Command comando, String alias, String[] args) {
         if (args.length == 1) {
-            return List.of("disco", "disk", "nuevo", "run", "ejecutar", "help");
+            return List.of("run", "ejecutar", "give", "help");
+        }
+        if (args.length == 2 && args[0].equalsIgnoreCase("give")) {
+            return List.of("floppydisk", "disk", "disco", "computer", "computadora");
         }
         return List.of();
     }

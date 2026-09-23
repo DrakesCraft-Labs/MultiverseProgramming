@@ -34,7 +34,7 @@ Cada programa corre en su propio hilo con un timeout configurable en:
 execution-timeout-ms: 3000
 ```
 
-- Si el programa supera el límite se interrumpe y se muestra una advertencia: `<ejecución interrumpida: supera 3000 ms>`.
+- Si el programa supera el límite se interrumpe y se muestra una advertencia: `<execution interrupted: exceeds 3000 ms>`.
 - El `StackOverflowError` (recursión infinita) también se captura y se notifica.
 
 ## Ejemplos
@@ -72,7 +72,7 @@ print(string.upper(nombre))
 Los errores de sintaxis o ejecución se muestran en chat con el prefijo `✘`, tal y como los reporta Lua, incluyendo el número de línea cuando es posible:
 
 ```
-[Computadora] ✘ string:2: 'end' expected
+[Computer] ✘ string:2: 'end' expected
 ```
 
 ## Qué no está disponible (todavía)

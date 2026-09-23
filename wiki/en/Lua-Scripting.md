@@ -34,7 +34,7 @@ Every program runs on its own worker thread with a timeout configured in:
 execution-timeout-ms: 3000
 ```
 
-- If a program exceeds the limit it is interrupted and a warning is shown: `<ejecución interrumpida: supera 3000 ms>`.
+- If a program exceeds the limit it is interrupted and a warning is shown: `<execution interrupted: exceeds 3000 ms>`.
 - `StackOverflowError` (infinite recursion) is also caught and reported.
 
 ## Examples
@@ -72,7 +72,7 @@ print(string.upper(nombre))
 Syntax or runtime errors are shown in chat prefixed with `✘`, exactly as reported by Lua, including the line number where possible:
 
 ```
-[Computadora] ✘ string:2: 'end' expected
+[Computer] ✘ string:2: 'end' expected
 ```
 
 ## What is not available (yet)

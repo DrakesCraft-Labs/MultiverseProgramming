@@ -2,15 +2,18 @@ name: MultiverseProgramming
 version: 1.0.0
 main: com.multiverse.programming.MultiverseProgrammingPlugin
 api-version: '1.21'
-description: Computadoras con Lua y disquetes.
+description: Programmable computers with Lua and floppy disks.
 
 commands:
   pc:
-    description: Computadora y disquetes
+    description: Computer and floppy disks
     aliases: [computador, computadora, disco]
-    usage: /pc <disco|run|help>
+    usage: /pc <run|give|help>
 
 permissions:
   multiverseprogramming.use:
-    description: Permite usar computadoras
+    description: Allows using computers
     default: true
+  multiverseprogramming.admin:
+    description: Allows giving custom items
+    default: op

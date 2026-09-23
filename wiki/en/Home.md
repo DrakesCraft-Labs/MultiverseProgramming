@@ -6,6 +6,7 @@ MultiverseProgramming brings **ComputerCraft‑style programmable computers** to
 
 - [Getting Started](Getting-Started.md) — install, first computer, first program.
 - [Computer and Disks](Computer-and-Disks.md) — how the computer block, the GUI and the floppy disks work.
+- [Recipes](Recipes.md) — visual crafting table recipes for every custom item.
 - [Lua Scripting](Lua-Scripting.md) — the sandboxed Lua environment, available libraries and examples.
 - [Configuration](Configuration.md) — `config.yml`, commands and permissions.
 

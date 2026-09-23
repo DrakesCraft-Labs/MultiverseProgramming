@@ -23,8 +23,8 @@ Config is loaded at server start. **Restart** the server after editing.
 
 | Command | Aliases | Description |
 |---|---|---|
-| `/pc disco` | `disk`, `nuevo` | Gives the player a floppy disk |
 | `/pc run` | `ejecutar` | Runs the program on the disk in hand |
+| `/pc give <item>` | `floppydisk`, `computer` | Admin: gives you a custom item |
 | `/pc help` | — | Lists the commands |
 | `/pc` | — | Same as help |
 
@@ -35,6 +35,7 @@ Full plugin aliases: `/pc`, `/computador`, `/computadora`, `/disco`.
 | Node | Default | Description |
 |---|---|---|
 | `multiverseprogramming.use` | `true` | Allows using computers and running disks |
+| `multiverseprogramming.admin` | `op` | Allows giving custom items (`/pc give`) |
 
 Example of restricting:
 
@@ -43,18 +44,18 @@ Example of restricting:
 multiverseprogramming.use: false
 ```
 
-## chat messages
+## Chat messages
 
-Chat messages are in Spanish, prefixed with `[Computadora]`:
+Chat messages are prefixed with `[Computer]`:
 
-- `✔ Código válido...` — code compiles.
+- `✔ Code is valid...` — code compiles.
 - `✘ <error>` — syntax/runtime error.
-- `(sin salida)` — program ran but printed nothing.
+- `(no output)` — program ran but printed nothing.
 
 ## Plugin messages
 
-- **Gui title**: `Multiverse - Computadora`
-- **Disk display name**: `Disquete`
+- **GUI title**: `Multiverse - Computer`
+- **Disk display name**: `Floppy Disk`
 
 ## Build & dependencies
 

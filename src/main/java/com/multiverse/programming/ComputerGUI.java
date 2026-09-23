@@ -12,7 +12,7 @@ import java.util.List;
 
 public final class ComputerGUI {
 
-    public static final String TITULO = "Multiverse - Computadora";
+    public static final String TITULO = "Multiverse - Computer";
     public static final int SLOT_DISCO = 0;
     public static final int SLOT_BOTON = 8;
 
@@ -33,8 +33,8 @@ public final class ComputerGUI {
 
         ItemStack boton = new ItemStack(Material.EMERALD);
         ItemMeta botonMeta = boton.getItemMeta();
-        botonMeta.setDisplayName("§a✔ Validar código");
-        botonMeta.setLore(List.of("§7Comprueba el código del disquete."));
+        botonMeta.setDisplayName("§a✔ Validate Code");
+        botonMeta.setLore(List.of("§7Checks the disk's code for errors."));
         boton.setItemMeta(botonMeta);
         inv.setItem(SLOT_BOTON, boton);
 
@@ -44,7 +44,7 @@ public final class ComputerGUI {
     public static void pulsarBoton(Player jugador, Inventory inv, String prefijo) {
         ItemStack disco = inv.getItem(SLOT_DISCO);
         if (disco == null || disco.getType().isAir()) {
-            jugador.sendMessage(prefijo + " §cNo hay ningún disquete en la ranura.");
+            jugador.sendMessage(prefijo + " §cThere is no floppy disk in the slot.");
             return;
         }
 
@@ -53,13 +53,13 @@ public final class ComputerGUI {
         jugador.closeInventory();
 
         if (error != null) {
-            jugador.sendMessage(prefijo + " §cError en el código:");
+            jugador.sendMessage(prefijo + " §cError in the code:");
             for (String linea : error.split("\n")) {
                 jugador.sendMessage(" §4✘ " + linea);
             }
         } else {
-            jugador.sendMessage(prefijo + " §a✔ Código válido.");
-            jugador.sendMessage(prefijo + " §7Ejecútalo así: pon el disquete en la mano y usa §e/pc run§7.");
+            jugador.sendMessage(prefijo + " §a✔ Code is valid.");
+            jugador.sendMessage(prefijo + " §7To run it, hold the disk in your hand and use §e/pc run§7.");
         }
     }
 }

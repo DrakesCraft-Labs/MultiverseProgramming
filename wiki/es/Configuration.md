@@ -23,8 +23,8 @@ La config se carga al arrancar el servidor. **Reinicia** el servidor después de
 
 | Comando | Aliases | Descripción |
 |---|---|---|
-| `/pc disco` | `disk`, `nuevo` | Da al jugador un disquete |
 | `/pc run` | `ejecutar` | Ejecuta el programa del disquete en la mano |
+| `/pc give <item>` | `floppydisk`, `computer` | Admin: te da un objeto custom |
 | `/pc help` | — | Lista los comandos |
 | `/pc` | — | Igual que help |
 
@@ -35,6 +35,7 @@ Alias globales del plugin: `/pc`, `/computador`, `/computadora`, `/disco`.
 | Nodo | Por defecto | Descripción |
 |---|---|---|
 | `multiverseprogramming.use` | `true` | Permite usar computadoras y ejecutar disquetes |
+| `multiverseprogramming.admin` | `op` | Permite dar objetos custom (`/pc give`) |
 
 Ejemplo para restringir:
 
@@ -45,16 +46,16 @@ multiverseprogramming.use: false
 
 ## Mensajes en chat
 
-Los mensajes del chat están en español, con el prefijo `[Computadora]`:
+Los mensajes del chat están en inglés, con el prefijo `[Computer]`:
 
-- `✔ Código válido...` — el código compila.
+- `✔ Code is valid...` — el código compila.
 - `✘ <error>` — error de sintaxis/ejecución.
-- `(sin salida)` — el programa corrió pero no imprimió nada.
+- `(no output)` — el programa corrió pero no imprimió nada.
 
 ## Textos del plugin
 
-- **Título de la interfaz**: `Multiverse - Computadora`
-- **Nombre del disquete**: `Disquete`
+- **Título de la interfaz**: `Multiverse - Computer`
+- **Nombre del disquete**: `Floppy Disk`
 
 ## Build y dependencias
 

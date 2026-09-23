@@ -26,9 +26,9 @@ Built for **Purpur / Paper 1.21.11** with Java 21.
 ## Quick start
 
 1. Drop `MultiverseProgramming.jar` into your server's `plugins/` folder and restart.
-2. `/pc disco` (alias of `/pc disk`) — receive a floppy disk. A fresh disk comes with a template.
+2. Craft a **Floppy Disk** (paper surrounded by an iron ingot) — a fresh disk comes with a template.
 3. Place a **lectern** and right‑click it — the computer GUI opens.
-4. Insert the disk into **slot 0** and click the **green "Validar código" button**.
+4. Insert the disk into **slot 0** and click the **green "✔ Validate Code" button**.
    - If the code has an error, the GUI closes and the error appears in chat.
    - If it is correct, the game tells you the code is valid and to run it.
 5. Hold the disk in your hand and run **`/pc run`**.
@@ -49,8 +49,8 @@ end
 
 | Command | Description |
 |---|---|
-| `/pc disco` | Gives you a (new) floppy disk |
 | `/pc run` | Executes the program on the disk in your hand |
+| `/pc give <item>` | **Admin**: gives you a custom item (`floppydisk`, `computer`) |
 | `/pc help` | Shows the command list |
 | `/pc` (no argument) | Same as `/pc help` |
 
@@ -61,6 +61,7 @@ Aliases: `computador`, `computadora`, `disco`.
 | Permission | Default | Description |
 |---|---|---|
 | `multiverseprogramming.use` | `true` | Allows using computers and disks |
+| `multiverseprogramming.admin` | `op` | Allows giving custom items (`/pc give`) |
 
 ## Configuration (`config.yml`)
 
@@ -74,6 +75,38 @@ execution-timeout-ms: 3000
 
 - `computer-block` can be any [Material](https://jd.papermc.io/paper/1.21/org/bukkit/Material.html) name, e.g. `BARREL` or `DISPENSER`.
 - Programs that take longer than `execution-timeout-ms` are interrupted with a warning in chat.
+
+## Crafting recipes
+
+Everything is obtainable in survival — no commands needed. These are the recipes as seen in the 3×3 crafting table.
+
+### Floppy Disk
+
+```text
++---+---+---+
+|   | P |   |
++---+---+---+
+| P | I | P |
++---+---+---+
+|   | P |   |
++---+---+---+
+```
+
+**Legend:** `P` = Paper · `I` = Iron Ingot → **1 Floppy Disk**
+
+### Computer (lectern)
+
+```text
++---+---+---+
+| S | S | S |
++---+---+---+
+|   | B |   |
++---+---+---+
+|   | S |   |
++---+---+---+
+```
+
+**Legend:** `S` = Wooden Slab (any wood) · `B` = Bookshelf → **1 Computer**
 
 ## Lua sandbox notes
 

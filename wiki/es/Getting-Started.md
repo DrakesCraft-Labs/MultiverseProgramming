@@ -5,15 +5,13 @@
 1. Pon `MultiverseProgramming.jar` en la carpeta `plugins/` de tu servidor.
 2. Reinicia el servidor.
 3. Comprueba `plugins/MultiverseProgramming/config.yml` — se genera en el primer arranque.
-4. Verifica en la consola el mensaje `MultiverseProgramming activado`.
+4. Verifica en la consola el mensaje `MultiverseProgramming enabled`.
 
 ## 2. Consigue un disquete
 
-```
-/pc disco
-```
+Craftea un **Floppy Disk** (ver [Recetas](Recipes.md)).
 
-Recibes un **Disquete** —un libro y pluma con una plantilla de Lua ya incluida en la primera página.
+Recibes un **Floppy Disk** —un libro y pluma con una plantilla de Lua ya incluida en la primera página.
 
 ## 3. Escribe un programa
 
@@ -36,12 +34,12 @@ Coloca un **atril (lectern)** y haz **clic derecho** sobre él. Se abre la inter
 ## 5. Validar
 
 - Pon el disquete en la **ranura 0** (la primera casilla vacía).
-- Haz clic en el botón verde **`✔ Validar código`** (la esmeralda, ranura 8).
+- Haz clic en el botón verde **`✔ Validate Code`** (la esmeralda, ranura 8).
 
 Dos resultados posibles:
 
 - **Error de sintaxis** → la interfaz se cierra y el error de Lua (con número de línea) sale en rojo en el chat.
-- **Código válido** → el juego confirma que el código está bien y te dice que lo ejecutes.
+- **Code is valid** → el juego confirma que el código está bien y te dice que lo ejecutes.
 
 ## 6. Ejecutar
 
@@ -51,11 +49,11 @@ Sostén el disquete en la mano principal y escribe:
 /pc run
 ```
 
-El programa se ejecuta **en la sandbox**. Todo lo que haga `print()` se muestra en tu chat. Si el programa no genera salida verás `(sin salida)`.
+El programa se ejecuta **en la sandbox**. Todo lo que haga `print()` se muestra en tu chat. Si el programa no genera salida verás `(no output)`.
 
 ## Errores comunes
 
 - Meter el disquete en otra ranura → solo la ranura 0 acepta disquetes.
 - Olvidar ejecutar: el botón **solo compila**, no ejecuta.
-- Ejecutar sin disquete en la mano → el comando te pide sujetar un **Disquete**.
+- Ejecutar sin disquete en la mano → el comando te pide sujetar un **Floppy Disk**.
 - Bucle infinito → el programa se interrumpe tras `execution-timeout-ms` (por defecto 3000).

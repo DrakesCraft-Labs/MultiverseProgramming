@@ -2,6 +2,8 @@
 package com.multiverse.programming;
 
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class MultiverseProgrammingPlugin extends JavaPlugin {
@@ -22,19 +24,30 @@ public final class MultiverseProgrammingPlugin extends JavaPlugin {
         getCommand("pc").setExecutor(new ComputerCommand(this));
         getCommand("pc").setTabCompleter(new ComputerCommand(this));
 
-        getLogger().info("MultiverseProgramming activado (bloque: " + bloque.name() + ").");
+        registrarRecetaDisco();
+
+        getLogger().info("MultiverseProgramming enabled (block: " + bloque.name() + ").");
     }
 
     @Override
     public void onDisable() {
-        getLogger().info("MultiverseProgramming desactivado.");
+        getLogger().info("MultiverseProgramming disabled.");
     }
 
     public String getPrefijo() {
-        return "§8[§bComputadora§8]";
+        return "§8[§bComputer§8]";
     }
 
     public long getTimeoutMs() {
         return timeoutMs;
+    }
+
+    private void registrarRecetaDisco() {
+        NamespacedKey key = new NamespacedKey(this, "floppy_disk");
+        ShapedRecipe receta = new ShapedRecipe(key, DiskManager.crearDisquete());
+        receta.shape(" P ", "PIP", " P ");
+        receta.setIngredient('P', Material.PAPER);
+        receta.setIngredient('I', Material.IRON_INGOT);
+        getServer().addRecipe(receta);
     }
 }

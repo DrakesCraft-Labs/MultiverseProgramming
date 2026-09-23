@@ -26,7 +26,7 @@ public final class LuaRunner {
 
     public static String validar(String codigo) {
         if (codigo == null || codigo.trim().isEmpty()) {
-            return "El disquete está vacío.";
+            return "The disk is empty.";
         }
         try {
             sandbox().load(codigo);
@@ -53,7 +53,7 @@ public final class LuaRunner {
                     salida.append(e.getMessage());
                 } catch (StackOverflowError e) {
                     ok.set(false);
-                    salida.append("pila agotada (¿recursión infinita?)");
+                    salida.append("stack exhausted (infinite recursion?)");
                 }
             });
             try {
@@ -61,10 +61,10 @@ public final class LuaRunner {
             } catch (TimeoutException e) {
                 future.cancel(true);
                 ok.set(false);
-                salida.append("<ejecución interrumpida: supera ").append(timeoutMs).append(" ms>");
+                salida.append("<execution interrupted: exceeds ").append(timeoutMs).append(" ms>");
             } catch (InterruptedException | ExecutionException e) {
                 ok.set(false);
-                salida.append("error al ejecutar: ").append(e.getMessage());
+                salida.append("error while running: ").append(e.getMessage());
             } finally {
                 executor.shutdownNow();
             }

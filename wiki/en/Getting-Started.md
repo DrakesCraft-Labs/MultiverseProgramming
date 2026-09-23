@@ -5,15 +5,13 @@
 1. Put `MultiverseProgramming.jar` in your server's `plugins/` folder.
 2. Restart the server (or run `multiverse-programming` reload if your administration allows it).
 3. Check `plugins/MultiverseProgramming/config.yml` — it is generated on first start.
-4. Verify the plugin loaded: look for `MultiverseProgramming activado` in the console/log.
+4. Verify the plugin loaded: look for `MultiverseProgramming enabled` in the console/log.
 
 ## 2. Get a floppy disk
 
-```
-/pc disco
-```
+Craft a **Floppy Disk** (see [Recipes](Recipes.md)).
 
-You receive a **Disquete** (floppy disk) — actually a *book & quill* with a small Lua template already on the first page.
+You receive a **Floppy Disk** — actually a *book & quill* with a small Lua template already on the first page.
 
 ## 3. Write a program
 
@@ -36,7 +34,7 @@ Place a **lectern** and **right‑click** it. The computer GUI opens.
 ## 5. Validate
 
 - Put the disk in **slot 0** (the leftmost empty slot).
-- Click the green **`✔ Validar código`** button (the emerald, slot 8).
+- Click the green **`✔ Validate Code`** button (the emerald, slot 8).
 
 Two outcomes:
 
@@ -51,11 +49,11 @@ Hold the disk in your main hand and type:
 /pc run
 ```
 
-The program executes **in the sandbox**. All `print()` output is shown in your chat. If the program produces no output you will see `(sin salida)`.
+The program executes **in the sandbox**. All `print()` output is shown in your chat. If the program produces no output you will see `(no output)`.
 
 ## Common mistakes
 
 - Places the disk in the wrong slot → only slot 0 accepts disks.
 - Forgets to run: the validate button **only compiles**, it does not execute.
-- Runs without holding a disk → the command tells you to hold a **Disquete**.
+- Runs without holding a disk → the command tells you to hold a **Floppy Disk**.
 - Infinite loop → the program is interrupted after `execution-timeout-ms` (default 3000).
