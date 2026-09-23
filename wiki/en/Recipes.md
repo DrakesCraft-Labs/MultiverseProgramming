@@ -36,6 +36,10 @@ The computer is a lectern. Shape (the vanilla lectern recipe):
 **Legend:** `S` = Wooden Slab (any wood type) · `B` = Bookshelf
 **Result:** 1 **Computer** (lectern)
 
+## Advanced Computer (enchanting table)
+
+The advanced computer is an **enchanting table**. No custom recipe: craft the vanilla enchanting table, then it behaves as an advanced computer once placed (configurable via `advanced-computer-block`).
+
 ## Note for admins
 
-Operators can get the items directly with `/pc give <item>` (`floppydisk`, `computer`). This uses the `multiverseprogramming.admin` permission (default `op`) and is **not** granted to normal survival players.
+Operators can get the items directly with `/pc give <item>` (`floppydisk`, `computer`, `advancedcomputer`). This uses the `multiverseprogramming.admin` permission (default `op`) and is **not** granted to normal survival players.

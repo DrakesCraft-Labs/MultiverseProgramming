@@ -10,46 +10,59 @@ import java.util.List;
 
 public final class DiskManager {
 
-    public static final String NOMBRE = "Floppy Disk";
+    public static final String NAME = "Floppy Disk";
+    public static final String ADVANCED_COMPUTER_NAME = "Advanced Computer";
 
     private DiskManager() {
     }
 
-    public static ItemStack crearDisquete() {
-        ItemStack disco = new ItemStack(Material.WRITABLE_BOOK);
-        BookMeta meta = (BookMeta) disco.getItemMeta();
-        meta.setDisplayName(NOMBRE);
+    public static ItemStack createFloppyDisk() {
+        ItemStack disk = new ItemStack(Material.WRITABLE_BOOK);
+        BookMeta meta = (BookMeta) disk.getItemMeta();
+        meta.setDisplayName(NAME);
         meta.setLore(List.of(
                 "§7Write your program on the pages.",
                 "§7Insert it into the computer's disk slot."
         ));
         meta.setPages("-- Write your program here\n-- Example:\n-- print(\"hello world\")");
-        disco.setItemMeta(meta);
-        return disco;
+        disk.setItemMeta(meta);
+        return disk;
     }
 
-    public static ItemStack crearComputadora() {
-        ItemStack computadora = new ItemStack(Material.LECTERN);
-        ItemMeta meta = computadora.getItemMeta();
+    public static ItemStack createComputer() {
+        ItemStack computer = new ItemStack(Material.LECTERN);
+        ItemMeta meta = computer.getItemMeta();
         meta.setDisplayName("Computer");
         meta.setLore(List.of("§7Place it and right-click it to open the GUI."));
-        computadora.setItemMeta(meta);
-        return computadora;
+        computer.setItemMeta(meta);
+        return computer;
     }
 
-    public static boolean esDisco(ItemStack item) {
+    public static ItemStack createAdvancedComputer() {
+        ItemStack computer = new ItemStack(Material.ENCHANTING_TABLE);
+        ItemMeta meta = computer.getItemMeta();
+        meta.setDisplayName(ADVANCED_COMPUTER_NAME);
+        meta.setLore(List.of(
+                "§7Runs looping programs without the short timeout.",
+                "§7Keeps the disk inside its inventory."
+        ));
+        computer.setItemMeta(meta);
+        return computer;
+    }
+
+    public static boolean isDisk(ItemStack item) {
         if (item == null) {
             return false;
         }
-        Material tipo = item.getType();
-        return tipo == Material.WRITABLE_BOOK || tipo == Material.WRITTEN_BOOK;
+        Material type = item.getType();
+        return type == Material.WRITABLE_BOOK || type == Material.WRITTEN_BOOK;
     }
 
-    public static String leerPrograma(ItemStack disco) {
-        if (!esDisco(disco)) {
+    public static String readProgram(ItemStack disk) {
+        if (!isDisk(disk)) {
             return "";
         }
-        BookMeta meta = (BookMeta) disco.getItemMeta();
+        BookMeta meta = (BookMeta) disk.getItemMeta();
         if (meta == null || !meta.hasPages()) {
             return "";
         }

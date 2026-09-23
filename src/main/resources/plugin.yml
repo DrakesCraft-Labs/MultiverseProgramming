@@ -1,5 +1,5 @@
 name: MultiverseProgramming
-version: 1.0.0
+version: ${project.version}
 main: com.multiverse.programming.MultiverseProgrammingPlugin
 api-version: '1.21'
 description: Programmable computers with Lua and floppy disks.
@@ -8,7 +8,7 @@ commands:
   pc:
     description: Computer and floppy disks
     aliases: [computador, computadora, disco]
-    usage: /pc <run|give|help>
+    usage: /pc <give|help>
 
 permissions:
   multiverseprogramming.use:

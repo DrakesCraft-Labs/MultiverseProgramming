@@ -12,6 +12,13 @@ computer-block: LECTERN
 
 Any block `Material` name works (e.g. `BARREL`, `DISPENSER`, `JUKEBOX`). Remember to restart for config changes to take effect.
 
+## The advanced computer
+
+Default block: **enchanting table**. Get one with `/pc give advancedcomputer` and place it. It behaves like the regular computer with two differences:
+
+- **No short timeout** — looping programs can run until they end (`advanced-execution-timeout-ms`, `0` = unlimited by default). Pressing the button again **stops** the running program.
+- **Keeps the disk inside** — the disk stays in the machine even after the GUI closes; you can take it out whenever you want.
+
 ### GUI layout
 
 The GUI is a single row of 9 slots:
@@ -22,7 +29,7 @@ The GUI is a single row of 9 slots:
 
 - **Slot 0 — disk slot.** Only floppy disks (books) can be inserted here. Any other item is rejected with a chat message.
 - **Slots 1–7 — decoration.** Black glass panes; they cannot be moved or replaced.
-- **Slot 8 — validate button.** A green emerald labeled `✔ Validate Code`. Clicking it validates the disk's code.
+- **Slot 8 — validate & run button.** A green emerald labeled `✔ Validate Code`. Clicking it checks the disk's code and, if valid, executes the program.
 
 When the inventory is closed (error or success), the disk returns to the player's inventory automatically.
 
@@ -38,12 +45,10 @@ The item is a **book & quill** renamed to "Floppy Disk". Both unsigned and signe
 
 ### Recognizing a disk
 
-Any `WRITABLE_BOOK` or `WRITTEN_BOOK` in your hand is treated as a disk for `/pc run`. Other item types are rejected.
+Any `WRITABLE_BOOK` or `WRITTEN_BOOK` is recognized as a disk. Other item types are rejected.
 
 ## Lifecycle of a program
 
 ```
-write code on a disk → insert disk → validate (button) → hold disk → /pc run → output in chat
+write code on a disk → insert disk → press the button → program runs → output in chat
 ```
-
-Validation only **compiles** the code (syntax check). Execution happens only with `/pc run`.

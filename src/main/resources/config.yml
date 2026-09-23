@@ -3,3 +3,11 @@ computer-block: LECTERN
 
 # Maximum execution time of a program, in milliseconds.
 execution-timeout-ms: 3000
+
+# Block that acts as an advanced computer.
+# Loops and programs can run without the short timeout (configured below).
+advanced-computer-block: ENCHANTING_TABLE
+
+# Maximum execution time of a program on an advanced computer, in milliseconds.
+# Use 0 for no limit.
+advanced-execution-timeout-ms: 0

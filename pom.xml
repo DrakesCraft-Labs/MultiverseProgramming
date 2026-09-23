@@ -9,7 +9,7 @@
     <version>1.0.0</version>
     <packaging>jar</packaging>
     <name>MultiverseProgramming</name>
-    <description>Computadoras con Lua y disquetes para Purpur/Paper</description>
+    <description>Computers with Lua and floppy disks for Purpur/Paper</description>
 
     <properties>
         <maven.compiler.release>21</maven.compiler.release>
@@ -27,7 +27,7 @@
         <dependency>
             <groupId>io.papermc.paper</groupId>
             <artifactId>paper-api</artifactId>
-            <!-- Paper API 1.21.11. Corre sobre Purpur 1.21.11 (mismo API). -->
+            <!-- Paper API 1.21.11. Runs on Purpur 1.21.11 (same API). -->
             <version>1.21.11-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
@@ -39,7 +39,23 @@
     </dependencies>
 
     <build>
-        <finalName>MultiverseProgramming</finalName>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>plugin.yml</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+                <excludes>
+                    <exclude>plugin.yml</exclude>
+                </excludes>
+            </resource>
+        </resources>
+        <finalName>MultiverseProgramming-${project.version}</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

@@ -31,7 +31,7 @@ Place a **lectern** and **right‑click** it. The computer GUI opens.
 
 > The block is configurable in `config.yml` (`computer-block`). If you change it, the new block type becomes the computer.
 
-## 5. Validate
+## 5. Validate and run
 
 - Put the disk in **slot 0** (the leftmost empty slot).
 - Click the green **`✔ Validate Code`** button (the emerald, slot 8).
@@ -39,21 +39,9 @@ Place a **lectern** and **right‑click** it. The computer GUI opens.
 Two outcomes:
 
 - **Syntax error** → the GUI closes and the Lua error (with line number) appears in red in your chat.
-- **Valid code** → the game confirms the code is valid and tells you to run it.
-
-## 6. Run
-
-Hold the disk in your main hand and type:
-
-```
-/pc run
-```
-
-The program executes **in the sandbox**. All `print()` output is shown in your chat. If the program produces no output you will see `(no output)`.
+- **Valid code** → the program runs immediately **in the sandbox**. All `print()` output is shown in your chat; if it produces no output you will see `(no output)`.
 
 ## Common mistakes
 
 - Places the disk in the wrong slot → only slot 0 accepts disks.
-- Forgets to run: the validate button **only compiles**, it does not execute.
-- Runs without holding a disk → the command tells you to hold a **Floppy Disk**.
 - Infinite loop → the program is interrupted after `execution-timeout-ms` (default 3000).

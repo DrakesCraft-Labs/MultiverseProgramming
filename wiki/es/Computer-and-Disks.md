@@ -12,6 +12,13 @@ computer-block: LECTERN
 
 Sirve cualquier nombre de `Material` (p. ej. `BARREL`, `DISPENSER`, `JUKEBOX`). Recuerda reiniciar para aplicar los cambios de config.
 
+## La computadora avanzada
+
+Bloque por defecto: **mesa de encantamientos**. Consíguela con `/pc give advancedcomputer` y colócala. Se comporta como la normal con dos diferencias:
+
+- **Sin timeout corto** — los programas con bucles pueden correr hasta terminar (`advanced-execution-timeout-ms`, `0` = sin límite por defecto). Volver a pulsar el botón **detiene** el programa en curso.
+- **Mantiene el disquete dentro** — el disquete permanece en la máquina aunque cierres la interfaz; puedes retirarlo cuando quieras.
+
 ### Diseño de la interfaz
 
 La interfaz es una fila de 9 ranuras:
@@ -22,7 +29,7 @@ La interfaz es una fila de 9 ranuras:
 
 - **Ranura 0 — compartimento del disquete.** Solo se pueden insertar disquetes (libros). Cualquier otro objeto se rechaza con un mensaje en chat.
 - **Ranuras 1–7 — decoración.** Cristal negro; no se pueden mover ni reemplazar.
-- **Ranura 8 — botón de validar.** Una esmeralda verde con la etiqueta `✔ Validate Code`. Al hacer clic valida el código del disquete.
+- **Ranura 8 — botón de validar y ejecutar.** Una esmeralda verde con la etiqueta `✔ Validate Code`. Al hacer clic comprueba el código del disquete y, si es válido, ejecuta el programa.
 
 Al cerrarse la interfaz (con error o con éxito), el disquete vuelve automáticamente al inventario del jugador.
 
@@ -38,12 +45,10 @@ El objeto es un **libro y pluma** renombrado a "Floppy Disk". La computadora ace
 
 ### Reconocer un disquete
 
-Cualquier `WRITABLE_BOOK` o `WRITTEN_BOOK` en tu mano se trata como disquete para `/pc run`. Otros tipos de objeto se rechazan.
+Cualquier `WRITABLE_BOOK` o `WRITTEN_BOOK` se reconoce como disquete. Otros tipos de objeto se rechazan.
 
 ## Ciclo de vida de un programa
 
 ```
-escribir código en un disquete → insertar disquete → validar (botón) → sujetar disquete → /pc run → salida en chat
+escribir código en un disquete → insertar disquete → pulsar el botón → el programa se ejecuta → salida en chat
 ```
-
-La validación solo **compila** el código (comprobación de sintaxis). La ejecución ocurre únicamente con `/pc run`.

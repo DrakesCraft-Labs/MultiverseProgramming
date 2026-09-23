@@ -37,6 +37,8 @@ execution-timeout-ms: 3000
 - Si el programa supera el límite se interrumpe y se muestra una advertencia: `<execution interrupted: exceeds 3000 ms>`.
 - El `StackOverflowError` (recursión infinita) también se captura y se notifica.
 
+En una **computadora avanzada** el límite es `advanced-execution-timeout-ms` (por defecto `0` = sin límite), así que los bucles pueden correr hasta terminar, la salida se transmite en vivo al chat y volver a pulsar el botón detiene el programa.
+
 ## Ejemplos
 
 ### Bucle y matemáticas
@@ -74,7 +76,3 @@ Los errores de sintaxis o ejecución se muestran en chat con el prefijo `✘`, t
 ```
 [Computer] ✘ string:2: 'end' expected
 ```
-
-## Qué no está disponible (todavía)
-
-Actualmente **no hay funciones de interacción con el mundo** (sin turtle que se mueva o construya). Lua se limita a computación pura y salida con `print`. Si quieres una API para mover jugadores, colocar bloques o leer redstone, ese sería el siguiente paso de este plugin — todo está preparado, ya que la computadora se comunica con el jugador a través del chat.

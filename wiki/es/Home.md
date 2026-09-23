@@ -14,6 +14,6 @@ MultiverseProgramming lleva **computadoras programables estilo ComputerCraft** a
 
 ## ¿Qué es esto?
 
-Un **disquete** es un *libro y pluma* cuyas páginas contienen un programa en Lua. Una **computadora** es un bloque configurable (un atril por defecto) con una interfaz: insertas el disquete en una ranura y pulsas un botón de validación. Si el código es válido, el juego te lo confirma y puedes **ejecutarlo** sosteniendo el disquete y usando `/pc run`. Todo lo que el programa imprime sale en tu chat.
+Un **disquete** es un *libro y pluma* cuyas páginas contienen un programa en Lua. Una **computadora** es un bloque configurable (un atril por defecto) con una interfaz: insertas el disquete en una ranura y pulsas el botón de validación. Si el código es válido, el programa se ejecuta **en la propia computadora** al instante. Todo lo que el programa imprime sale en tu chat.
 
 Es una forma 100 % con plugins (sin mods) de enseñar y jugar con programación dentro de Minecraft.

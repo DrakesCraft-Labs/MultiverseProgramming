@@ -19,89 +19,59 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
     }
 
     @Override
-    public boolean onCommand(CommandSender emisor, Command comando, String etiqueta, String[] args) {
-        if (!(emisor instanceof Player jugador)) {
-            emisor.sendMessage("Players only.");
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage("Players only.");
             return true;
         }
 
         if (args.length == 0) {
-            ayuda(jugador);
+            help(player);
             return true;
         }
 
         switch (args[0].toLowerCase()) {
-            case "run", "ejecutar" -> ejecutar(jugador);
-            case "give" -> dar(jugador, args);
-            default -> ayuda(jugador);
+            case "give" -> give(player, args);
+            default -> help(player);
         }
         return true;
     }
 
-    private void dar(Player jugador, String[] args) {
-        if (!jugador.hasPermission("multiverseprogramming.admin")) {
-            jugador.sendMessage(plugin.getPrefijo() + " §cYou don't have permission to use this command.");
+    private void give(Player player, String[] args) {
+        if (!player.hasPermission("multiverseprogramming.admin")) {
+            player.sendMessage(plugin.getPrefix() + " §cYou don't have permission to use this command.");
             return;
         }
         if (args.length < 2) {
-            jugador.sendMessage(plugin.getPrefijo() + " §cUsage: /pc give <floppydisk|computer>");
+            player.sendMessage(plugin.getPrefix() + " §cUsage: /pc give <floppydisk|computer>");
             return;
         }
-        ItemStack objeto;
+        ItemStack item;
         switch (args[1].toLowerCase()) {
-            case "floppydisk", "disk", "disco", "disquete" -> objeto = DiskManager.crearDisquete();
-            case "computer", "computadora", "pc" -> objeto = DiskManager.crearComputadora();
+            case "floppydisk", "disk", "disco", "disquete" -> item = DiskManager.createFloppyDisk();
+            case "computer", "computadora", "pc" -> item = DiskManager.createComputer();
+            case "advancedcomputer", "advanced", "computadoraavanzada" -> item = DiskManager.createAdvancedComputer();
             default -> {
-                jugador.sendMessage(plugin.getPrefijo() + " §cUnknown item. Available: floppydisk, computer");
+                player.sendMessage(plugin.getPrefix() + " §cUnknown item. Available: floppydisk, computer, advancedcomputer");
                 return;
             }
         }
-        jugador.getInventory().addItem(objeto);
-        jugador.sendMessage(plugin.getPrefijo() + " §7You received a " + objeto.getItemMeta().getDisplayName() + ".");
+        player.getInventory().addItem(item);
+        player.sendMessage(plugin.getPrefix() + " §7You received a " + item.getItemMeta().getDisplayName() + ".");
     }
 
-    private void ejecutar(Player jugador) {
-        ItemStack disco = jugador.getInventory().getItemInMainHand();
-        if (!DiskManager.esDisco(disco)) {
-            jugador.sendMessage(plugin.getPrefijo() + " §cYou must hold a " + DiskManager.NOMBRE + " in your hand.");
-            return;
-        }
-
-        String codigo = DiskManager.leerPrograma(disco);
-        String error = LuaRunner.validar(codigo);
-        if (error != null) {
-            jugador.sendMessage(plugin.getPrefijo() + " §cError in the code:");
-            for (String linea : error.split("\n")) {
-                jugador.sendMessage(" §4✘ " + linea);
-            }
-            return;
-        }
-
-        jugador.sendMessage(plugin.getPrefijo() + " §7Running program…");
-        LuaRunner.Resultado resultado = LuaRunner.ejecutar(codigo, plugin.getTimeoutMs());
-
-        if (!resultado.salida().isEmpty()) {
-            for (String linea : resultado.salida().split("\n")) {
-                jugador.sendMessage("§f" + linea);
-            }
-        } else if (resultado.ok()) {
-            jugador.sendMessage(plugin.getPrefijo() + " §7(no output)");
-        }
-    }
-
-    private void ayuda(Player jugador) {
-jugador.sendMessage(plugin.getPrefijo() + " §7Commands:");
-        jugador.sendMessage(" §e/pc run §8- §7run the program on the disk in your hand");
-        jugador.sendMessage(" §e/pc give <item> §8- §7admin: give yourself a custom item");
+    private void help(Player player) {
+        player.sendMessage(plugin.getPrefix() + " §7Commands:");
+        player.sendMessage(" §e/pc give <item> §8- §7admin: give yourself a custom item");
     }
 
     @Override
-    public List<String> onTabComplete(CommandSender emisor, Command comando, String alias, String[] args) {
+    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            return List.of("run", "ejecutar", "give", "help");
+            return List.of("give");
         }
         if (args.length == 2 && args[0].equalsIgnoreCase("give")) {
-            return List.of("floppydisk", "disk", "disco", "computer", "computadora");
+            return List.of("floppydisk", "disk", "disco", "computer", "computadora", "advancedcomputer");
         }
         return List.of();
     }

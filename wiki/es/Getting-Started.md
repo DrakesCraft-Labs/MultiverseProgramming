@@ -31,7 +31,7 @@ Coloca un **atril (lectern)** y haz **clic derecho** sobre él. Se abre la inter
 
 > El bloque es configurable en `config.yml` (`computer-block`). Si lo cambias, el nuevo bloque pasa a ser la computadora.
 
-## 5. Validar
+## 5. Validar y ejecutar
 
 - Pon el disquete en la **ranura 0** (la primera casilla vacía).
 - Haz clic en el botón verde **`✔ Validate Code`** (la esmeralda, ranura 8).
@@ -39,21 +39,9 @@ Coloca un **atril (lectern)** y haz **clic derecho** sobre él. Se abre la inter
 Dos resultados posibles:
 
 - **Error de sintaxis** → la interfaz se cierra y el error de Lua (con número de línea) sale en rojo en el chat.
-- **Code is valid** → el juego confirma que el código está bien y te dice que lo ejecutes.
-
-## 6. Ejecutar
-
-Sostén el disquete en la mano principal y escribe:
-
-```
-/pc run
-```
-
-El programa se ejecuta **en la sandbox**. Todo lo que haga `print()` se muestra en tu chat. Si el programa no genera salida verás `(no output)`.
+- **Código válido** → el programa se ejecuta inmediatamente **en la sandbox**. Todo lo que haga `print()` se muestra en tu chat; si no genera salida verás `(no output)`.
 
 ## Errores comunes
 
 - Meter el disquete en otra ranura → solo la ranura 0 acepta disquetes.
-- Olvidar ejecutar: el botón **solo compila**, no ejecuta.
-- Ejecutar sin disquete en la mano → el comando te pide sujetar un **Floppy Disk**.
 - Bucle infinito → el programa se interrumpe tras `execution-timeout-ms` (por defecto 3000).

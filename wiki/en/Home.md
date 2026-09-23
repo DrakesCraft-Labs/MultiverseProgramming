@@ -14,6 +14,6 @@ MultiverseProgramming brings **ComputerCraft‑style programmable computers** to
 
 ## What is this?
 
-A **floppy disk** is an in-game *book & quill* whose pages contain a Lua program. A **computer** is a configurable block (a lectern by default) with a GUI: you insert the disk into a slot and press a validate button. If the code is valid, the game tells you, and you can **run** it by holding the disk and executing `/pc run`. Whatever the program prints goes to your chat.
+A **floppy disk** is an in-game *book & quill* whose pages contain a Lua program. A **computer** is a configurable block (a lectern by default) with a GUI: you insert the disk into a slot and press the validate button. If the code is valid, the program runs **on the computer** right away. Whatever the program prints goes to your chat.
 
 It is a mod‑free, plugin‑only way to teach and play with programming inside Minecraft.

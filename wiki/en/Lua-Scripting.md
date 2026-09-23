@@ -37,6 +37,8 @@ execution-timeout-ms: 3000
 - If a program exceeds the limit it is interrupted and a warning is shown: `<execution interrupted: exceeds 3000 ms>`.
 - `StackOverflowError` (infinite recursion) is also caught and reported.
 
+On an **advanced computer** the limit is `advanced-execution-timeout-ms` (default `0` = no limit), so loops can keep running until they end, output streams to chat live, and pressing the button again stops the program.
+
 ## Examples
 
 ### Loop and math
@@ -74,7 +76,3 @@ Syntax or runtime errors are shown in chat prefixed with `✘`, exactly as repor
 ```
 [Computer] ✘ string:2: 'end' expected
 ```
-
-## What is not available (yet)
-
-There are currently **no world interaction functions** (no turtle move/build). Lua is restricted to pure computation and `print` output. If you want an API to move players, place blocks or read redstone, that would be the next step for this plugin — everything is ready for it, since the computer already communicates with the player through the chat.

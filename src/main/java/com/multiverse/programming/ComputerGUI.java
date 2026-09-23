@@ -12,54 +12,72 @@ import java.util.List;
 
 public final class ComputerGUI {
 
-    public static final String TITULO = "Multiverse - Computer";
-    public static final int SLOT_DISCO = 0;
-    public static final int SLOT_BOTON = 8;
+    public static final String TITLE = "Computer";
+    public static final String ADVANCED_TITLE = "Advanced Computer";
+    public static final int DISK_SLOT = 0;
+    public static final int BUTTON_SLOT = 8;
 
     private ComputerGUI() {
     }
 
-    public static Inventory abrir() {
-        Inventory inv = Bukkit.createInventory(null, 9, TITULO);
+    public static Inventory open() {
+        return open(TITLE, "§a✔ Validate & Run");
+    }
 
-        ItemStack marco = new ItemStack(Material.BLACK_STAINED_GLASS_PANE);
-        ItemMeta marcoMeta = marco.getItemMeta();
-        marcoMeta.setDisplayName(" ");
-        marco.setItemMeta(marcoMeta);
+    public static Inventory openAdvanced() {
+        return open(ADVANCED_TITLE, "§a✔ Run / Stop");
+    }
 
-        for (int i = 1; i < SLOT_BOTON; i++) {
-            inv.setItem(i, marco.clone());
+    private static Inventory open(String title, String buttonLabel) {
+        Inventory inv = Bukkit.createInventory(null, 9, title);
+
+        ItemStack frame = new ItemStack(Material.BLACK_STAINED_GLASS_PANE);
+        ItemMeta frameMeta = frame.getItemMeta();
+        frameMeta.setDisplayName(" ");
+        frame.setItemMeta(frameMeta);
+
+        for (int i = 1; i < BUTTON_SLOT; i++) {
+            inv.setItem(i, frame.clone());
         }
 
-        ItemStack boton = new ItemStack(Material.EMERALD);
-        ItemMeta botonMeta = boton.getItemMeta();
-        botonMeta.setDisplayName("§a✔ Validate Code");
-        botonMeta.setLore(List.of("§7Checks the disk's code for errors."));
-        boton.setItemMeta(botonMeta);
-        inv.setItem(SLOT_BOTON, boton);
+        ItemStack button = new ItemStack(Material.EMERALD);
+        ItemMeta buttonMeta = button.getItemMeta();
+        buttonMeta.setDisplayName(buttonLabel);
+        buttonMeta.setLore(List.of("§7Checks the disk's code for errors."));
+        button.setItemMeta(buttonMeta);
+        inv.setItem(BUTTON_SLOT, button);
 
         return inv;
     }
 
-    public static void pulsarBoton(Player jugador, Inventory inv, String prefijo) {
-        ItemStack disco = inv.getItem(SLOT_DISCO);
-        if (disco == null || disco.getType().isAir()) {
-            jugador.sendMessage(prefijo + " §cThere is no floppy disk in the slot.");
+    public static void pressButton(Player player, Inventory inv, String prefix, long timeoutMs) {
+        ItemStack disk = inv.getItem(DISK_SLOT);
+        if (disk == null || disk.getType().isAir()) {
+            player.sendMessage(prefix + " §cThere is no floppy disk in the slot.");
             return;
         }
 
-        String codigo = DiskManager.leerPrograma(disco);
-        String error = LuaRunner.validar(codigo);
-        jugador.closeInventory();
+        String code = DiskManager.readProgram(disk);
+        String error = LuaRunner.validate(code);
+        player.closeInventory();
 
         if (error != null) {
-            jugador.sendMessage(prefijo + " §cError in the code:");
-            for (String linea : error.split("\n")) {
-                jugador.sendMessage(" §4✘ " + linea);
+            player.sendMessage(prefix + " §cError in the code:");
+            for (String line : error.split("\n")) {
+                player.sendMessage(" §4✘ " + line);
             }
-        } else {
-            jugador.sendMessage(prefijo + " §a✔ Code is valid.");
-            jugador.sendMessage(prefijo + " §7To run it, hold the disk in your hand and use §e/pc run§7.");
+            return;
+        }
+
+        player.sendMessage(prefix + " §7Running program…");
+        LuaRunner.Result result = LuaRunner.execute(code, timeoutMs);
+
+        if (!result.output().isEmpty()) {
+            for (String line : result.output().split("\n")) {
+                player.sendMessage("§f" + line);
+            }
+        } else if (result.ok()) {
+            player.sendMessage(prefix + " §7(no output)");
         }
     }
 }

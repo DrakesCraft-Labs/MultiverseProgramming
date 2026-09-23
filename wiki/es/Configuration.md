@@ -10,12 +10,20 @@ computer-block: LECTERN
 
 # Tiempo máximo de ejecución de un programa, en milisegundos.
 execution-timeout-ms: 3000
+
+# Bloque que actúa como computadora avanzada (bucles, sin timeout corto).
+advanced-computer-block: ENCHANTING_TABLE
+
+# Tiempo máximo de ejecución en la avanzada, en milisegundos. 0 = sin límite.
+advanced-execution-timeout-ms: 0
 ```
 
 | Clave | Tipo | Por defecto | Descripción |
 |---|---|---|---|
 | `computer-block` | `string` | `LECTERN` | Cualquier nombre de `Material` usado como bloque computadora |
 | `execution-timeout-ms` | `long` | `3000` | Cuánto puede tardar un programa antes de ser interrumpido |
+| `advanced-computer-block` | `string` | `ENCHANTING_TABLE` | Cualquier nombre de `Material` usado como computadora avanzada |
+| `advanced-execution-timeout-ms` | `long` | `0` | Tiempo máximo en la avanzada; `0` significa sin límite |
 
 La config se carga al arrancar el servidor. **Reinicia** el servidor después de editarla.
 
@@ -23,8 +31,7 @@ La config se carga al arrancar el servidor. **Reinicia** el servidor después de
 
 | Comando | Aliases | Descripción |
 |---|---|---|
-| `/pc run` | `ejecutar` | Ejecuta el programa del disquete en la mano |
-| `/pc give <item>` | `floppydisk`, `computer` | Admin: te da un objeto custom |
+| `/pc give <item>` | `floppydisk`, `computer`, `advancedcomputer` | Admin: te da un objeto custom |
 | `/pc help` | — | Lista los comandos |
 | `/pc` | — | Igual que help |
 
@@ -48,13 +55,13 @@ multiverseprogramming.use: false
 
 Los mensajes del chat están en inglés, con el prefijo `[Computer]`:
 
-- `✔ Code is valid...` — el código compila.
+- `Running program…` — el programa se está ejecutando.
 - `✘ <error>` — error de sintaxis/ejecución.
 - `(no output)` — el programa corrió pero no imprimió nada.
 
 ## Textos del plugin
 
-- **Título de la interfaz**: `Multiverse - Computer`
+- **Títulos de la interfaz**: `Computer` y `Advanced Computer`
 - **Nombre del disquete**: `Floppy Disk`
 
 ## Build y dependencias
@@ -69,4 +76,4 @@ Para compilar:
 mvn -q -DskipTests package
 ```
 
-Salida: `target/MultiverseProgramming.jar`
+Salida: `target/MultiverseProgramming-<version>.jar` (coincide con `<version>` del pom)

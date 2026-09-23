@@ -2,7 +2,7 @@
 
 Programmable computers with **Lua** inside your Minecraft server, inspired by ComputerCraft.
 
-Place a computer in the world, insert a **floppy disk**, validate your Lua code with one click, and run it straight from the chat.
+Place a computer in the world, insert a **floppy disk**, and validate & run your Lua code with one click — the output appears straight in chat.
 
 Built for **Purpur / Paper 1.21.11** with Java 21.
 
@@ -11,9 +11,9 @@ Built for **Purpur / Paper 1.21.11** with Java 21.
 ## Features
 
 - **Computer block** (default: lectern) — right‑click to open the computer GUI.
+- **Advanced Computer** (default: enchanting table) — runs looping programs without the short timeout and keeps the disk inside its inventory.
 - **Floppy disks** — an in-game book & quill that holds your Lua program, page by page.
-- **Validate button** — checks your code for errors and reports them in chat.
-- **Run from chat** — `/pc run` executes the program on the disk you are holding.
+- **Validate & Run button** — checks your code for errors and, if valid, executes the program right on the computer.
 - **Sandboxed Lua** (Luaj) — `io`, `os`, `luajava`, `package`, `dofile` and `loadfile` are disabled, and every program has a configurable execution timeout.
 - **Chat output** — everything the program prints with `print()` is sent to the player's chat.
 
@@ -30,9 +30,8 @@ Built for **Purpur / Paper 1.21.11** with Java 21.
 3. Place a **lectern** and right‑click it — the computer GUI opens.
 4. Insert the disk into **slot 0** and click the **green "✔ Validate Code" button**.
    - If the code has an error, the GUI closes and the error appears in chat.
-   - If it is correct, the game tells you the code is valid and to run it.
-5. Hold the disk in your hand and run **`/pc run`**.
-   - The program's `print()` output appears in your chat.
+   - If it is valid, the program runs immediately.
+5. The program's `print()` output appears in your chat (`(no output)` if it printed nothing).
 
 ### Example program
 
@@ -49,8 +48,7 @@ end
 
 | Command | Description |
 |---|---|
-| `/pc run` | Executes the program on the disk in your hand |
-| `/pc give <item>` | **Admin**: gives you a custom item (`floppydisk`, `computer`) |
+| `/pc give <item>` | **Admin**: gives you a custom item (`floppydisk`, `computer`, `advancedcomputer`) |
 | `/pc help` | Shows the command list |
 | `/pc` (no argument) | Same as `/pc help` |
 
@@ -71,10 +69,17 @@ computer-block: LECTERN
 
 # Maximum execution time of a program, in milliseconds.
 execution-timeout-ms: 3000
+
+# Block that acts as an advanced computer (loops, no short timeout).
+advanced-computer-block: ENCHANTING_TABLE
+
+# Maximum execution time on an advanced computer, in milliseconds. 0 = no limit.
+advanced-execution-timeout-ms: 0
 ```
 
-- `computer-block` can be any [Material](https://jd.papermc.io/paper/1.21/org/bukkit/Material.html) name, e.g. `BARREL` or `DISPENSER`.
-- Programs that take longer than `execution-timeout-ms` are interrupted with a warning in chat.
+- The `*-block` options accept any [Material](https://jd.papermc.io/paper/1.21/org/bukkit/Material.html) name, e.g. `BARREL` or `DISPENSER`.
+- Programs that take longer than `execution-timeout-ms` on a regular computer are interrupted with a warning in chat.
+- On an advanced computer a program runs until it ends (`0` = unlimited) and can be stopped by clicking the button again. Its output is streamed to chat as the program prints.
 
 ## Crafting recipes
 
@@ -121,7 +126,7 @@ Everything is obtainable in survival — no commands needed. These are the recip
 mvn -q -DskipTests package
 ```
 
-The artifact is generated at `target/MultiverseProgramming.jar` (Luaj bundled via shade).
+The artifact is generated at `target/MultiverseProgramming-<version>.jar` (Luaj bundled via shade), where `<version>` matches the pom's `<version>`.
 
 ## Documentation
 

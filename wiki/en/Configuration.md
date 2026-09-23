@@ -10,12 +10,20 @@ computer-block: LECTERN
 
 # Maximum execution time of a program, in milliseconds.
 execution-timeout-ms: 3000
+
+# Block that acts as an advanced computer (loops, no short timeout).
+advanced-computer-block: ENCHANTING_TABLE
+
+# Maximum execution time on an advanced computer, in milliseconds. 0 = no limit.
+advanced-execution-timeout-ms: 0
 ```
 
 | Key | Type | Default | Description |
 |---|---|---|---|
 | `computer-block` | `string` | `LECTERN` | Any `Material` name used as the computer block |
 | `execution-timeout-ms` | `long` | `3000` | How long a program may run before being interrupted |
+| `advanced-computer-block` | `string` | `ENCHANTING_TABLE` | Any `Material` name used as the advanced computer |
+| `advanced-execution-timeout-ms` | `long` | `0` | Max run time on the advanced computer; `0` means no limit |
 
 Config is loaded at server start. **Restart** the server after editing.
 
@@ -23,8 +31,7 @@ Config is loaded at server start. **Restart** the server after editing.
 
 | Command | Aliases | Description |
 |---|---|---|
-| `/pc run` | `ejecutar` | Runs the program on the disk in hand |
-| `/pc give <item>` | `floppydisk`, `computer` | Admin: gives you a custom item |
+| `/pc give <item>` | `floppydisk`, `computer`, `advancedcomputer` | Admin: gives you a custom item |
 | `/pc help` | — | Lists the commands |
 | `/pc` | — | Same as help |
 
@@ -48,13 +55,13 @@ multiverseprogramming.use: false
 
 Chat messages are prefixed with `[Computer]`:
 
-- `✔ Code is valid...` — code compiles.
+- `Running program…` — the program is executing.
 - `✘ <error>` — syntax/runtime error.
 - `(no output)` — program ran but printed nothing.
 
 ## Plugin messages
 
-- **GUI title**: `Multiverse - Computer`
+- **GUI titles**: `Computer` and `Advanced Computer`
 - **Disk display name**: `Floppy Disk`
 
 ## Build & dependencies
@@ -69,4 +76,4 @@ To build:
 mvn -q -DskipTests package
 ```
 
-Output: `target/MultiverseProgramming.jar`
+Output: `target/MultiverseProgramming-<version>.jar` (matches the pom's `<version>`)
