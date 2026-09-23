@@ -38,7 +38,20 @@ The computer is a lectern. Shape (the vanilla lectern recipe):
 
 ## Advanced Computer (enchanting table)
 
-The advanced computer is an **enchanting table**. No custom recipe: craft the vanilla enchanting table, then it behaves as an advanced computer once placed (configurable via `advanced-computer-block`).
+The advanced computer is an **enchanting table** and depends on the regular computer — craft that first (vanilla lectern recipe), then:
+
+```text
++---+---+---+
+|   | C |   |
++---+---+---+
+| D | O | D |
++---+---+---+
+| O | O | O |
++---+---+---+
+```
+
+**Legend:** `C` = Computer (lectern) · `D` = Diamond · `O` = Obsidian
+**Result:** 1 **Advanced Computer** (enchanting table)
 
 ## Note for admins
 

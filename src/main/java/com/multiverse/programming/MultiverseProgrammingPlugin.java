@@ -2,8 +2,6 @@
 package com.multiverse.programming;
 
 import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
-import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class MultiverseProgrammingPlugin extends JavaPlugin {
@@ -24,7 +22,7 @@ public final class MultiverseProgrammingPlugin extends JavaPlugin {
         getCommand("pc").setExecutor(new ComputerCommand(this));
         getCommand("pc").setTabCompleter(new ComputerCommand(this));
 
-        registerDiskRecipe();
+        new RecipeManager(this).registerAll(block);
 
         getLogger().info("MultiverseProgramming enabled (computer: " + block.name()
                 + ", advanced: " + advancedBlock.name() + ").");
@@ -51,14 +49,5 @@ public final class MultiverseProgrammingPlugin extends JavaPlugin {
     private Material readBlock(String key, Material defaultValue) {
         Material block = Material.matchMaterial(getConfig().getString(key, defaultValue.name()));
         return block != null ? block : defaultValue;
-    }
-
-    private void registerDiskRecipe() {
-        NamespacedKey key = new NamespacedKey(this, "floppy_disk");
-        ShapedRecipe recipe = new ShapedRecipe(key, DiskManager.createFloppyDisk());
-        recipe.shape(" P ", "PIP", " P ");
-        recipe.setIngredient('P', Material.PAPER);
-        recipe.setIngredient('I', Material.IRON_INGOT);
-        getServer().addRecipe(recipe);
     }
 }

@@ -113,6 +113,22 @@ Everything is obtainable in survival — no commands needed. These are the recip
 
 **Legend:** `S` = Wooden Slab (any wood) · `B` = Bookshelf → **1 Computer**
 
+### Advanced Computer (enchanting table)
+
+Requires the regular **Computer** first (vanilla lectern recipe):
+
+```text
++---+---+---+
+|   | C |   |
++---+---+---+
+| D | O | D |
++---+---+---+
+| O | O | O |
++---+---+---+
+```
+
+**Legend:** `C` = Computer (lectern) · `D` = Diamond · `O` = Obsidian → **1 Advanced Computer**
+
 ## Lua sandbox notes
 
 - Only the safe standard libraries are available (`table`, `string`, `math`, `coroutine`, `bit32`).

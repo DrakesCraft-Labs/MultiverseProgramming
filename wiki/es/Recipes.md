@@ -38,7 +38,20 @@ La computadora es un atril (lectern). Forma (receta vanilla del atril):
 
 ## Computadora avanzada (mesa de encantamientos)
 
-La computadora avanzada es una **mesa de encantamientos**. Sin receta custom: craftea la mesa vanilla y, al colocarla, se comporta como computadora avanzada (configurable con `advanced-computer-block`).
+La computadora avanzada es una **mesa de encantamientos** y depende de la computadora normal — craftea antes esa (receta vanilla del atril) y luego:
+
+```text
++---+---+---+
+|   | C |   |
++---+---+---+
+| D | O | D |
++---+---+---+
+| O | O | O |
++---+---+---+
+```
+
+**Leyenda:** `C` = Computadora (atril) · `D` = Diamante · `O` = Obsidiana
+**Resultado:** 1 **Computadora avanzada** (mesa de encantamientos)
 
 ## Nota para administradores
 
