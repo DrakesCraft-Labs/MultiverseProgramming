@@ -93,9 +93,11 @@ web-portal-port: 8080
 # Bind IP address (0.0.0.0 binds to all interfaces, 127.0.0.1 for local only).
 web-portal-bind-address: "0.0.0.0"
 
-# Optional public URL displayed to players with /pc web.
-# If empty, defaults to http://<server-ip>:<port> or http://localhost:<port>.
-web-portal-public-url: ""
+# Public URL displayed to players with /pc web.
+# By default, points to the official Web Dashboard hosted on GitHub Pages:
+# https://drakescraft-labs.github.io/MultiverseProgramming/
+# Players can open this link directly without port forwarding or manual setup.
+web-portal-public-url: "https://drakescraft-labs.github.io/MultiverseProgramming/"
 
 # ===================================================================== #
 #                   Blueprint Security & Storage Quotas                 #

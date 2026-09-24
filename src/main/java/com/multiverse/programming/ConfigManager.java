@@ -35,6 +35,7 @@ public final class ConfigManager {
     public static final boolean DEFAULT_WEB_PORTAL_ENABLED = true;
     public static final int DEFAULT_WEB_PORTAL_PORT = 8080;
     public static final String DEFAULT_WEB_PORTAL_BIND = "0.0.0.0";
+    public static final String DEFAULT_WEB_PORTAL_PUBLIC_URL = "https://drakescraft-labs.github.io/MultiverseProgramming/";
 
     public static final double DEFAULT_BLUEPRINT_PLAYER_QUOTA_MB = 15.0;
     public static final double DEFAULT_BLUEPRINT_MAX_FILE_SIZE_MB = 10.0;
@@ -68,7 +69,7 @@ public final class ConfigManager {
     private boolean webPortalEnabled = DEFAULT_WEB_PORTAL_ENABLED;
     private int webPortalPort = DEFAULT_WEB_PORTAL_PORT;
     private String webPortalBindAddress = DEFAULT_WEB_PORTAL_BIND;
-    private String webPortalPublicUrl = "";
+    private String webPortalPublicUrl = DEFAULT_WEB_PORTAL_PUBLIC_URL;
 
     private double blueprintPlayerQuotaMb = DEFAULT_BLUEPRINT_PLAYER_QUOTA_MB;
     private double blueprintMaxFileSizeMb = DEFAULT_BLUEPRINT_MAX_FILE_SIZE_MB;
@@ -200,7 +201,10 @@ public final class ConfigManager {
         int rawPort = config.getInt("web-portal-port", DEFAULT_WEB_PORTAL_PORT);
         this.webPortalPort = (rawPort >= 1 && rawPort <= 65535) ? rawPort : DEFAULT_WEB_PORTAL_PORT;
         this.webPortalBindAddress = config.getString("web-portal-bind-address", DEFAULT_WEB_PORTAL_BIND);
-        this.webPortalPublicUrl = config.getString("web-portal-public-url", "").trim();
+        String rawPublicUrl = config.getString("web-portal-public-url", DEFAULT_WEB_PORTAL_PUBLIC_URL);
+        this.webPortalPublicUrl = (rawPublicUrl != null && !rawPublicUrl.isBlank())
+                ? rawPublicUrl.trim()
+                : DEFAULT_WEB_PORTAL_PUBLIC_URL;
 
         double rawQuota = config.getDouble("blueprint-player-quota-mb", DEFAULT_BLUEPRINT_PLAYER_QUOTA_MB);
         this.blueprintPlayerQuotaMb = rawQuota > 0 ? rawQuota : DEFAULT_BLUEPRINT_PLAYER_QUOTA_MB;
