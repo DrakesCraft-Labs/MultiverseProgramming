@@ -70,6 +70,8 @@ public final class WebServerManager {
             server.createContext("/api/build", new BuildHandler());
             server.createContext("/api/pause", new PauseHandler());
             server.createContext("/api/cancel", new CancelHandler());
+            server.createContext("/api/quota", new QuotaHandler());
+            server.createContext("/api/delete", new DeleteHandler());
 
             server.start();
             plugin.getLogger().info("[WebPortal] Web server successfully running on " + bindAddress + ":" + port);
@@ -174,6 +176,7 @@ public final class WebServerManager {
                     mats.addProperty(e.getKey(), e.getValue());
                 }
                 obj.add("materialCounts", mats);
+                obj.addProperty("owner", plugin.getBlueprintManager().getOwner(bp.id()));
                 arr.add(obj);
             }
             sendJsonResponse(exchange, 200, gson.toJson(arr));
@@ -198,16 +201,17 @@ public final class WebServerManager {
                 JsonObject json = JsonParser.parseString(body).getAsJsonObject();
                 String filename = json.get("filename").getAsString();
                 String base64Data = json.get("data").getAsString();
+                String owner = json.has("player") ? json.get("player").getAsString() : "WebPlayer";
 
                 byte[] rawBytes = Base64.getDecoder().decode(base64Data);
-                Blueprint bp = plugin.getBlueprintManager().register(filename, new ByteArrayInputStream(rawBytes));
+                Blueprint bp = plugin.getBlueprintManager().register(filename, rawBytes, owner);
 
                 JsonObject resp = new JsonObject();
                 resp.addProperty("ok", true);
                 resp.add("blueprint", gson.toJsonTree(bp));
 
                 sendJsonResponse(exchange, 200, gson.toJson(resp));
-                plugin.getLogger().info("[WebPortal] New blueprint uploaded: " + bp.name() + " (" + bp.id() + ")");
+                plugin.getLogger().info("[WebPortal] New blueprint uploaded by " + owner + ": " + bp.name() + " (" + bp.id() + ")");
             } catch (Exception e) {
                 JsonObject err = new JsonObject();
                 err.addProperty("ok", false);
@@ -377,6 +381,74 @@ public final class WebServerManager {
                 sendJsonResponse(exchange, 200, gson.toJson(resp));
             } catch (Exception e) {
                 sendJsonResponse(exchange, 400, "{\"ok\":false,\"error\":\"" + e.getMessage() + "\"}");
+            }
+        }
+    }
+
+    private class QuotaHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
+                sendResponse(exchange, 204, "text/plain", new byte[0]);
+                return;
+            }
+
+            String query = exchange.getRequestURI().getQuery();
+            String player = "WebPlayer";
+            if (query != null && query.contains("player=")) {
+                for (String param : query.split("&")) {
+                    String[] pair = param.split("=");
+                    if (pair.length == 2 && "player".equalsIgnoreCase(pair[0])) {
+                        player = pair[1].trim();
+                        break;
+                    }
+                }
+            }
+
+            long usedBytes = plugin.getBlueprintManager().getPlayerUsageBytes(player);
+            double quotaMb = plugin.getConfigManager().getBlueprintPlayerQuotaMb();
+            long quotaBytes = (long) (quotaMb * 1024 * 1024);
+
+            JsonObject resp = new JsonObject();
+            resp.addProperty("player", player);
+            resp.addProperty("usedBytes", usedBytes);
+            resp.addProperty("usedMb", Math.round((usedBytes / (1024.0 * 1024.0)) * 100.0) / 100.0);
+            resp.addProperty("quotaMb", quotaMb);
+            resp.addProperty("remainingBytes", Math.max(0, quotaBytes - usedBytes));
+            resp.addProperty("remainingMb", Math.max(0, Math.round(((quotaBytes - usedBytes) / (1024.0 * 1024.0)) * 100.0) / 100.0));
+
+            sendJsonResponse(exchange, 200, gson.toJson(resp));
+        }
+    }
+
+    private class DeleteHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
+                sendResponse(exchange, 204, "text/plain", new byte[0]);
+                return;
+            }
+
+            if (!"POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+                sendJsonResponse(exchange, 405, "{\"error\":\"Method not allowed\"}");
+                return;
+            }
+
+            try {
+                String body = readBody(exchange);
+                JsonObject json = JsonParser.parseString(body).getAsJsonObject();
+                String blueprintId = json.get("blueprintId").getAsString();
+                String player = json.has("player") ? json.get("player").getAsString() : "WebPlayer";
+
+                boolean deleted = plugin.getBlueprintManager().deleteBlueprint(blueprintId, player);
+                JsonObject resp = new JsonObject();
+                resp.addProperty("ok", deleted);
+                sendJsonResponse(exchange, deleted ? 200 : 404, gson.toJson(resp));
+            } catch (Exception e) {
+                JsonObject err = new JsonObject();
+                err.addProperty("ok", false);
+                err.addProperty("error", e.getMessage());
+                sendJsonResponse(exchange, 400, gson.toJson(err));
             }
         }
     }

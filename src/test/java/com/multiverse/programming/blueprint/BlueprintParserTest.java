@@ -204,4 +204,16 @@ class BlueprintParserTest {
         assertEquals(1, bp.totalBlocks()); // air is skipped, only diamond_block
         assertEquals(1, bp.materialCounts().get("DIAMOND_BLOCK"));
     }
+
+    @Test
+    @DisplayName("Parse Real User Litematic File if Present")
+    void testRealUserLitematic() throws IOException {
+        java.io.File file = new java.io.File("C:\\Users\\danie\\Downloads\\nether-portal-g-jnftbzaq.litematic");
+        if (!file.exists()) return;
+        Blueprint bp = BlueprintParser.parse("BP-REAL", file);
+        assertNotNull(bp);
+        System.out.println("Parsed Real Blueprint: " + bp.name() + " (" + bp.sizeX() + "x" + bp.sizeY() + "x" + bp.sizeZ() + "), total non-air blocks: " + bp.totalBlocks());
+        System.out.println("Materials: " + bp.materialCounts());
+        assertTrue(bp.totalBlocks() > 0);
+    }
 }

@@ -36,6 +36,13 @@ public final class ConfigManager {
     public static final int DEFAULT_WEB_PORTAL_PORT = 8080;
     public static final String DEFAULT_WEB_PORTAL_BIND = "0.0.0.0";
 
+    public static final double DEFAULT_BLUEPRINT_PLAYER_QUOTA_MB = 15.0;
+    public static final double DEFAULT_BLUEPRINT_MAX_FILE_SIZE_MB = 10.0;
+    public static final int DEFAULT_BLUEPRINT_MAX_DIMENSION = 512;
+    public static final int DEFAULT_BLUEPRINT_MAX_BLOCKS = 250_000;
+    public static final boolean DEFAULT_BLUEPRINT_FILTER_DANGEROUS = true;
+    public static final int DEFAULT_BLUEPRINT_RETENTION_DAYS = 30;
+
     private final MultiverseProgrammingPlugin plugin;
 
     private Material computerBlock = DEFAULT_COMPUTER_BLOCK;
@@ -62,6 +69,13 @@ public final class ConfigManager {
     private int webPortalPort = DEFAULT_WEB_PORTAL_PORT;
     private String webPortalBindAddress = DEFAULT_WEB_PORTAL_BIND;
     private String webPortalPublicUrl = "";
+
+    private double blueprintPlayerQuotaMb = DEFAULT_BLUEPRINT_PLAYER_QUOTA_MB;
+    private double blueprintMaxFileSizeMb = DEFAULT_BLUEPRINT_MAX_FILE_SIZE_MB;
+    private int blueprintMaxDimension = DEFAULT_BLUEPRINT_MAX_DIMENSION;
+    private int blueprintMaxBlocks = DEFAULT_BLUEPRINT_MAX_BLOCKS;
+    private boolean blueprintFilterDangerous = DEFAULT_BLUEPRINT_FILTER_DANGEROUS;
+    private int blueprintRetentionDays = DEFAULT_BLUEPRINT_RETENTION_DAYS;
 
     public ConfigManager(MultiverseProgrammingPlugin plugin) {
         this.plugin = plugin;
@@ -187,6 +201,21 @@ public final class ConfigManager {
         this.webPortalPort = (rawPort >= 1 && rawPort <= 65535) ? rawPort : DEFAULT_WEB_PORTAL_PORT;
         this.webPortalBindAddress = config.getString("web-portal-bind-address", DEFAULT_WEB_PORTAL_BIND);
         this.webPortalPublicUrl = config.getString("web-portal-public-url", "").trim();
+
+        double rawQuota = config.getDouble("blueprint-player-quota-mb", DEFAULT_BLUEPRINT_PLAYER_QUOTA_MB);
+        this.blueprintPlayerQuotaMb = rawQuota > 0 ? rawQuota : DEFAULT_BLUEPRINT_PLAYER_QUOTA_MB;
+
+        double rawMaxFile = config.getDouble("blueprint-max-file-size-mb", DEFAULT_BLUEPRINT_MAX_FILE_SIZE_MB);
+        this.blueprintMaxFileSizeMb = rawMaxFile > 0 ? rawMaxFile : DEFAULT_BLUEPRINT_MAX_FILE_SIZE_MB;
+
+        int rawMaxDim = config.getInt("blueprint-max-dimension", DEFAULT_BLUEPRINT_MAX_DIMENSION);
+        this.blueprintMaxDimension = rawMaxDim > 0 ? rawMaxDim : DEFAULT_BLUEPRINT_MAX_DIMENSION;
+
+        int rawMaxBlocks = config.getInt("blueprint-max-blocks", DEFAULT_BLUEPRINT_MAX_BLOCKS);
+        this.blueprintMaxBlocks = rawMaxBlocks > 0 ? rawMaxBlocks : DEFAULT_BLUEPRINT_MAX_BLOCKS;
+
+        this.blueprintFilterDangerous = config.getBoolean("blueprint-filter-dangerous-blocks", DEFAULT_BLUEPRINT_FILTER_DANGEROUS);
+        this.blueprintRetentionDays = Math.max(0, config.getInt("blueprint-retention-days", DEFAULT_BLUEPRINT_RETENTION_DAYS));
     }
 
     /**
@@ -311,5 +340,29 @@ public final class ConfigManager {
 
     public String getWebPortalPublicUrl() {
         return webPortalPublicUrl;
+    }
+
+    public double getBlueprintPlayerQuotaMb() {
+        return blueprintPlayerQuotaMb;
+    }
+
+    public double getBlueprintMaxFileSizeMb() {
+        return blueprintMaxFileSizeMb;
+    }
+
+    public int getBlueprintMaxDimension() {
+        return blueprintMaxDimension;
+    }
+
+    public int getBlueprintMaxBlocks() {
+        return blueprintMaxBlocks;
+    }
+
+    public boolean isBlueprintFilterDangerous() {
+        return blueprintFilterDangerous;
+    }
+
+    public int getBlueprintRetentionDays() {
+        return blueprintRetentionDays;
     }
 }

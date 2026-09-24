@@ -30,7 +30,7 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
         switch (args[0].toLowerCase()) {
             case "reload" -> reload(sender);
             case "web", "portal", "dashboard" -> showWebPortal(sender);
-            case "blueprints", "bp", "list" -> listBlueprints(sender);
+            case "blueprint", "blueprints", "bp" -> handleBlueprintCommand(sender, args);
             case "build" -> triggerBuild(sender, args);
             case "give" -> {
                 if (sender instanceof Player player) {
@@ -55,21 +55,70 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(" §7Connect to any active Turtle and dispatch builds with visual preview!");
     }
 
-    private void listBlueprints(CommandSender sender) {
+    private void handleBlueprintCommand(CommandSender sender, String[] args) {
         var manager = plugin.getBlueprintManager();
         if (manager == null) {
             sender.sendMessage(plugin.getPrefix() + " §cBlueprint manager is not available.");
             return;
         }
-        var all = manager.getAllBlueprints();
-        if (all.isEmpty()) {
-            sender.sendMessage(plugin.getPrefix() + " §eNo blueprints loaded. Upload .litematic or .nbt via /pc web!");
-            return;
-        }
-        sender.sendMessage(plugin.getPrefix() + " §b=== Loaded Blueprints (" + all.size() + ") ===");
-        for (var bp : all) {
-            sender.sendMessage(String.format(" §e%s §7- §f%s §8[%dx%dx%d, %d blocks, %s]",
-                    bp.id(), bp.name(), bp.sizeX(), bp.sizeY(), bp.sizeZ(), bp.totalBlocks(), bp.format()));
+
+        String sub = args.length > 1 ? args[1].toLowerCase() : "list";
+        switch (sub) {
+            case "quota" -> {
+                String targetPlayer = args.length > 2 ? args[2] : (sender instanceof Player p ? p.getName() : "Server");
+                long used = manager.getPlayerUsageBytes(targetPlayer);
+                double quotaMb = plugin.getConfigManager().getBlueprintPlayerQuotaMb();
+                double usedMb = Math.round((used / (1024.0 * 1024.0)) * 100.0) / 100.0;
+                double percent = Math.min(100.0, Math.round((used / (quotaMb * 1024.0 * 1024.0)) * 1000.0) / 10.0);
+                sender.sendMessage(plugin.getPrefix() + " §b=== Blueprint Storage Quota ===");
+                sender.sendMessage(" §7Player: §f" + targetPlayer);
+                sender.sendMessage(String.format(" §7Storage Used: §e%.2f MB §7/ §a%.2f MB §8(§b%.1f%%§8)", usedMb, quotaMb, percent));
+            }
+            case "delete", "remove" -> {
+                if (args.length < 3) {
+                    sender.sendMessage(plugin.getPrefix() + " §cUsage: /pc blueprint delete <blueprintId>");
+                    return;
+                }
+                String bpId = args[2];
+                String user = sender.hasPermission("multiverseprogramming.admin") ? "Admin" : sender.getName();
+                try {
+                    boolean ok = manager.deleteBlueprint(bpId, user);
+                    if (ok) {
+                        sender.sendMessage(plugin.getPrefix() + " §aBlueprint §e" + bpId + " §asuccessfully deleted.");
+                    } else {
+                        sender.sendMessage(plugin.getPrefix() + " §cBlueprint not found: " + bpId);
+                    }
+                } catch (SecurityException e) {
+                    sender.sendMessage(plugin.getPrefix() + " §c" + e.getMessage());
+                }
+            }
+            case "clean" -> {
+                if (!sender.hasPermission("multiverseprogramming.admin")) {
+                    sender.sendMessage(plugin.getPrefix() + " §cYou don't have permission to clean blueprints.");
+                    return;
+                }
+                int days = plugin.getConfigManager().getBlueprintRetentionDays();
+                if (args.length > 2) {
+                    try {
+                        days = Integer.parseInt(args[2]);
+                    } catch (NumberFormatException ignored) {}
+                }
+                int cleaned = manager.cleanOldBlueprints(days);
+                sender.sendMessage(plugin.getPrefix() + " §aPurged §e" + cleaned + " §aold unpinned blueprint(s) older than §e" + days + " §adays.");
+            }
+            default -> {
+                var all = manager.getAllBlueprints();
+                if (all.isEmpty()) {
+                    sender.sendMessage(plugin.getPrefix() + " §eNo blueprints loaded. Upload .litematic or .nbt via /pc web!");
+                    return;
+                }
+                sender.sendMessage(plugin.getPrefix() + " §b=== Loaded Blueprints (" + all.size() + ") ===");
+                for (var bp : all) {
+                    String owner = manager.getOwner(bp.id());
+                    sender.sendMessage(String.format(" §e%s §7- §f%s §8[%dx%dx%d, %d blocks, %s] §7by §b%s",
+                            bp.id(), bp.name(), bp.sizeX(), bp.sizeY(), bp.sizeZ(), bp.totalBlocks(), bp.format(), owner));
+                }
+            }
         }
     }
 
@@ -165,9 +214,10 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
     private void help(CommandSender sender) {
         sender.sendMessage(plugin.getPrefix() + " §7Commands:");
         sender.sendMessage(" §e/pc web §8- §7view Web Dashboard link for uploading .litematic & .nbt");
-        sender.sendMessage(" §e/pc blueprints §8- §7list loaded blueprints and sizes");
+        sender.sendMessage(" §e/pc bp [list|quota|delete] §8- §7manage blueprints and check 15MB storage quota");
         if (sender.hasPermission("multiverseprogramming.admin")) {
             sender.sendMessage(" §e/pc build <bpId> <turtleId> [x y z] §8- §7order turtle to build");
+            sender.sendMessage(" §e/pc bp clean [days] §8- §7admin: clean old unused blueprints");
             sender.sendMessage(" §e/pc give <item> §8- §7admin: give yourself a custom item");
             sender.sendMessage(" §e/pc reload §8- §7admin: reload configuration and recipes");
         } else {
@@ -182,13 +232,28 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
             List<String> subcommands = new ArrayList<>();
             subcommands.add("help");
             subcommands.add("web");
+            subcommands.add("blueprint");
             subcommands.add("blueprints");
+            subcommands.add("bp");
             if (sender.hasPermission("multiverseprogramming.admin")) {
                 subcommands.add("build");
                 subcommands.add("give");
                 subcommands.add("reload");
             }
             return StringUtil.copyPartialMatches(args[0], subcommands, completions);
+        }
+        if (args.length == 2 && (args[0].equalsIgnoreCase("blueprint") || args[0].equalsIgnoreCase("blueprints") || args[0].equalsIgnoreCase("bp"))) {
+            List<String> subs = new ArrayList<>(List.of("list", "quota", "delete"));
+            if (sender.hasPermission("multiverseprogramming.admin")) {
+                subs.add("clean");
+            }
+            return StringUtil.copyPartialMatches(args[1], subs, completions);
+        }
+        if (args.length == 3 && (args[0].equalsIgnoreCase("blueprint") || args[0].equalsIgnoreCase("blueprints") || args[0].equalsIgnoreCase("bp")) && args[1].equalsIgnoreCase("delete")) {
+            if (plugin.getBlueprintManager() != null) {
+                List<String> ids = plugin.getBlueprintManager().getAllBlueprints().stream().map(com.multiverse.programming.blueprint.Blueprint::id).toList();
+                return StringUtil.copyPartialMatches(args[2], ids, completions);
+            }
         }
         if (args.length == 2 && args[0].equalsIgnoreCase("give") && sender.hasPermission("multiverseprogramming.admin")) {
             List<String> items = List.of(

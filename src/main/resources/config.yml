@@ -96,3 +96,26 @@ web-portal-bind-address: "0.0.0.0"
 # Optional public URL displayed to players with /pc web.
 # If empty, defaults to http://<server-ip>:<port> or http://localhost:<port>.
 web-portal-public-url: ""
+
+# ===================================================================== #
+#                   Blueprint Security & Storage Quotas                 #
+# ===================================================================== #
+
+# Maximum storage in megabytes (MB) allowed per player for uploaded blueprints.
+blueprint-player-quota-mb: 15.0
+
+# Maximum file size in MB for a single uploaded blueprint.
+blueprint-max-file-size-mb: 10.0
+
+# Sanity limit for blueprint dimensions (maximum width/height/length in blocks).
+blueprint-max-dimension: 512
+
+# Maximum non-air blocks allowed in a single blueprint to prevent memory crashes.
+blueprint-max-blocks: 250000
+
+# Strip dangerous / illegal blocks (Bedrock, Command Blocks, End Portals, Barriers, etc.)
+# and replace them with AIR to protect survival worlds from malicious blueprints.
+blueprint-filter-dangerous-blocks: true
+
+# Automatic cleanup retention in days for unused blueprints (0 to disable).
+blueprint-retention-days: 30
