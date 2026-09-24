@@ -31,34 +31,23 @@
     .brand { display: flex; align-items: center; gap: 12px; font-weight: 800; font-size: 1.2rem; letter-spacing: 0.5px; }
     .brand-badge { background: linear-gradient(135deg, #0284c7, #38bdf8); color: #fff; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; text-transform: uppercase; font-weight: 800; letter-spacing: 1.5px; box-shadow: 0 0 15px rgba(56, 189, 248, 0.4); }
     
-    .header-controls { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
-    .server-conn-bar { display: flex; align-items: center; gap: 8px; background: #070a13; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--card-border); font-size: 0.85rem; }
-    .server-conn-bar input { background: transparent; border: none; color: #fff; font-size: 0.82rem; outline: none; width: 180px; }
-    .status-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--warning); box-shadow: 0 0 8px var(--warning); transition: 0.3s; flex-shrink: 0; }
-    .status-dot.online { background: var(--accent); box-shadow: 0 0 10px var(--accent); }
-    .status-dot.local { background: var(--primary); box-shadow: 0 0 10px var(--primary); }
-    .status-dot.offline { background: var(--danger); box-shadow: 0 0 10px var(--danger); }
-    
-    /* Storage quota meter */
-    .quota-container { display: flex; align-items: center; gap: 10px; background: #070a13; border: 1px solid var(--card-border); padding: 6px 14px; border-radius: 8px; font-size: 0.8rem; }
-    .quota-bar-track { width: 90px; height: 7px; background: #1e293b; border-radius: 4px; overflow: hidden; }
-    .quota-bar-fill { height: 100%; width: 0%; background: var(--primary); transition: width 0.3s, background 0.3s; }
-    .quota-bar-fill.warning { background: var(--warning); }
-    .quota-bar-fill.danger { background: var(--danger); }
+    .header-controls { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+    .repo-badge { display: flex; align-items: center; gap: 6px; background: #070a13; border: 1px solid var(--card-border); padding: 6px 12px; border-radius: 8px; font-size: 0.8rem; color: var(--text-muted); text-decoration: none; }
+    .repo-badge:hover { border-color: var(--primary); color: #fff; }
 
-    .help-btn { background: transparent; border: 1px solid var(--card-border); color: var(--text-muted); border-radius: 50%; width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.8rem; }
+    .help-btn { background: transparent; border: 1px solid var(--card-border); color: var(--text-muted); border-radius: 50%; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.85rem; font-weight: 700; }
     .help-btn:hover { color: #fff; border-color: var(--primary); }
 
     /* Modal */
-    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
     .modal-content { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; max-width: 580px; width: 100%; padding: 24px; display: flex; flex-direction: column; gap: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); }
     .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--card-border); padding-bottom: 12px; }
     .modal-title { font-weight: 700; font-size: 1.15rem; color: #fff; }
     .close-btn { background: transparent; border: none; color: var(--text-muted); font-size: 1.3rem; cursor: pointer; }
     .close-btn:hover { color: #fff; }
 
-    .container { max-width: 1440px; margin: 0 auto; padding: 24px; display: grid; grid-template-columns: 370px 1fr 390px; gap: 24px; flex: 1; width: 100%; }
-    @media (max-width: 1200px) { .container { grid-template-columns: 1fr; } }
+    .container { max-width: 1440px; margin: 0 auto; padding: 24px; display: grid; grid-template-columns: 360px 1fr 380px; gap: 24px; flex: 1; width: 100%; }
+    @media (max-width: 1180px) { .container { grid-template-columns: 1fr; } }
 
     .card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
     .card-title { font-size: 1.05rem; font-weight: 700; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--card-border); padding-bottom: 12px; }
@@ -81,14 +70,13 @@
     .bp-item { background: #0b1120; border: 1px solid var(--card-border); border-radius: 8px; padding: 12px; cursor: pointer; transition: 0.15s; display: flex; flex-direction: column; gap: 6px; }
     .bp-item:hover, .bp-item.selected { border-color: var(--primary); background: #131d33; box-shadow: 0 0 12px rgba(56, 189, 248, 0.15); }
     .bp-header { display: flex; justify-content: space-between; align-items: center; }
-    .bp-name { font-weight: 700; font-size: 0.95rem; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px; }
+    .bp-name { font-weight: 700; font-size: 0.95rem; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 190px; }
     .badges-row { display: flex; gap: 6px; align-items: center; }
     .badge { font-size: 0.7rem; padding: 2px 7px; border-radius: 4px; font-weight: 700; text-transform: uppercase; }
     .badge-litematic { background: #6d28d9; color: #fff; }
     .badge-nbt { background: #1d4ed8; color: #fff; }
     .badge-community { background: #059669; color: #fff; }
     .bp-meta { font-size: 0.78rem; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center; }
-    .bp-actions { display: flex; gap: 6px; margin-top: 4px; }
 
     /* Visualizer & Slicer */
     .preview-canvas-container { background: #04060c; border: 1px solid var(--card-border); border-radius: 8px; height: 350px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
@@ -113,25 +101,18 @@
     th { background: #0b1120; color: var(--text-muted); position: sticky; top: 0; font-weight: 600; }
     tr:hover { background: rgba(255,255,255,0.02); }
 
-    /* Turtle & Dispatch Panel */
-    .turtle-list { display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto; }
-    .turtle-item { background: #0b1120; border: 1px solid var(--card-border); border-radius: 8px; padding: 10px; display: flex; justify-content: space-between; align-items: center; }
-    .turtle-status-IDLE { color: var(--accent); }
-    .turtle-status-BUILDING { color: var(--warning); }
-    .turtle-status-PAUSED { color: #f97316; }
-    .turtle-status-ERROR { color: var(--danger); }
+    /* Turtle Pastebin / Code Box */
+    .code-box { background: #070a13; border: 1px solid var(--card-border); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+    .code-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.82rem; color: var(--text-muted); }
+    .code-display { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 1rem; font-weight: 700; color: var(--primary); letter-spacing: 0.5px; user-select: all; }
+    .copy-btn { background: #1e293b; border: 1px solid var(--card-border); color: #fff; padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: 0.15s; display: flex; align-items: center; gap: 6px; }
+    .copy-btn:hover { background: var(--primary); color: #000; border-color: var(--primary); }
 
-    .form-group { display: flex; flex-direction: column; gap: 6px; }
-    label { font-size: 0.82rem; color: var(--text-muted); font-weight: 500; }
-    input[type="text"], input[type="number"], select { background: #070a13; border: 1px solid var(--card-border); color: #fff; padding: 9px 12px; border-radius: 6px; font-size: 0.88rem; outline: none; }
-    input:focus, select:focus { border-color: var(--primary); }
-    .coord-inputs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+    .instruction-step { display: flex; gap: 10px; align-items: flex-start; font-size: 0.85rem; color: var(--text-muted); line-height: 1.45; }
+    .step-number { background: #1e293b; color: var(--primary); border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.75rem; flex-shrink: 0; margin-top: 1px; }
 
     .btn { background: var(--primary); color: #000; border: none; padding: 11px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: 0.15s; font-size: 0.9rem; text-align: center; }
     .btn:hover { background: var(--primary-hover); color: #fff; }
-    .btn-accent { background: var(--accent); color: #fff; }
-    .btn-accent:hover { background: var(--accent-hover); }
-    .btn-danger { background: var(--danger); color: #fff; }
     .btn-sm { padding: 5px 10px; font-size: 0.78rem; border-radius: 5px; }
     .btn-ghost { background: transparent; border: 1px solid var(--card-border); color: var(--text-muted); }
     .btn-ghost:hover { color: #fff; border-color: var(--text); }
@@ -148,42 +129,28 @@
     </div>
     
     <div class="header-controls">
-      <!-- 15 MB Quota Widget -->
-      <div class="quota-container" title="Storage Quota (Max 15 MB per player)">
-        <span>💾 Quota:</span>
-        <div class="quota-bar-track">
-          <div class="quota-bar-fill" id="quotaFill"></div>
-        </div>
-        <span id="quotaText" style="font-weight: 700;">0.00 / 15.0 MB</span>
-      </div>
-
-      <!-- Server Connection -->
-      <div class="server-conn-bar" title="Minecraft Server Webhook API Base">
-        <div class="status-dot" id="serverStatusDot"></div>
-        <input type="text" id="serverUrlInput" placeholder="http://localhost:8080" />
-        <button class="btn btn-sm" onclick="saveServerUrl()">Connect</button>
-      </div>
-
-      <button class="help-btn" onclick="openHelpModal()" title="Connection Guide">?</button>
+      <a href="https://github.com/DrakesCraft-Labs/MultiverseProgramming" target="_blank" class="repo-badge">
+        <span>📦 GitHub Repository</span>
+      </a>
+      <button class="help-btn" onclick="openHelpModal()" title="In-Game Usage Guide">?</button>
     </div>
   </header>
 
-  <!-- Help / Connection Guide Modal -->
+  <!-- Help / Instructions Modal -->
   <div class="modal-overlay" id="helpModal" onclick="closeHelpModal(event)">
     <div class="modal-content" onclick="event.stopPropagation()">
       <div class="modal-header">
-        <span class="modal-title">Blueprint Nexus Connection Guide</span>
+        <span class="modal-title">How to Build with Turtles In-Game</span>
         <button class="close-btn" onclick="closeHelpModal()">&times;</button>
       </div>
       <div style="font-size:0.88rem; color:var(--text-muted); display:flex; flex-direction:column; gap:12px; line-height:1.5;">
-        <p><strong style="color:#fff;">100% Client-Side Engine:</strong> This dashboard works completely offline! You can drop any <code style="color:var(--primary);">.litematic</code> or <code style="color:var(--primary);">.nbt</code> file right now to inspect layers, 3D voxels, and materials without needing any server running.</p>
-        <p><strong style="color:#fff;">Connecting from GitHub Pages (HTTPS to HTTP):</strong> Browsers block unencrypted requests (<code style="color:var(--warning);">http://localhost:8080</code>) from HTTPS pages by default (Mixed Content). To connect live in-game:</p>
-        <ul style="padding-left: 20px;">
-          <li><strong>Option A:</strong> In Chrome/Edge, click the padlock/settings icon on the left of the URL bar &gt; <em>Site Settings</em> &gt; Set <strong>Insecure content</strong> to <em>Allow</em>.</li>
-          <li><strong>Option B:</strong> Open the server's internal portal URL directly in your browser: <code style="color:var(--primary);">http://localhost:8080</code> (served by the plugin itself with no mixed content restrictions!).</li>
-          <li><strong>Option C:</strong> Use an HTTPS tunnel like ngrok or Cloudflare Tunnel (e.g. <code style="color:var(--primary);">https://your-domain.ngrok-free.app</code>).</li>
-        </ul>
-        <p><strong style="color:#fff;">Player Quota (15 MB):</strong> Each player has a dedicated 15 MB storage quota. Malicious blocks (Command Blocks, Bedrock, Barriers) are automatically filtered for server safety.</p>
+        <p><strong style="color:#fff;">1. Universal Blueprint Code (Pastebin Style):</strong> Every design has a unique Blueprint Code (like <code style="color:var(--primary);">BP-NETHER-PORTAL</code>). You don't need to configure coordinates on this page!</p>
+        <p><strong style="color:#fff;">2. Position Your Turtle:</strong> Place your Turtle directly in front of where you want the structure to be built. The Turtle builds forward and upward relative to its facing direction.</p>
+        <p><strong style="color:#fff;">3. Execute the Build:</strong> In-game, run the command:</p>
+        <div style="background:#070a13; padding:10px 14px; border-radius:6px; font-family:monospace; color:var(--primary);">/pc build &lt;CODE&gt; [turtleId]</div>
+        <p>Or inside a Lua floppy disk program:</p>
+        <div style="background:#070a13; padding:10px 14px; border-radius:6px; font-family:monospace; color:var(--accent);">turtle.build("&lt;CODE&gt;")</div>
+        <p><strong style="color:#fff;">4. Server Storage &amp; 15 MB Quota:</strong> Structures are saved once in the server. If two players use the same design, it is not duplicated. Player quotas only apply when uploading new custom files inside the server.</p>
       </div>
       <button class="btn btn-sm" style="margin-top:8px;" onclick="closeHelpModal()">Got it!</button>
     </div>
@@ -194,22 +161,20 @@
     <div class="card">
       <div class="card-title">
         <span>Blueprint Library</span>
-        <div style="display:flex; gap:6px;">
-          <button class="btn btn-sm btn-ghost" onclick="syncLibrary()">⟳ Refresh</button>
-        </div>
+        <button class="btn btn-sm btn-ghost" onclick="syncLibrary()">⟳ Refresh</button>
       </div>
 
       <!-- Drag & Drop Zone -->
       <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()">
         <div class="dropzone-icon">📥</div>
         <div class="dropzone-text">Drop .litematic or .nbt file here</div>
-        <div class="dropzone-sub">Parsed client-side &bull; Zero upload wait</div>
+        <div class="dropzone-sub">Parsed client-side • Instant preview</div>
       </div>
       <input type="file" id="fileInput" accept=".litematic,.nbt" onchange="handleFileSelect(event)">
 
       <!-- Search & Filter -->
       <div class="search-bar">
-        <input type="text" class="search-input" id="searchInput" placeholder="Search blueprints or blocks..." oninput="filterBlueprints(this.value)">
+        <input type="text" class="search-input" id="searchInput" placeholder="Search blueprints..." oninput="filterBlueprints(this.value)">
       </div>
 
       <!-- Blueprint List -->
@@ -267,67 +232,70 @@
       </div>
     </div>
 
-    <!-- COLUMN 3: TURTLES & DISPATCH -->
+    <!-- COLUMN 3: TURTLE IN-GAME INTEGRATION (PASTEBIN STYLE) -->
     <div class="card">
       <div class="card-title">
-        <span>Active Turtles</span>
-        <button class="btn btn-sm btn-ghost" onclick="fetchTurtles()">⟳ Refresh</button>
+        <span>In-Game Construction Code</span>
       </div>
 
-      <div class="turtle-list" id="turtleList">
-        <div style="text-align:center; padding: 20px; color: var(--text-muted);">No active turtles online. Place one in-game!</div>
+      <!-- Blueprint Share Code -->
+      <div class="code-box">
+        <div class="code-header">
+          <span>📋 Blueprint Code</span>
+          <span style="font-size:0.75rem; color:var(--accent);">Pastebin Style</span>
+        </div>
+        <div class="code-display" id="bpCodeDisplay">BP-NETHER-PORTAL</div>
+        <button class="copy-btn" onclick="copyBlueprintCode()">
+          <span>📋 Copy Code</span>
+        </button>
       </div>
 
+      <!-- In-Game Command -->
+      <div class="code-box">
+        <div class="code-header">
+          <span>🎮 Chat Command</span>
+        </div>
+        <div class="code-display" id="inGameCommandDisplay" style="font-size:0.88rem; color:#fff;">/pc build BP-NETHER-PORTAL</div>
+        <button class="copy-btn" onclick="copyInGameCommand()">
+          <span>⚡ Copy Chat Command</span>
+        </button>
+      </div>
+
+      <!-- Lua Script Code -->
+      <div class="code-box">
+        <div class="code-header">
+          <span>💻 Turtle Lua Code</span>
+        </div>
+        <div class="code-display" id="luaCodeDisplay" style="font-size:0.85rem; color:var(--accent);">turtle.build("BP-NETHER-PORTAL")</div>
+        <button class="copy-btn" onclick="copyLuaCode()">
+          <span>💾 Copy Lua Code</span>
+        </button>
+      </div>
+
+      <!-- In-Game Instructions Guide -->
       <div class="card-title" style="margin-top: 6px;">
-        <span>Dispatch Construction</span>
+        <span>How to Build in Minecraft</span>
       </div>
 
-      <div class="form-group">
-        <label>Selected Blueprint</label>
-        <select id="dispatchBpSelect" onchange="onDispatchBpSelect(this.value)">
-          <option value="">-- Choose Blueprint --</option>
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label>Target Turtle</label>
-        <select id="dispatchTurtleSelect" onchange="onDispatchTurtleSelect(this.value)">
-          <option value="">-- Choose Turtle --</option>
-        </select>
-      </div>
-
-      <div class="form-group">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <label>Target Coordinates (X, Y, Z)</label>
-          <a href="#" style="font-size:0.75rem; color:var(--primary); text-decoration:none;" onclick="useTurtleCoords()">Use Turtle Coords</a>
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <div class="instruction-step">
+          <div class="step-number">1</div>
+          <div><strong>Place your Turtle:</strong> Place the Turtle block in your world facing where you want the build to start.</div>
         </div>
-        <div class="coord-inputs">
-          <input type="number" id="coordX" placeholder="X">
-          <input type="number" id="coordY" placeholder="Y">
-          <input type="number" id="coordZ" placeholder="Z">
+        <div class="instruction-step">
+          <div class="step-number">2</div>
+          <div><strong>Provide Fuel / Materials:</strong> If configured on your server, put fuel (coal) and required blocks inside the Turtle.</div>
+        </div>
+        <div class="instruction-step">
+          <div class="step-number">3</div>
+          <div><strong>Run Command:</strong> Type <code style="color:var(--primary);">/pc build &lt;CODE&gt;</code> in chat or run <code style="color:var(--accent);">turtle.build("&lt;CODE&gt;")</code> in a floppy disk.</div>
         </div>
       </div>
 
-      <button class="btn btn-accent" onclick="startDispatchBuild()">⚡ INITIATE CONSTRUCTION</button>
-
-      <!-- Live Job Progress -->
-      <div id="liveJobCard" style="display:none; background:#070a13; border: 1px solid var(--card-border); border-radius: 8px; padding: 14px; margin-top: 10px;">
-        <div style="display:flex; justify-content:space-between; font-weight:700; font-size:0.9rem; margin-bottom: 6px;">
-          <span id="jobTurtleName">Turtle T-001</span>
-          <span id="jobPercent" style="color:var(--accent);">0%</span>
-        </div>
-        <div style="background:#1e293b; height: 8px; border-radius: 4px; overflow:hidden; margin-bottom: 8px;">
-          <div id="jobProgressBar" style="background:var(--accent); width: 0%; height: 100%; transition: 0.2s;"></div>
-        </div>
-        <div style="display:flex; justify-content:space-between; font-size:0.8rem; color:var(--text-muted); margin-bottom: 10px;">
-          <span id="jobBlocks">0 / 0 blocks</span>
-          <span id="jobStatus">Building</span>
-        </div>
-        <div style="display:flex; gap: 8px;">
-          <button class="btn btn-sm btn-ghost" style="flex:1;" onclick="togglePauseJob()">Pause / Resume</button>
-          <button class="btn btn-sm btn-danger" style="flex:1;" onclick="cancelJob()">Cancel Job</button>
-        </div>
-      </div>
+      <!-- Download Original File -->
+      <button class="btn btn-ghost" id="downloadFileBtn" style="margin-top:8px;" onclick="downloadSelectedFile()">
+        ⬇ Download Blueprint File
+      </button>
     </div>
   </main>
 
@@ -335,170 +303,36 @@
 
   <!-- Client-Side Engine Script -->
   <script>
-    // =========================================================================
-    // STATE & INITIALIZATION
-    // =========================================================================
     let blueprints = [];
-    let turtles = [];
     let selectedBlueprint = null;
     let viewMode = '3D'; // '3D' or '2D'
     let currentRotation = 0; // 0, 90, 180, 270 degrees
     let zoomLevel = 1.0;
     let animInterval = null;
 
-    const MAX_QUOTA_BYTES = 15 * 1024 * 1024; // 15 MB per player
-    let usedQuotaBytes = 0;
-
     window.addEventListener('DOMContentLoaded', async () => {
-      initServerUrl();
       loadLocalLibrary();
       await loadCommunityCatalog();
       syncLibrary();
-      fetchTurtles();
-      setInterval(fetchTurtles, 3500);
       setupDropzone();
       setupCanvasInteraction();
     });
-
-    function getApiBase() {
-      const stored = localStorage.getItem('mp_server_url');
-      if (stored !== null && stored.trim() !== '') {
-        return stored.trim().replace(/\/+$/, '');
-      }
-      if (window.location.protocol === 'file:' || window.location.hostname.endsWith('github.io')) {
-        return 'http://localhost:8080';
-      }
-      return window.location.origin;
-    }
-
-    function initServerUrl() {
-      const input = document.getElementById('serverUrlInput');
-      const base = getApiBase();
-      input.value = base;
-    }
-
-    function saveServerUrl() {
-      const input = document.getElementById('serverUrlInput');
-      let val = input.value.trim().replace(/\/+$/, '');
-      if (val) {
-        localStorage.setItem('mp_server_url', val);
-        showToast('Connecting to: ' + val);
-        syncLibrary();
-        fetchTurtles();
-      }
-    }
-
-    function updateServerStatusDot(mode) {
-      const dot = document.getElementById('serverStatusDot');
-      dot.className = 'status-dot ' + mode; // 'online', 'local', 'offline'
-    }
 
     function showToast(msg, isError = false) {
       const toast = document.getElementById('toast');
       toast.textContent = msg;
       toast.style.borderColor = isError ? 'var(--danger)' : 'var(--accent)';
       toast.style.display = 'block';
-      setTimeout(() => { toast.style.display = 'none'; }, 3800);
+      setTimeout(() => { toast.style.display = 'none'; }, 3500);
     }
 
     function openHelpModal() { document.getElementById('helpModal').style.display = 'flex'; }
     function closeHelpModal(e) { if (!e || e.target.id === 'helpModal' || e.target.tagName === 'BUTTON') document.getElementById('helpModal').style.display = 'none'; }
 
     // =========================================================================
-    // LOCAL STORAGE & 15 MB QUOTA MANAGEMENT
-    // =========================================================================
-    function updateQuotaDisplay() {
-      const usedMb = usedQuotaBytes / (1024 * 1024);
-      const percent = Math.min(100, (usedQuotaBytes / MAX_QUOTA_BYTES) * 100);
-      
-      const fill = document.getElementById('quotaFill');
-      fill.style.width = percent.toFixed(1) + '%';
-      fill.className = 'quota-bar-fill' + (percent > 85 ? ' danger' : percent > 60 ? ' warning' : '');
-
-      document.getElementById('quotaText').textContent = `${usedMb.toFixed(2)} / 15.0 MB`;
-    }
-
-    function loadLocalLibrary() {
-      try {
-        const raw = localStorage.getItem('mp_user_blueprints');
-        if (raw) {
-          const localList = JSON.parse(raw);
-          usedQuotaBytes = 0;
-          localList.forEach(bp => {
-            usedQuotaBytes += (bp.fileSizeBytes || (bp.totalBlocks * 4));
-            if (!blueprints.some(b => b.id === bp.id)) {
-              blueprints.push(bp);
-            }
-          });
-        }
-      } catch (e) {
-        console.error('Failed to load local library:', e);
-      }
-      updateQuotaDisplay();
-    }
-
-    function saveToLocalLibrary(bp, fileSizeBytes) {
-      if (usedQuotaBytes + fileSizeBytes > MAX_QUOTA_BYTES) {
-        showToast('⚠️ Storage quota exceeded! Max 15 MB per player.', true);
-        return false;
-      }
-      bp.fileSizeBytes = fileSizeBytes;
-      bp.isLocal = true;
-      bp.owner = bp.owner || 'You';
-
-      // Remove duplicate if exists
-      blueprints = blueprints.filter(b => b.id !== bp.id);
-      blueprints.unshift(bp);
-
-      usedQuotaBytes += fileSizeBytes;
-      updateQuotaDisplay();
-
-      try {
-        const localsOnly = blueprints.filter(b => b.isLocal);
-        localStorage.setItem('mp_user_blueprints', JSON.stringify(localsOnly));
-      } catch (e) {
-        console.warn('LocalStorage limit reached for full structure, caching metadata:', e);
-      }
-      return true;
-    }
-
-    function deleteBlueprint(id) {
-      const bp = blueprints.find(b => b.id === id);
-      if (!bp) return;
-
-      if (bp.isLocal) {
-        usedQuotaBytes = Math.max(0, usedQuotaBytes - (bp.fileSizeBytes || 0));
-        blueprints = blueprints.filter(b => b.id !== id);
-        const localsOnly = blueprints.filter(b => b.isLocal);
-        localStorage.setItem('mp_user_blueprints', JSON.stringify(localsOnly));
-        updateQuotaDisplay();
-        showToast('🗑️ Deleted blueprint: ' + bp.name);
-      }
-
-      // Try server delete if connected
-      fetch(getApiBase() + '/api/delete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ blueprintId: id, player: 'WebPlayer' })
-      }).catch(() => {});
-
-      if (selectedBlueprint && selectedBlueprint.id === id) {
-        selectedBlueprint = null;
-        document.getElementById('visualizerTitle').textContent = 'Design Visualizer';
-        document.getElementById('visualizerDims').textContent = 'Select a blueprint to begin';
-        document.getElementById('matTableBody').innerHTML = '<tr><td colspan="3" style="text-align:center; padding:20px; color:var(--text-muted);">Select a blueprint to calculate materials</td></tr>';
-        clearCanvas();
-      }
-
-      renderBlueprintList();
-      updateDispatchDropdowns();
-    }
-
-    // =========================================================================
     // COMMUNITY CATALOG PRELOAD
     // =========================================================================
     async function loadCommunityCatalog() {
-      // Preload user's Nether Portal sample structure
       const sample = {
         id: 'BP-NETHER-PORTAL',
         name: 'Monumental Nether Portal',
@@ -508,7 +342,7 @@
         sizeY: 148,
         sizeZ: 113,
         totalBlocks: 49298,
-        owner: 'Community',
+        owner: 'Repository',
         isCommunity: true,
         fileSizeBytes: 39476,
         materialCounts: {
@@ -531,8 +365,41 @@
       }
     }
 
+    function loadLocalLibrary() {
+      try {
+        const raw = localStorage.getItem('mp_user_blueprints');
+        if (raw) {
+          const localList = JSON.parse(raw);
+          localList.forEach(bp => {
+            if (!blueprints.some(b => b.id === bp.id)) {
+              blueprints.push(bp);
+            }
+          });
+        }
+      } catch (e) {
+        console.error('Failed to load local library:', e);
+      }
+    }
+
+    function saveToLocalLibrary(bp, fileSizeBytes) {
+      bp.fileSizeBytes = fileSizeBytes;
+      bp.isLocal = true;
+      bp.owner = bp.owner || 'Custom';
+
+      blueprints = blueprints.filter(b => b.id !== bp.id);
+      blueprints.unshift(bp);
+
+      try {
+        const localsOnly = blueprints.filter(b => b.isLocal);
+        localStorage.setItem('mp_user_blueprints', JSON.stringify(localsOnly));
+      } catch (e) {
+        console.warn('LocalStorage caching:', e);
+      }
+      return true;
+    }
+
     // =========================================================================
-    // CLIENT-SIDE ZERO-DEPENDENCY NBT & LITEMATICA PARSER
+    // CLIENT-SIDE NBT & LITEMATICA DECOMPRESSOR / PARSER
     // =========================================================================
     async function decompressGzip(arrayBuffer) {
       const bytes = new Uint8Array(arrayBuffer);
@@ -543,7 +410,7 @@
           return await new Response(decompressedStream).arrayBuffer();
         }
       }
-      return arrayBuffer; // Not compressed or uncompressed NBT
+      return arrayBuffer;
     }
 
     function parseNbtBuffer(buffer) {
@@ -610,7 +477,7 @@
 
       const rootType = view.getInt8(offset++);
       if (rootType !== 10) throw new Error('Root must be Compound (10), got ' + rootType);
-      readString(); // root name
+      readString();
       return readTag(10);
     }
 
@@ -666,7 +533,7 @@
               const y = Math.floor(i / (rx * rz)) % ry;
               const z = Math.floor(i / rx) % rz;
               const x = i % rx;
-              blocks.push({ x, y, z, blockState: mat, material: mat });
+              blocks.push({ x, y, z, material: mat });
               materials[mat] = (materials[mat] || 0) + 1;
             }
           }
@@ -708,8 +575,7 @@
           const state = b.state || 0;
           const mat = palette[state] || 'AIR';
           if (mat !== 'AIR' && mat !== 'CAVE_AIR' && mat !== 'VOID_AIR' && b.pos && b.pos.length >= 3) {
-            const block = { x: b.pos[0], y: b.pos[1], z: b.pos[2], blockState: mat, material: mat };
-            blocks.push(block);
+            blocks.push({ x: b.pos[0], y: b.pos[1], z: b.pos[2], material: mat });
             materials[mat] = (materials[mat] || 0) + 1;
           }
         });
@@ -758,7 +624,7 @@
         return;
       }
 
-      showToast('⚡ Processing ' + file.name + ' client-side…');
+      showToast('⚡ Processing ' + file.name + '…');
       try {
         const rawBuffer = await file.arrayBuffer();
         const decompressed = await decompressGzip(rawBuffer);
@@ -771,44 +637,13 @@
           parsedBp = parseVanillaNbtData(generatedId, file.name, decompressed);
         }
 
-        // Save to browser quota
-        const saved = saveToLocalLibrary(parsedBp, file.size);
-        if (!saved) return;
-
+        saveToLocalLibrary(parsedBp, file.size);
         showToast(`✔ Loaded "${parsedBp.name}" (${parsedBp.totalBlocks.toLocaleString()} blocks)`);
         renderBlueprintList();
         selectBlueprint(parsedBp.id);
-
-        // Also attempt background sync to server if available
-        syncWithServerIfPossible(file.name, rawBuffer);
       } catch (err) {
         console.error(err);
         showToast('Parsing error: ' + err.message, true);
-      }
-    }
-
-    async function syncWithServerIfPossible(filename, rawBuffer) {
-      try {
-        const bytes = new Uint8Array(rawBuffer);
-        let binary = '';
-        for (let i = 0; i < bytes.byteLength; i++) {
-          binary += String.fromCharCode(bytes[i]);
-        }
-        const base64Data = btoa(binary);
-
-        const res = await fetch(getApiBase() + '/api/upload', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ filename, data: base64Data, player: 'WebPlayer' })
-        });
-        const data = await res.json();
-        if (data.ok) {
-          updateServerStatusDot('online');
-          showToast('☁️ Synced to Minecraft server!');
-        }
-      } catch (err) {
-        // Safe fallback - offline/client mode
-        updateServerStatusDot('local');
       }
     }
 
@@ -817,24 +652,9 @@
     // =========================================================================
     function syncLibrary() {
       renderBlueprintList();
-      updateDispatchDropdowns();
-
-      // Fetch server blueprints
-      fetch(getApiBase() + '/api/blueprints')
-        .then(res => res.json())
-        .then(serverBps => {
-          updateServerStatusDot('online');
-          serverBps.forEach(sbp => {
-            if (!blueprints.some(b => b.id === sbp.id)) {
-              blueprints.push(sbp);
-            }
-          });
-          renderBlueprintList();
-          updateDispatchDropdowns();
-        })
-        .catch(() => {
-          updateServerStatusDot('local');
-        });
+      if (blueprints.length > 0 && !selectedBlueprint) {
+        selectBlueprint(blueprints[0].id);
+      }
     }
 
     function renderBlueprintList(filterText = '') {
@@ -842,7 +662,7 @@
       const filtered = blueprints.filter(bp => {
         if (!filterText) return true;
         const q = filterText.toLowerCase();
-        return bp.name.toLowerCase().includes(q) || (bp.format && bp.format.toLowerCase().includes(q));
+        return bp.name.toLowerCase().includes(q) || (bp.id && bp.id.toLowerCase().includes(q));
       });
 
       if (filtered.length === 0) {
@@ -860,11 +680,8 @@
             </div>
           </div>
           <div class="bp-meta">
-            <span>📐 ${bp.sizeX}×${bp.sizeY}×${bp.sizeZ} &bull; 🧱 ${bp.totalBlocks.toLocaleString()}</span>
-            <span style="color:var(--text-dim);">${escapeHtml(bp.owner || bp.author || '')}</span>
-          </div>
-          <div class="bp-actions" onclick="event.stopPropagation()">
-            ${bp.isLocal ? `<button class="btn btn-sm btn-ghost" style="color:var(--danger);" onclick="deleteBlueprint('${bp.id}')">Delete</button>` : ''}
+            <span>📐 ${bp.sizeX}×${bp.sizeY}×${bp.sizeZ} • 🧱 ${bp.totalBlocks.toLocaleString()}</span>
+            <span style="color:var(--primary); font-weight:700;">${bp.id}</span>
           </div>
         </div>
       `).join('');
@@ -878,7 +695,6 @@
       let bp = blueprints.find(b => b.id === id);
       if (!bp) return;
 
-      // If sample without full blocks, load sample file
       if (bp.sampleUrl && (!bp.blocks || bp.blocks.length === 0)) {
         showToast('Loading full 3D voxels…');
         try {
@@ -893,23 +709,16 @@
         }
       }
 
-      // If server blueprint without blocks, fetch from /api/blueprints/:id
-      if (!bp.blocks || bp.blocks.length === 0) {
-        try {
-          const res = await fetch(getApiBase() + '/api/blueprints/' + id);
-          const full = await res.json();
-          bp.blocks = full.blocks;
-          bp.materialCounts = full.materialCounts;
-        } catch (e) {
-          console.warn('Could not fetch server blueprint blocks:', e);
-        }
-      }
-
       selectedBlueprint = bp;
       renderBlueprintList();
 
       document.getElementById('visualizerTitle').textContent = bp.name;
-      document.getElementById('visualizerDims').textContent = `${bp.sizeX} × ${bp.sizeY} × ${bp.sizeZ} (${bp.totalBlocks.toLocaleString()} blocks) &bull; Author: ${bp.author || 'Unknown'}`;
+      document.getElementById('visualizerDims').textContent = `${bp.sizeX} × ${bp.sizeY} × ${bp.sizeZ} (${bp.totalBlocks.toLocaleString()} blocks) • Author: ${bp.author || 'Unknown'}`;
+
+      // Update In-Game Code Display & Copy Boxes
+      document.getElementById('bpCodeDisplay').textContent = bp.id;
+      document.getElementById('inGameCommandDisplay').textContent = `/pc build ${bp.id}`;
+      document.getElementById('luaCodeDisplay').textContent = `turtle.build("${bp.id}")`;
 
       // Slider setup
       const slider = document.getElementById('layerSlider');
@@ -941,10 +750,48 @@
         }).join('');
       }
 
-      // Select in dispatch dropdown
-      document.getElementById('dispatchBpSelect').value = bp.id;
-
       renderCanvas();
+    }
+
+    // =========================================================================
+    // COPY CODE & COMMANDS
+    // =========================================================================
+    function copyBlueprintCode() {
+      if (!selectedBlueprint) return;
+      navigator.clipboard.writeText(selectedBlueprint.id).then(() => {
+        showToast('📋 Copied Code: ' + selectedBlueprint.id);
+      });
+    }
+
+    function copyInGameCommand() {
+      if (!selectedBlueprint) return;
+      const cmd = `/pc build ${selectedBlueprint.id}`;
+      navigator.clipboard.writeText(cmd).then(() => {
+        showToast('⚡ Copied Chat Command: ' + cmd);
+      });
+    }
+
+    function copyLuaCode() {
+      if (!selectedBlueprint) return;
+      const lua = `turtle.build("${selectedBlueprint.id}")`;
+      navigator.clipboard.writeText(lua).then(() => {
+        showToast('💻 Copied Lua Script: ' + lua);
+      });
+    }
+
+    function downloadSelectedFile() {
+      if (!selectedBlueprint) return;
+      if (selectedBlueprint.sampleUrl) {
+        window.open(selectedBlueprint.sampleUrl, '_blank');
+      } else {
+        const jsonStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(selectedBlueprint));
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute("href", jsonStr);
+        downloadAnchor.setAttribute("download", `${selectedBlueprint.id}_${selectedBlueprint.name}.json`);
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+      }
     }
 
     // =========================================================================
@@ -993,19 +840,12 @@
       renderCanvas();
     }
 
-    function clearCanvas() {
-      const canvas = document.getElementById('previewCanvas');
-      const ctx = canvas.getContext('2d');
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-    }
-
     function renderCanvas() {
       const canvas = document.getElementById('previewCanvas');
       const ctx = canvas.getContext('2d');
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       if (!selectedBlueprint || !selectedBlueprint.blocks || selectedBlueprint.blocks.length === 0) {
-        // Draw grid placeholder
         ctx.strokeStyle = '#1e293b';
         ctx.lineWidth = 1;
         for (let i = 0; i < canvas.width; i += 30) {
@@ -1037,7 +877,6 @@
       const offX = Math.floor((w - sx * cellSize) / 2);
       const offY = Math.floor((h - sz * cellSize) / 2);
 
-      // Grid
       ctx.strokeStyle = '#1e293b';
       ctx.lineWidth = 1;
       ctx.strokeRect(offX, offY, sx * cellSize, sz * cellSize);
@@ -1054,9 +893,6 @@
     }
 
     function render3DIsometric(ctx, w, h, maxLayer, sx, sy, sz) {
-      // Isometric projection:
-      // screenX = originX + (x - z) * tileWidth / 2
-      // screenY = originY + (x + z) * tileHeight / 2 - y * blockHeight
       const blocks = selectedBlueprint.blocks.filter(b => b.y <= maxLayer);
       
       const maxDim = Math.max(sx, sy, sz);
@@ -1068,13 +904,11 @@
       const originX = w / 2;
       const originY = h * 0.7;
 
-      // Sort blocks for correct isometric depth (back to front: y, then x+z)
       blocks.sort((a, b) => {
         if (a.y !== b.y) return a.y - b.y;
         return (a.x + a.z) - (b.x + b.z);
       });
 
-      // Render voxel isometric cubes
       blocks.forEach(b => {
         let x = b.x, z = b.z;
         if (currentRotation === 90) { const tx = x; x = sz - 1 - z; z = tx; }
@@ -1102,7 +936,7 @@
       ctx.closePath();
       ctx.fill();
 
-      // Left face (shaded 20% darker)
+      // Left face
       ctx.fillStyle = shadeColor(hexColor, -25);
       ctx.beginPath();
       ctx.moveTo(x - hw, y - bh + hh);
@@ -1112,7 +946,7 @@
       ctx.closePath();
       ctx.fill();
 
-      // Right face (shaded 40% darker)
+      // Right face
       ctx.fillStyle = shadeColor(hexColor, -45);
       ctx.beginPath();
       ctx.moveTo(x, y - bh + th);
@@ -1147,134 +981,6 @@
         e.preventDefault();
         if (e.deltaY < 0) zoomIn(); else zoomOut();
       });
-    }
-
-    // =========================================================================
-    // TURTLE DISPATCH & MANAGEMENT
-    // =========================================================================
-    function fetchTurtles() {
-      fetch(getApiBase() + '/api/turtles')
-        .then(res => res.json())
-        .then(data => {
-          turtles = data;
-          updateServerStatusDot('online');
-          renderTurtleList();
-          updateDispatchDropdowns();
-          updateActiveJob();
-        })
-        .catch(() => {
-          // Keep local status if server is unreachable
-          updateServerStatusDot(blueprints.some(b => b.isLocal) ? 'local' : 'offline');
-        });
-    }
-
-    function renderTurtleList() {
-      const list = document.getElementById('turtleList');
-      if (turtles.length === 0) {
-        list.innerHTML = '<div style="text-align:center; padding: 20px; color: var(--text-muted);">No active turtles online. Place one in-game!</div>';
-        return;
-      }
-      list.innerHTML = turtles.map(t => `
-        <div class="turtle-item">
-          <div>
-            <div style="font-weight:700;">${t.id} <span style="font-weight:400; font-size:0.8rem; color:var(--text-muted);">[${t.x}, ${t.y}, ${t.z}]</span></div>
-            <div style="font-size:0.75rem; color:var(--text-muted);">Facing: ${t.facing} &bull; Fuel: ${t.fuel}</div>
-          </div>
-          <div class="turtle-status-${t.status}" style="font-weight:700; font-size:0.85rem;">
-            ${t.status}
-          </div>
-        </div>
-      `).join('');
-    }
-
-    function updateDispatchDropdowns() {
-      const tSelect = document.getElementById('dispatchTurtleSelect');
-      const curT = tSelect.value;
-      tSelect.innerHTML = '<option value="">-- Choose Turtle --</option>' +
-        turtles.map(t => `<option value="${t.id}" ${t.id === curT ? 'selected' : ''}>${t.id} at [${t.x}, ${t.y}, ${t.z}] (${t.status})</option>`).join('');
-
-      const bpSelect = document.getElementById('dispatchBpSelect');
-      const curBp = bpSelect.value;
-      bpSelect.innerHTML = '<option value="">-- Choose Blueprint --</option>' +
-        blueprints.map(b => `<option value="${b.id}" ${b.id === curBp ? 'selected' : ''}>${escapeHtml(b.name)} (${b.totalBlocks.toLocaleString()} blocks)</option>`).join('');
-    }
-
-    function onDispatchBpSelect(bpId) { if (bpId) selectBlueprint(bpId); }
-    function onDispatchTurtleSelect(turtleId) {
-      const t = turtles.find(x => x.id === turtleId);
-      if (t) {
-        document.getElementById('coordX').value = t.x;
-        document.getElementById('coordY').value = t.y;
-        document.getElementById('coordZ').value = t.z;
-      }
-    }
-    function useTurtleCoords() {
-      const tId = document.getElementById('dispatchTurtleSelect').value;
-      onDispatchTurtleSelect(tId);
-    }
-
-    function startDispatchBuild() {
-      const bpId = document.getElementById('dispatchBpSelect').value;
-      const turtleId = document.getElementById('dispatchTurtleSelect').value;
-      const x = parseInt(document.getElementById('coordX').value, 10);
-      const y = parseInt(document.getElementById('coordY').value, 10);
-      const z = parseInt(document.getElementById('coordZ').value, 10);
-
-      if (!bpId || !turtleId || isNaN(x) || isNaN(y) || isNaN(z)) {
-        showToast('Please select Blueprint, Turtle, and valid coordinates.', true);
-        return;
-      }
-
-      fetch(getApiBase() + '/api/build', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ blueprintId: bpId, turtleId, x, y, z })
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.ok) {
-          showToast('⚡ Build dispatched to ' + turtleId);
-          fetchTurtles();
-        } else {
-          showToast('Dispatch failed: ' + data.error, true);
-        }
-      })
-      .catch(err => showToast('Connection error: ' + err, true));
-    }
-
-    function updateActiveJob() {
-      const buildingTurtle = turtles.find(t => t.status === 'BUILDING' || t.status === 'PAUSED');
-      const jobCard = document.getElementById('liveJobCard');
-      if (buildingTurtle && buildingTurtle.progress) {
-        jobCard.style.display = 'block';
-        document.getElementById('jobTurtleName').textContent = 'Turtle ' + buildingTurtle.id;
-        document.getElementById('jobPercent').textContent = buildingTurtle.progress.percentage.toFixed(1) + '%';
-        document.getElementById('jobProgressBar').style.width = buildingTurtle.progress.percentage + '%';
-        document.getElementById('jobBlocks').textContent = `${buildingTurtle.progress.current} / ${buildingTurtle.progress.total} blocks`;
-        document.getElementById('jobStatus').textContent = buildingTurtle.statusMessage || buildingTurtle.status;
-      } else {
-        jobCard.style.display = 'none';
-      }
-    }
-
-    function togglePauseJob() {
-      const buildingTurtle = turtles.find(t => t.status === 'BUILDING' || t.status === 'PAUSED');
-      if (!buildingTurtle) return;
-      fetch(getApiBase() + '/api/pause', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ turtleId: buildingTurtle.id })
-      }).then(() => fetchTurtles());
-    }
-
-    function cancelJob() {
-      const buildingTurtle = turtles.find(t => t.status === 'BUILDING' || t.status === 'PAUSED');
-      if (!buildingTurtle) return;
-      fetch(getApiBase() + '/api/cancel', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ turtleId: buildingTurtle.id })
-      }).then(() => fetchTurtles());
     }
 
     function escapeHtml(str) {

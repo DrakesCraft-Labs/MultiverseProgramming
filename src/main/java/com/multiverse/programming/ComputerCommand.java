@@ -127,12 +127,12 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage(plugin.getPrefix() + " §cYou don't have permission to use this command.");
             return;
         }
-        if (args.length < 3) {
-            sender.sendMessage(plugin.getPrefix() + " §cUsage: /pc build <blueprintId> <turtleId> [x y z]");
+        if (args.length < 2) {
+            sender.sendMessage(plugin.getPrefix() + " §cUsage: /pc build <blueprintId> [turtleId] [x y z]");
             return;
         }
         String bpId = args[1];
-        String turtleId = args[2];
+        String turtleId = args.length >= 3 ? args[2] : null;
 
         var bp = plugin.getBlueprintManager().getBlueprint(bpId);
         if (bp == null) {
@@ -140,11 +140,39 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
             return;
         }
 
-        var turtle = plugin.getTurtleManager().getTurtleById(turtleId);
-        if (turtle == null) {
-            sender.sendMessage(plugin.getPrefix() + " §cTurtle not found: " + turtleId);
+        var turtleManager = plugin.getTurtleManager();
+        if (turtleManager == null) {
+            sender.sendMessage(plugin.getPrefix() + " §cTurtle manager is not available.");
             return;
         }
+
+        com.multiverse.programming.turtle.Turtle turtle = null;
+        if (turtleId != null) {
+            turtle = turtleManager.getTurtleById(turtleId);
+        } else if (sender instanceof Player p) {
+            double bestDist = 100.0;
+            for (var t : turtleManager.getAllTurtles()) {
+                if (t.getLocation().getWorld() != null && t.getLocation().getWorld().equals(p.getWorld())) {
+                    double d = t.getLocation().distanceSquared(p.getLocation());
+                    if (d < bestDist) {
+                        bestDist = d;
+                        turtle = t;
+                    }
+                }
+            }
+        } else {
+            var allTurtles = turtleManager.getAllTurtles();
+            if (!allTurtles.isEmpty()) {
+                turtle = allTurtles.iterator().next();
+            }
+        }
+
+        if (turtle == null) {
+            sender.sendMessage(plugin.getPrefix() + " §cNo turtle found nearby. Specify turtle ID: /pc build " + bpId + " <turtleId>");
+            return;
+        }
+
+        final com.multiverse.programming.turtle.Turtle targetTurtle = turtle;
 
         org.bukkit.Location origin;
         if (args.length >= 6) {
@@ -152,22 +180,22 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
                 int x = Integer.parseInt(args[3]);
                 int y = Integer.parseInt(args[4]);
                 int z = Integer.parseInt(args[5]);
-                origin = new org.bukkit.Location(turtle.getLocation().getWorld(), x, y, z);
+                origin = new org.bukkit.Location(targetTurtle.getLocation().getWorld(), x, y, z);
             } catch (NumberFormatException e) {
                 sender.sendMessage(plugin.getPrefix() + " §cInvalid coordinates.");
                 return;
             }
         } else {
-            origin = turtle.getLocation().clone();
+            origin = targetTurtle.getLocation().clone();
         }
 
         int delay = plugin.getConfigManager().getTurtleBuildDelayTicks();
         boolean requireMaterials = plugin.getConfigManager().isTurtleRequireMaterials();
-        turtle.startBuild(bp, origin, delay, requireMaterials,
-                () -> sender.sendMessage(plugin.getPrefix() + " §aTurtle " + turtle.getId() + " finished building " + bp.name() + "!"),
-                err -> sender.sendMessage(plugin.getPrefix() + " §cTurtle " + turtle.getId() + " error: " + err)
+        targetTurtle.startBuild(bp, origin, delay, requireMaterials,
+                () -> sender.sendMessage(plugin.getPrefix() + " §aTurtle " + targetTurtle.getId() + " finished building " + bp.name() + "!"),
+                err -> sender.sendMessage(plugin.getPrefix() + " §cTurtle " + targetTurtle.getId() + " error: " + err)
         );
-        sender.sendMessage(plugin.getPrefix() + " §aDispatched build §e" + bp.name() + " §ato Turtle §e" + turtle.getId()
+        sender.sendMessage(plugin.getPrefix() + " §aDispatched build §e" + bp.name() + " §ato Turtle §e" + targetTurtle.getId()
                 + " §aat [" + origin.getBlockX() + ", " + origin.getBlockY() + ", " + origin.getBlockZ() + "].");
     }
 

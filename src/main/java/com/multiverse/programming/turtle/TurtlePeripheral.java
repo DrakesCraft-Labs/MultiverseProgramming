@@ -295,6 +295,8 @@ public final class TurtlePeripheral implements Peripheral {
             }
         });
 
+        t.set("build", t.get("buildBlueprint"));
+
         t.set("getBuildProgress", new ZeroArgFunction() {
             @Override
             public LuaValue call() {
