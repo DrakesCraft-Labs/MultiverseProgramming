@@ -215,5 +215,16 @@ class BlueprintParserTest {
         System.out.println("Parsed Real Blueprint: " + bp.name() + " (" + bp.sizeX() + "x" + bp.sizeY() + "x" + bp.sizeZ() + "), total non-air blocks: " + bp.totalBlocks());
         System.out.println("Materials: " + bp.materialCounts());
         assertTrue(bp.totalBlocks() > 0);
+        assertEquals("nether-portal-g-jnftbzaq", bp.name());
+    }
+
+    @Test
+    @DisplayName("Verify clean name resolution for dummy names like 'aaaaa'")
+    void testResolveCleanName() {
+        assertEquals("nether-portal-g-jnftbzaq", BlueprintParser.resolveCleanName("aaaaa", "nether-portal-g-jnftbzaq.litematic"));
+        assertEquals("nether-portal-g-jnftbzaq", BlueprintParser.resolveCleanName("test", "nether-portal-g-jnftbzaq.litematic"));
+        assertEquals("nether-portal-g-jnftbzaq", BlueprintParser.resolveCleanName("1111", "nether-portal-g-jnftbzaq.litematic"));
+        assertEquals("Monumental Nether Portal", BlueprintParser.resolveCleanName("Monumental Nether Portal", "nether_portal.litematic"));
+        assertEquals("castle_gate", BlueprintParser.resolveCleanName(null, "castle_gate.nbt"));
     }
 }

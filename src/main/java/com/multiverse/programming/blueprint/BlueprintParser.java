@@ -41,7 +41,7 @@ public final class BlueprintParser {
     }
 
     private static Blueprint parseVanillaStructure(String id, String fileName, NbtTag.CompoundTag root) throws IOException {
-        String name = fileName.replaceFirst("\\.(?i)nbt$", "");
+        String name = resolveCleanName(root.getString("name", null), fileName);
         String author = root.getString("author", "Unknown");
 
         int sizeX = 1, sizeY = 1, sizeZ = 1;
@@ -112,7 +112,8 @@ public final class BlueprintParser {
 
     private static Blueprint parseLitematic(String id, String fileName, NbtTag.CompoundTag root) throws IOException {
         NbtTag.CompoundTag metadata = root.getCompound("Metadata");
-        String name = metadata != null ? metadata.getString("Name", fileName.replaceFirst("\\.(?i)litematic$", "")) : fileName;
+        String metaName = metadata != null ? metadata.getString("Name", null) : null;
+        String name = resolveCleanName(metaName, fileName);
         String author = metadata != null ? metadata.getString("Author", "Unknown") : "Unknown";
 
         int sizeX = 1, sizeY = 1, sizeZ = 1;
@@ -239,5 +240,19 @@ public final class BlueprintParser {
 
     private static boolean isAir(String mat) {
         return "AIR".equals(mat) || "CAVE_AIR".equals(mat) || "VOID_AIR".equals(mat);
+    }
+
+    public static String resolveCleanName(String metadataName, String fileName) {
+        String cleanFile = fileName != null ? fileName.replaceFirst("\\.(?i)(litematic|nbt)$", "").trim() : "";
+        if (metadataName == null || metadataName.isBlank()) {
+            return cleanFile.isEmpty() ? "Unnamed Blueprint" : cleanFile;
+        }
+        String trimmedMeta = metadataName.trim();
+        boolean isRepeated = trimmedMeta.matches("^(.)\\1+$");
+        boolean isPlaceholder = trimmedMeta.matches("(?i)^(test|temp|schematic|untitled|new|sample|litematic|nbt|aaaa+.*)$");
+        if ((isRepeated || isPlaceholder || trimmedMeta.length() <= 2) && !cleanFile.isEmpty() && cleanFile.length() > 2) {
+            return cleanFile;
+        }
+        return trimmedMeta;
     }
 }

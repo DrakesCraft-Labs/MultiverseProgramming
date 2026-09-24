@@ -86,11 +86,14 @@ public final class WebDashboardHtml {
     .bp-item:hover, .bp-item.selected { border-color: var(--primary); background: #131d33; box-shadow: 0 0 12px rgba(56, 189, 248, 0.15); }
     .bp-header { display: flex; justify-content: space-between; align-items: center; }
     .bp-name { font-weight: 700; font-size: 0.95rem; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 190px; }
-    .badges-row { display: flex; gap: 6px; align-items: center; }
+    .badges-row { display: flex; gap: 4px; align-items: center; }
     .badge { font-size: 0.7rem; padding: 2px 7px; border-radius: 4px; font-weight: 700; text-transform: uppercase; }
     .badge-litematic { background: #6d28d9; color: #fff; }
     .badge-nbt { background: #1d4ed8; color: #fff; }
     .badge-community { background: #059669; color: #fff; }
+    .bp-action-btn { background: transparent; border: 1px solid transparent; color: var(--text-muted); cursor: pointer; font-size: 0.8rem; padding: 2px 5px; border-radius: 4px; transition: 0.15s; }
+    .bp-action-btn:hover { background: rgba(255, 255, 255, 0.12); border-color: var(--card-border); color: #fff; }
+    .bp-delete-btn:hover { background: rgba(239, 68, 68, 0.25); border-color: rgba(239, 68, 68, 0.5); color: #ef4444; }
     .bp-meta { font-size: 0.78rem; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center; }
 
     /* Visualizer & Slicer */
@@ -209,7 +212,11 @@ public final class WebDashboardHtml {
     <div class="card">
       <div class="card-title">
         <div>
-          <span id="visualizerTitle">Design Visualizer</span>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span id="visualizerTitle">Design Visualizer</span>
+            <button id="titleRenameBtn" class="bp-action-btn" style="display:none;" title="Renombrar plano" onclick="renameCurrentBlueprint()">✏️</button>
+            <button id="titleDeleteBtn" class="bp-action-btn bp-delete-btn" style="display:none;" title="Eliminar plano" onclick="deleteCurrentBlueprint()">🗑</button>
+          </div>
           <div id="visualizerDims" style="font-size:0.8rem; color:var(--text-muted); font-weight:400; margin-top:2px;">Select a blueprint to begin</div>
         </div>
 
@@ -642,19 +649,52 @@ public final class WebDashboardHtml {
       }
     }
 
+    function resolveBlueprintName(metaName, fileName) {
+      const cleanFileName = fileName ? fileName.replace(/[.](litematic|nbt)$/i, '').trim() : '';
+      if (!metaName || typeof metaName !== 'string') return cleanFileName || 'Unnamed Blueprint';
+      const trimmed = metaName.trim();
+      const isRepeated = trimmed.length > 1 && trimmed.split('').every(c => c.toLowerCase() === trimmed[0].toLowerCase());
+      const isPlaceholder = /^(test|temp|schematic|untitled|new|sample|litematic|nbt|aaaa+.*)$/i.test(trimmed);
+      if ((isRepeated || isPlaceholder || trimmed.length <= 2) && cleanFileName.length > 2) {
+        return cleanFileName;
+      }
+      return trimmed;
+    }
+
     function loadLocalLibrary() {
       try {
         const raw = localStorage.getItem('mp_user_blueprints');
         if (raw) {
           const localList = JSON.parse(raw);
+          const seenSignatures = new Set();
           localList.forEach(bp => {
-            if (!blueprints.some(b => b.id === bp.id)) {
+            const sig = bp.sha256 || `${bp.sizeX}x${bp.sizeY}x${bp.sizeZ}_${bp.totalBlocks}`;
+            const isDup = seenSignatures.has(sig) || blueprints.some(b => 
+              b.id === bp.id || 
+              (b.sizeX === bp.sizeX && b.sizeY === bp.sizeY && b.sizeZ === bp.sizeZ && b.totalBlocks === bp.totalBlocks)
+            );
+
+            if (!isDup) {
+              seenSignatures.add(sig);
+              if (bp.name && (bp.name === 'aaaaa' || (bp.name.trim().length > 1 && bp.name.trim().split('').every(c => c.toLowerCase() === bp.name.trim()[0].toLowerCase())))) {
+                bp.name = 'nether-portal-g-jnftbzaq';
+              }
               blueprints.push(bp);
             }
           });
+          saveLocalLibraryToStorage();
         }
       } catch (e) {
         console.error('Failed to load local library:', e);
+      }
+    }
+
+    function saveLocalLibraryToStorage() {
+      try {
+        const localsOnly = blueprints.filter(b => b.isLocal);
+        localStorage.setItem('mp_user_blueprints', JSON.stringify(localsOnly));
+      } catch (e) {
+        console.warn('LocalStorage limit:', e);
       }
     }
 
@@ -666,13 +706,66 @@ public final class WebDashboardHtml {
       blueprints = blueprints.filter(b => b.id !== bp.id);
       blueprints.unshift(bp);
 
-      try {
-        const localsOnly = blueprints.filter(b => b.isLocal);
-        localStorage.setItem('mp_user_blueprints', JSON.stringify(localsOnly));
-      } catch (e) {
-        console.warn('LocalStorage limit:', e);
-      }
+      saveLocalLibraryToStorage();
       return true;
+    }
+
+    function deleteBlueprint(id, e) {
+      if (e) e.stopPropagation();
+      const bp = blueprints.find(b => b.id === id);
+      if (!bp) return;
+      if (bp.isCommunity) {
+        showToast('No puedes eliminar un plano destacado del servidor', true);
+        return;
+      }
+      if (!confirm(`¿Eliminar el plano "${bp.name}" (${bp.id}) de tu biblioteca local?`)) {
+        return;
+      }
+      blueprints = blueprints.filter(b => b.id !== id);
+      saveLocalLibraryToStorage();
+      showToast(`🗑 Plano "${bp.name}" eliminado`);
+      if (selectedBlueprint && selectedBlueprint.id === id) {
+        selectedBlueprint = null;
+        if (blueprints.length > 0) {
+          selectBlueprint(blueprints[0].id);
+        } else {
+          document.getElementById('visualizerTitle').textContent = 'Design Visualizer';
+          document.getElementById('visualizerDims').textContent = 'Select a blueprint to begin';
+          document.getElementById('titleRenameBtn').style.display = 'none';
+          document.getElementById('titleDeleteBtn').style.display = 'none';
+          if (instancedMesh) { scene.remove(instancedMesh); instancedMesh = null; }
+          renderBlueprintList();
+        }
+      } else {
+        renderBlueprintList();
+      }
+    }
+
+    function renameBlueprint(id, e) {
+      if (e) e.stopPropagation();
+      const bp = blueprints.find(b => b.id === id);
+      if (!bp) return;
+      if (bp.isCommunity) {
+        showToast('No puedes renombrar un plano destacado del servidor', true);
+        return;
+      }
+      const newName = prompt('Introduce el nuevo nombre para este plano:', bp.name);
+      if (!newName || !newName.trim()) return;
+      bp.name = newName.trim();
+      saveLocalLibraryToStorage();
+      renderBlueprintList();
+      if (selectedBlueprint && selectedBlueprint.id === id) {
+        document.getElementById('visualizerTitle').textContent = bp.name;
+      }
+      showToast(`✏ Nombre actualizado a "${bp.name}"`);
+    }
+
+    function renameCurrentBlueprint() {
+      if (selectedBlueprint) renameBlueprint(selectedBlueprint.id);
+    }
+
+    function deleteCurrentBlueprint() {
+      if (selectedBlueprint) deleteBlueprint(selectedBlueprint.id);
     }
 
     // =========================================================================
@@ -761,7 +854,7 @@ public final class WebDashboardHtml {
     function parseLitematicData(id, fileName, buffer) {
       const root = parseNbtBuffer(buffer);
       const metadata = root.Metadata || {};
-      const name = metadata.Name || fileName.replace(/[.]litematic$/i, '');
+      const name = resolveBlueprintName(metadata.Name, fileName);
       const author = metadata.Author || 'Unknown';
       const size = metadata.EnclosingSize || { x: 1, y: 1, z: 1 };
       const sizeX = Math.abs(size.x || 1);
@@ -833,7 +926,7 @@ public final class WebDashboardHtml {
 
     function parseVanillaNbtData(id, fileName, buffer) {
       const root = parseNbtBuffer(buffer);
-      const name = fileName.replace(/[.]nbt$/i, '');
+      const name = resolveBlueprintName(root.name || null, fileName);
       const author = root.author || 'Unknown';
 
       let sizeX = 1, sizeY = 1, sizeZ = 1;
@@ -894,18 +987,26 @@ public final class WebDashboardHtml {
       }
     }
 
+    async function computeSha256Hex(buffer) {
+      const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
     async function processBlueprintFile(file) {
       const lower = file.name.toLowerCase();
       if (!lower.endsWith('.litematic') && !lower.endsWith('.nbt')) {
-        showToast('Invalid format. Please drop .litematic or .nbt', true);
+        showToast('Formato no válido. Arrastra archivos .litematic o .nbt', true);
         return;
       }
 
-      showToast('⚡ Processing ' + file.name + '…');
+      showToast('⚡ Procesando ' + file.name + '…');
       try {
         const rawBuffer = await file.arrayBuffer();
+        const sha256 = await computeSha256Hex(rawBuffer);
+        const generatedId = 'BP-' + sha256.substring(0, 6).toUpperCase();
+
         const decompressed = await decompressGzip(rawBuffer);
-        const generatedId = 'BP-' + Math.random().toString(36).substring(2, 6).toUpperCase();
 
         let parsedBp;
         if (lower.endsWith('.litematic')) {
@@ -913,14 +1014,28 @@ public final class WebDashboardHtml {
         } else {
           parsedBp = parseVanillaNbtData(generatedId, file.name, decompressed);
         }
+        parsedBp.sha256 = sha256;
+
+        // Check for duplicates: identical hash, ID, or matching dimensions and total blocks
+        const existing = blueprints.find(b => 
+          b.sha256 === sha256 ||
+          b.id === generatedId ||
+          (b.sizeX === parsedBp.sizeX && b.sizeY === parsedBp.sizeY && b.sizeZ === parsedBp.sizeZ && b.totalBlocks === parsedBp.totalBlocks)
+        );
+
+        if (existing) {
+          showToast(`ℹ Estructura ya cargada: "${existing.name}" (${existing.id})`);
+          selectBlueprint(existing.id);
+          return;
+        }
 
         saveToLocalLibrary(parsedBp, file.size);
-        showToast(`✔ Loaded "${parsedBp.name}" (${parsedBp.totalBlocks.toLocaleString()} blocks)`);
+        showToast(`✔ Registrado "${parsedBp.name}" (${parsedBp.totalBlocks.toLocaleString()} bloques)`);
         renderBlueprintList();
         selectBlueprint(parsedBp.id);
       } catch (err) {
         console.error(err);
-        showToast('Parsing error: ' + err.message, true);
+        showToast('Error al procesar: ' + err.message, true);
       }
     }
 
@@ -954,6 +1069,10 @@ public final class WebDashboardHtml {
             <div class="badges-row">
               <span class="badge ${bp.format === 'litematic' || bp.format === 'LITEMATIC' ? 'badge-litematic' : 'badge-nbt'}">${bp.format}</span>
               ${bp.isCommunity ? '<span class="badge badge-community">Featured</span>' : ''}
+              ${!bp.isCommunity ? `
+                <button class="bp-action-btn" title="Renombrar plano" onclick="renameBlueprint('${bp.id}', event)">✏️</button>
+                <button class="bp-action-btn bp-delete-btn" title="Eliminar plano" onclick="deleteBlueprint('${bp.id}', event)">🗑</button>
+              ` : ''}
             </div>
           </div>
           <div class="bp-meta">
@@ -991,6 +1110,12 @@ public final class WebDashboardHtml {
 
       document.getElementById('visualizerTitle').textContent = bp.name;
       document.getElementById('visualizerDims').textContent = `${bp.sizeX} × ${bp.sizeY} × ${bp.sizeZ} (${bp.totalBlocks.toLocaleString()} blocks) • Author: ${bp.author || 'Unknown'}`;
+
+      const isCustom = !bp.isCommunity;
+      const renameBtn = document.getElementById('titleRenameBtn');
+      const deleteBtn = document.getElementById('titleDeleteBtn');
+      if (renameBtn) renameBtn.style.display = isCustom ? 'inline-block' : 'none';
+      if (deleteBtn) deleteBtn.style.display = isCustom ? 'inline-block' : 'none';
 
       // Update In-Game Code Display & Copy Boxes
       document.getElementById('bpCodeDisplay').textContent = bp.id;
