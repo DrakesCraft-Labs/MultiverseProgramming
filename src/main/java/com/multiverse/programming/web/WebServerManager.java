@@ -20,6 +20,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.BindException;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
@@ -39,9 +40,18 @@ public final class WebServerManager {
     private final Gson gson = new Gson();
     private HttpServer server;
     private ThreadPoolExecutor executor;
+    private int activePort = -1;
 
     public WebServerManager(MultiverseProgrammingPlugin plugin) {
         this.plugin = Objects.requireNonNull(plugin, "plugin cannot be null");
+    }
+
+    public synchronized boolean isRunning() {
+        return server != null;
+    }
+
+    public synchronized int getActivePort() {
+        return activePort;
     }
 
     public synchronized void start() {
@@ -51,44 +61,75 @@ public final class WebServerManager {
         }
 
         String bindAddress = plugin.getConfigManager().getWebPortalBindAddress();
-        int port = plugin.getConfigManager().getWebPortalPort();
+        int preferredPort = plugin.getConfigManager().getWebPortalPort();
+        int maxAttempts = 10;
+        HttpServer createdServer = null;
+        int boundPort = -1;
 
-        try {
-            server = HttpServer.create(new InetSocketAddress(bindAddress, port), 0);
-            executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(4, r -> {
-                Thread t = new Thread(r, "MultiverseWeb-Worker");
-                t.setDaemon(true);
-                return t;
-            });
-            server.setExecutor(executor);
-
-            // Register Route Handlers
-            server.createContext("/", new DashboardHandler());
-            server.createContext("/api/blueprints", new BlueprintsHandler());
-            server.createContext("/api/upload", new UploadHandler());
-            server.createContext("/api/turtles", new TurtlesHandler());
-            server.createContext("/api/build", new BuildHandler());
-            server.createContext("/api/pause", new PauseHandler());
-            server.createContext("/api/cancel", new CancelHandler());
-            server.createContext("/api/quota", new QuotaHandler());
-            server.createContext("/api/delete", new DeleteHandler());
-
-            server.start();
-            plugin.getLogger().info("[WebPortal] Web server successfully running on " + bindAddress + ":" + port);
-        } catch (IOException e) {
-            plugin.getLogger().log(Level.SEVERE, "[WebPortal] Failed to start HTTP server on port " + port, e);
+        for (int attempt = 0; attempt < maxAttempts; attempt++) {
+            int candidatePort = preferredPort + attempt;
+            try {
+                createdServer = HttpServer.create(new InetSocketAddress(bindAddress, candidatePort), 0);
+                boundPort = candidatePort;
+                if (attempt > 0) {
+                    plugin.getLogger().warning("[WebPortal] Configured port " + preferredPort
+                            + " was already in use! Automatically switched to fallback port " + boundPort
+                            + ". (You can change 'web-portal-port' in config.yml)");
+                }
+                break;
+            } catch (BindException e) {
+                if (attempt == maxAttempts - 1) {
+                    plugin.getLogger().severe("[WebPortal] Failed to start HTTP server: Ports "
+                            + preferredPort + " to " + candidatePort
+                            + " are already in use by another application or server instance. "
+                            + "Please configure a free port under 'web-portal-port' in config.yml.");
+                    return;
+                }
+            } catch (IOException e) {
+                plugin.getLogger().log(Level.SEVERE, "[WebPortal] Failed to initialize HTTP server on port " + candidatePort, e);
+                return;
+            }
         }
+
+        if (createdServer == null) {
+            return;
+        }
+
+        this.server = createdServer;
+        this.activePort = boundPort;
+
+        executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(4, r -> {
+            Thread t = new Thread(r, "MultiverseWeb-Worker");
+            t.setDaemon(true);
+            return t;
+        });
+        server.setExecutor(executor);
+
+        // Register Route Handlers
+        server.createContext("/", new DashboardHandler());
+        server.createContext("/api/blueprints", new BlueprintsHandler());
+        server.createContext("/api/upload", new UploadHandler());
+        server.createContext("/api/turtles", new TurtlesHandler());
+        server.createContext("/api/build", new BuildHandler());
+        server.createContext("/api/pause", new PauseHandler());
+        server.createContext("/api/cancel", new CancelHandler());
+        server.createContext("/api/quota", new QuotaHandler());
+        server.createContext("/api/delete", new DeleteHandler());
+
+        server.start();
+        plugin.getLogger().info("[WebPortal] Web server successfully running on " + bindAddress + ":" + activePort);
     }
 
     public synchronized void stop() {
         if (server != null) {
-            server.stop(1);
+            server.stop(0);
             server = null;
         }
         if (executor != null) {
             executor.shutdownNow();
             executor = null;
         }
+        activePort = -1;
         plugin.getLogger().info("[WebPortal] Web server stopped.");
     }
 

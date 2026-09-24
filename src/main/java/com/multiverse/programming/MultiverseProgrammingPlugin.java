@@ -93,6 +93,10 @@ public class MultiverseProgrammingPlugin extends JavaPlugin {
                         configManager.isEnableComputerRecipe()
                 );
             }
+            if (webServerManager != null) {
+                webServerManager.stop();
+                webServerManager.start();
+            }
             getLogger().info("Configuration reloaded (computer: " + configManager.getComputerBlock().name()
                     + ", advanced: " + configManager.getAdvancedComputerBlock().name() + ").");
         }

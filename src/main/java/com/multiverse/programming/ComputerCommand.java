@@ -45,9 +45,15 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
     }
 
     private void showWebPortal(CommandSender sender) {
+        var webManager = plugin.getWebServerManager();
+        if (webManager == null || !webManager.isRunning()) {
+            sender.sendMessage(plugin.getPrefix() + " §cThe Web Portal is currently offline (port could not be bound).");
+            sender.sendMessage(" §7Check server console or configure a free port in §eplugins/MultiverseProgramming/config.yml§7.");
+            return;
+        }
         String webUrl = plugin.getConfigManager().getWebPortalPublicUrl();
         if (webUrl == null || webUrl.isBlank()) {
-            webUrl = "http://localhost:" + plugin.getConfigManager().getWebPortalPort();
+            webUrl = "http://localhost:" + webManager.getActivePort();
         }
         sender.sendMessage(plugin.getPrefix() + " §b=== Blueprint Web Portal ===");
         sender.sendMessage(" §7Access dashboard to upload §e.litematic §7and §e.nbt §7files:");
