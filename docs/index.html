@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Multiverse Programming // Blueprint Nexus</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐢</text></svg>">
+  <!-- Three.js for GPU-accelerated 60 FPS 3D rendering and Orbit Camera -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <style>
     :root {
       --bg: #070a13;
@@ -79,13 +81,15 @@
     .bp-meta { font-size: 0.78rem; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center; }
 
     /* Visualizer & Slicer */
-    .preview-canvas-container { background: #04060c; border: 1px solid var(--card-border); border-radius: 8px; height: 350px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
-    canvas { background: #04060c; border-radius: 6px; cursor: grab; }
+    .preview-canvas-container { background: #04060c; border: 1px solid var(--card-border); border-radius: 8px; height: 380px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+    canvas { width: 100%; height: 100%; border-radius: 6px; cursor: grab; }
     canvas:active { cursor: grabbing; }
     
     .canvas-overlay-controls { position: absolute; top: 12px; right: 12px; display: flex; flex-direction: column; gap: 6px; z-index: 10; }
-    .canvas-btn { background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px); border: 1px solid var(--card-border); color: #fff; width: 32px; height: 32px; border-radius: 6px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; transition: 0.15s; }
+    .canvas-btn { background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px); border: 1px solid var(--card-border); color: #fff; width: 34px; height: 34px; border-radius: 6px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.95rem; transition: 0.15s; }
     .canvas-btn:hover { border-color: var(--primary); color: var(--primary); }
+
+    .canvas-hints { position: absolute; bottom: 8px; left: 12px; font-size: 0.72rem; color: var(--text-dim); pointer-events: none; }
 
     .view-mode-tabs { display: flex; gap: 8px; }
     .tab-btn { background: #070a13; border: 1px solid var(--card-border); color: var(--text-muted); padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; }
@@ -104,7 +108,7 @@
     /* Turtle Pastebin / Code Box */
     .code-box { background: #070a13; border: 1px solid var(--card-border); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
     .code-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.82rem; color: var(--text-muted); }
-    .code-display { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 1rem; font-weight: 700; color: var(--primary); letter-spacing: 0.5px; user-select: all; }
+    .code-display { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.95rem; font-weight: 700; color: var(--primary); letter-spacing: 0.5px; user-select: all; word-break: break-all; }
     .copy-btn { background: #1e293b; border: 1px solid var(--card-border); color: #fff; padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: 0.15s; display: flex; align-items: center; gap: 6px; }
     .copy-btn:hover { background: var(--primary); color: #000; border-color: var(--primary); }
 
@@ -144,13 +148,18 @@
         <button class="close-btn" onclick="closeHelpModal()">&times;</button>
       </div>
       <div style="font-size:0.88rem; color:var(--text-muted); display:flex; flex-direction:column; gap:12px; line-height:1.5;">
-        <p><strong style="color:#fff;">1. Universal Blueprint Code (Pastebin Style):</strong> Every design has a unique Blueprint Code (like <code style="color:var(--primary);">BP-NETHER-PORTAL</code>). You don't need to configure coordinates on this page!</p>
-        <p><strong style="color:#fff;">2. Position Your Turtle:</strong> Place your Turtle directly in front of where you want the structure to be built. The Turtle builds forward and upward relative to its facing direction.</p>
+        <p><strong style="color:#fff;">1. Universal Blueprint Code (Pastebin Style):</strong> Every design has a unique Blueprint Code (like <code style="color:var(--primary);">BP-NETHER-PORTAL</code>). No manual coordinates needed on this page!</p>
+        <p><strong style="color:#fff;">2. Position Your Turtle:</strong> Place your Turtle directly where you want the structure to begin. The Turtle builds forward and upward relative to its facing direction.</p>
         <p><strong style="color:#fff;">3. Execute the Build:</strong> In-game, run the command:</p>
-        <div style="background:#070a13; padding:10px 14px; border-radius:6px; font-family:monospace; color:var(--primary);">/pc build &lt;CODE&gt; [turtleId]</div>
-        <p>Or inside a Lua floppy disk program:</p>
+        <div style="background:#070a13; padding:10px 14px; border-radius:6px; font-family:monospace; color:var(--primary);">/pc build &lt;CODE&gt;</div>
+        <p>Or in a Turtle Floppy Disk Lua program:</p>
         <div style="background:#070a13; padding:10px 14px; border-radius:6px; font-family:monospace; color:var(--accent);">turtle.build("&lt;CODE&gt;")</div>
-        <p><strong style="color:#fff;">4. Server Storage &amp; 15 MB Quota:</strong> Structures are saved once in the server. If two players use the same design, it is not duplicated. Player quotas only apply when uploading new custom files inside the server.</p>
+        <p><strong style="color:#fff;">4. 3D Camera Controls:</strong></p>
+        <ul style="padding-left: 20px;">
+          <li><strong>Left Click + Drag:</strong> Freely rotate the 3D model in 360°.</li>
+          <li><strong>Right Click / Shift + Drag:</strong> Pan camera inside or around the structure.</li>
+          <li><strong>Mouse Wheel:</strong> Zoom in as close as you want.</li>
+        </ul>
       </div>
       <button class="btn btn-sm" style="margin-top:8px;" onclick="closeHelpModal()">Got it!</button>
     </div>
@@ -168,7 +177,7 @@
       <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()">
         <div class="dropzone-icon">📥</div>
         <div class="dropzone-text">Drop .litematic or .nbt file here</div>
-        <div class="dropzone-sub">Parsed client-side • Instant preview</div>
+        <div class="dropzone-sub">Parsed client-side • Instant 3D preview</div>
       </div>
       <input type="file" id="fileInput" accept=".litematic,.nbt" onchange="handleFileSelect(event)">
 
@@ -192,19 +201,22 @@
         </div>
 
         <div class="view-mode-tabs">
-          <button class="tab-btn active" id="tab3D" onclick="setViewMode('3D')">3D Isometric</button>
+          <button class="tab-btn active" id="tab3D" onclick="setViewMode('3D')">3D Full Orbit</button>
           <button class="tab-btn" id="tab2D" onclick="setViewMode('2D')">2D Slice</button>
         </div>
       </div>
 
-      <!-- Interactive Canvas -->
+      <!-- Interactive Canvas Container -->
       <div class="preview-canvas-container" id="canvasContainer">
-        <canvas id="previewCanvas" width="460" height="340"></canvas>
+        <canvas id="previewCanvas"></canvas>
         <div class="canvas-overlay-controls">
           <button class="canvas-btn" onclick="zoomIn()" title="Zoom In">+</button>
           <button class="canvas-btn" onclick="zoomOut()" title="Zoom Out">-</button>
-          <button class="canvas-btn" onclick="rotateView()" title="Rotate 90°">⟳</button>
-          <button class="canvas-btn" onclick="resetView()" title="Reset View">⌂</button>
+          <button class="canvas-btn" onclick="rotateYaw(45)" title="Rotate 45°">⟳</button>
+          <button class="canvas-btn" onclick="resetCamera()" title="Reset Camera">⌂</button>
+        </div>
+        <div class="canvas-hints" id="canvasHints">
+          🖱 Left Click: Rotate • Right Click: Pan • Scroll: Zoom
         </div>
       </div>
 
@@ -280,7 +292,7 @@
       <div style="display:flex; flex-direction:column; gap:12px;">
         <div class="instruction-step">
           <div class="step-number">1</div>
-          <div><strong>Place your Turtle:</strong> Place the Turtle block in your world facing where you want the build to start.</div>
+          <div><strong>Place your Turtle:</strong> Place the Turtle block in your world facing where you want the structure to be built.</div>
         </div>
         <div class="instruction-step">
           <div class="step-number">2</div>
@@ -303,19 +315,158 @@
 
   <!-- Client-Side Engine Script -->
   <script>
+    // =========================================================================
+    // ACCURATE MINECRAFT BLOCK COLOR PALETTE
+    // =========================================================================
+    const MINECRAFT_COLORS = {
+      // Deepslate & Dark Stones
+      'POLISHED_DEEPSLATE': 0x36363c,
+      'DEEPSLATE_TILES': 0x27272c,
+      'DEEPSLATE_BRICKS': 0x2e2e34,
+      'DEEPSLATE': 0x48484e,
+      'DEEPSLATE_BRICK_STAIRS': 0x2e2e34,
+      'COBBLESTONE': 0x7f7f7f,
+      'STONE': 0x8a8a8a,
+      'STONE_BRICKS': 0x7c7c7c,
+      'SMOOTH_STONE': 0xa0a0a0,
+      'ANDESITE': 0x888888,
+      'POLISHED_ANDESITE': 0x848484,
+      'DIORITE': 0xdcdcdc,
+      'POLISHED_DIORITE': 0xe6e6e6,
+      'GRANITE': 0x9f6b53,
+      'POLISHED_GRANITE': 0x9e674f,
+      'TUFF': 0x5a5a54,
+      'CALCITE': 0xe0ded5,
+      'DRIPSTONE_BLOCK': 0x846859,
+
+      // Nether Materials
+      'OBSIDIAN': 0x14101e,
+      'CRYING_OBSIDIAN': 0x280e3b,
+      'NETHER_PORTAL': 0x9333ea, // Glowing translucent purple
+      'POLISHED_BLACKSTONE': 0x2b262d,
+      'BLACKSTONE': 0x221e23,
+      'NETHERRACK': 0x682525,
+      'NETHER_BRICKS': 0x2c151a,
+      'RED_NETHER_BRICKS': 0x450709,
+      'SOUL_SAND': 0x514035,
+      'SOUL_SOIL': 0x4b3a2f,
+      'BASALT': 0x4f4b4f,
+      'POLISHED_BASALT': 0x5c575d,
+      'GLOWSTONE': 0xdda032,
+      'SHROOMLIGHT': 0xf2883a,
+
+      // Woods & Planks
+      'OAK_PLANKS': 0xa6854b,
+      'OAK_LOG': 0x6b5331,
+      'SPRUCE_PLANKS': 0x695032,
+      'SPRUCE_LOG': 0x3b2a1a,
+      'BIRCH_PLANKS': 0xc8b679,
+      'BIRCH_LOG': 0xdbdbdb,
+      'JUNGLE_PLANKS': 0xa07352,
+      'ACACIA_PLANKS': 0xa85a32,
+      'DARK_OAK_PLANKS': 0x422a15,
+      'MANGROVE_PLANKS': 0x753430,
+      'CHERRY_PLANKS': 0xe3a5a7,
+      'BAMBOO_PLANKS': 0xc2ab4e,
+      'CRIMSON_PLANKS': 0x653041,
+      'WARPED_PLANKS': 0x2b6863,
+
+      // Minerals & Ores
+      'REDSTONE_BLOCK': 0xb8180c,
+      'LAPIS_BLOCK': 0x1b458d,
+      'GOLD_BLOCK': 0xf6d03d,
+      'IRON_BLOCK': 0xd8d8d8,
+      'DIAMOND_BLOCK': 0x5decf0,
+      'EMERALD_BLOCK': 0x17dd62,
+      'NETHERITE_BLOCK': 0x443a3b,
+      'COAL_BLOCK': 0x131313,
+      'COPPER_BLOCK': 0xc06c50,
+      'AMETHYST_BLOCK': 0x8561bd,
+
+      // Nature & Environmental
+      'GRASS_BLOCK': 0x5b8731,
+      'DIRT': 0x866043,
+      'COARSE_DIRT': 0x77553b,
+      'MUD': 0x3c3938,
+      'SAND': 0xd5c98c,
+      'RED_SAND': 0xbd5a28,
+      'GRAVEL': 0x838080,
+      'CLAY': 0x9ca3b4,
+      'OAK_LEAVES': 0x4a7a28,
+      'WATER': 0x3f76e4,
+      'LAVA': 0xd95713,
+      'SNOW_BLOCK': 0xf9feff,
+      'ICE': 0x91b7fa,
+
+      // Architectural & Glazed
+      'GLASS': 0xc0e9ed,
+      'WHITE_TERRACOTTA': 0xd1b1a1,
+      'ORANGE_TERRACOTTA': 0xa05325,
+      'TERRACOTTA': 0x985e43,
+      'BRICKS': 0x964a38,
+      'QUARTZ_BLOCK': 0xeae5de,
+      'SEA_LANTERN': 0xacd6cf,
+      'PRISMARINE': 0x5b978d,
+      'PRISMARINE_BRICKS': 0x63ab9e,
+      'DARK_PRISMARINE': 0x335b4b,
+      'END_STONE': 0xdfe2a8,
+      'END_STONE_BRICKS': 0xdfe2a8,
+      'PURPUR_BLOCK': 0xa97da9
+    };
+
+    function getMinecraftColorHex(name) {
+      if (!name) return 0x7f7f7f;
+      const clean = name.replace('minecraft:', '').toUpperCase();
+      if (MINECRAFT_COLORS[clean]) return MINECRAFT_COLORS[clean];
+
+      // Heuristic color matching for variants (stairs, slabs, walls)
+      for (const key of Object.keys(MINECRAFT_COLORS)) {
+        if (clean.includes(key)) return MINECRAFT_COLORS[key];
+      }
+
+      if (clean.includes('DEEPSLATE') || clean.includes('BLACKSTONE')) return 0x2b262d;
+      if (clean.includes('WOOD') || clean.includes('PLANKS') || clean.includes('LOG')) return 0x8b6534;
+      if (clean.includes('LEAVES') || clean.includes('GRASS') || clean.includes('VINE')) return 0x4a7a28;
+      if (clean.includes('STONE') || clean.includes('COBBLE')) return 0x808080;
+      if (clean.includes('SAND')) return 0xd5c98c;
+      if (clean.includes('RED') || clean.includes('CRIMSON')) return 0xb8180c;
+      if (clean.includes('BLUE') || clean.includes('LAPIS') || clean.includes('WATER')) return 0x3f76e4;
+      if (clean.includes('PORTAL')) return 0x9333ea;
+      if (clean.includes('GLASS')) return 0xc0e9ed;
+
+      return 0x7c7c7c;
+    }
+
+    // =========================================================================
+    // STATE & THREE.JS 3D ENGINE
+    // =========================================================================
     let blueprints = [];
     let selectedBlueprint = null;
     let viewMode = '3D'; // '3D' or '2D'
-    let currentRotation = 0; // 0, 90, 180, 270 degrees
-    let zoomLevel = 1.0;
     let animInterval = null;
 
+    // Three.js Scene Variables
+    let renderer, scene, camera;
+    let instancedMesh = null;
+    let currentBlueprintBlocks = [];
+    let layerBuckets = []; // layerBuckets[y] = [block indices]
+
+    // Camera Orbit State
+    let isDragging = false;
+    let dragMode = 'rotate'; // 'rotate' (left click) or 'pan' (right click)
+    let prevMouseX = 0, prevMouseY = 0;
+    let camTarget = new THREE.Vector3(0, 0, 0);
+    let camRadius = 80;
+    let camTheta = Math.PI / 4; // azimuth
+    let camPhi = Math.PI / 3;   // elevation
+
     window.addEventListener('DOMContentLoaded', async () => {
+      initThreeJs();
       loadLocalLibrary();
       await loadCommunityCatalog();
       syncLibrary();
       setupDropzone();
-      setupCanvasInteraction();
+      window.addEventListener('resize', onWindowResize);
     });
 
     function showToast(msg, isError = false) {
@@ -330,7 +481,120 @@
     function closeHelpModal(e) { if (!e || e.target.id === 'helpModal' || e.target.tagName === 'BUTTON') document.getElementById('helpModal').style.display = 'none'; }
 
     // =========================================================================
-    // COMMUNITY CATALOG PRELOAD
+    // GPU WEBGL THREE.JS INITIALIZATION
+    // =========================================================================
+    function initThreeJs() {
+      const container = document.getElementById('canvasContainer');
+      const canvas = document.getElementById('previewCanvas');
+
+      scene = new THREE.Scene();
+
+      // Camera
+      camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.5, 2000);
+      updateCameraPosition();
+
+      // Renderer
+      renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+      // Lights
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+      scene.add(ambientLight);
+
+      const sunLight = new THREE.DirectionalLight(0xffffff, 0.85);
+      sunLight.position.set(100, 200, 100);
+      scene.add(sunLight);
+
+      const fillLight = new THREE.DirectionalLight(0x818cf8, 0.35);
+      fillLight.position.set(-100, -50, -100);
+      scene.add(fillLight);
+
+      setupCameraControls(canvas);
+      requestAnimationFrame(renderLoop);
+    }
+
+    function renderLoop() {
+      requestAnimationFrame(renderLoop);
+      if (viewMode === '3D' && renderer && scene && camera) {
+        renderer.render(scene, camera);
+      }
+    }
+
+    function updateCameraPosition() {
+      camPhi = Math.max(0.05, Math.min(Math.PI - 0.05, camPhi));
+      camera.position.x = camTarget.x + camRadius * Math.sin(camPhi) * Math.sin(camTheta);
+      camera.position.y = camTarget.y + camRadius * Math.cos(camPhi);
+      camera.position.z = camTarget.z + camRadius * Math.sin(camPhi) * Math.cos(camTheta);
+      camera.lookAt(camTarget);
+    }
+
+    function setupCameraControls(canvas) {
+      canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+      canvas.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        dragMode = (e.button === 2 || e.shiftKey) ? 'pan' : 'rotate';
+        prevMouseX = e.clientX;
+        prevMouseY = e.clientY;
+      });
+
+      window.addEventListener('mouseup', () => { isDragging = false; });
+
+      window.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        const dx = e.clientX - prevMouseX;
+        const dy = e.clientY - prevMouseY;
+        prevMouseX = e.clientX;
+        prevMouseY = e.clientY;
+
+        if (dragMode === 'rotate') {
+          camTheta -= dx * 0.008;
+          camPhi -= dy * 0.008;
+        } else {
+          // Pan camera relative to orientation
+          const panSpeed = camRadius * 0.0015;
+          const forward = new THREE.Vector3().subVectors(camTarget, camera.position).normalize();
+          const right = new THREE.Vector3().crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
+          const up = new THREE.Vector3().crossVectors(right, forward).normalize();
+
+          camTarget.addScaledVector(right, -dx * panSpeed);
+          camTarget.addScaledVector(up, dy * panSpeed);
+        }
+        updateCameraPosition();
+      });
+
+      canvas.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const factor = e.deltaY < 0 ? 0.88 : 1.14;
+        camRadius = Math.max(5, Math.min(1200, camRadius * factor));
+        updateCameraPosition();
+      }, { passive: false });
+    }
+
+    function zoomIn() { camRadius = Math.max(5, camRadius * 0.82); updateCameraPosition(); }
+    function zoomOut() { camRadius = Math.min(1200, camRadius * 1.22); updateCameraPosition(); }
+    function rotateYaw(deg) { camTheta += (deg * Math.PI) / 180; updateCameraPosition(); }
+    function resetCamera() {
+      if (!selectedBlueprint) return;
+      const maxDim = Math.max(selectedBlueprint.sizeX || 1, selectedBlueprint.sizeY || 1, selectedBlueprint.sizeZ || 1);
+      camTarget.set(0, (selectedBlueprint.sizeY || 1) / 2, 0);
+      camRadius = maxDim * 1.7;
+      camTheta = Math.PI / 4;
+      camPhi = Math.PI / 3;
+      updateCameraPosition();
+    }
+
+    function onWindowResize() {
+      const container = document.getElementById('canvasContainer');
+      if (!container || !renderer || !camera) return;
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+    }
+
+    // =========================================================================
+    // COMMUNITY CATALOG & LOCAL STORAGE
     // =========================================================================
     async function loadCommunityCatalog() {
       const sample = {
@@ -393,7 +657,7 @@
         const localsOnly = blueprints.filter(b => b.isLocal);
         localStorage.setItem('mp_user_blueprints', JSON.stringify(localsOnly));
       } catch (e) {
-        console.warn('LocalStorage caching:', e);
+        console.warn('LocalStorage limit:', e);
       }
       return true;
     }
@@ -484,7 +748,7 @@
     function parseLitematicData(id, fileName, buffer) {
       const root = parseNbtBuffer(buffer);
       const metadata = root.Metadata || {};
-      const name = metadata.Name || fileName.replace(/\.litematic$/i, '');
+      const name = metadata.Name || fileName.replace(/[.]litematic$/i, '');
       const author = metadata.Author || 'Unknown';
       const size = metadata.EnclosingSize || { x: 1, y: 1, z: 1 };
       const sizeX = Math.abs(size.x || 1);
@@ -556,7 +820,7 @@
 
     function parseVanillaNbtData(id, fileName, buffer) {
       const root = parseNbtBuffer(buffer);
-      const name = fileName.replace(/\.nbt$/i, '');
+      const name = fileName.replace(/[.]nbt$/i, '');
       const author = root.author || 'Unknown';
 
       let sizeX = 1, sizeY = 1, sizeZ = 1;
@@ -648,7 +912,7 @@
     }
 
     // =========================================================================
-    // BLUEPRINT LIST & SELECTION
+    // BLUEPRINT SELECTION & HARDWARE INSTANCING SETUP
     // =========================================================================
     function syncLibrary() {
       renderBlueprintList();
@@ -723,8 +987,8 @@
       // Slider setup
       const slider = document.getElementById('layerSlider');
       slider.max = Math.max(0, bp.sizeY - 1);
-      slider.value = 0;
-      document.getElementById('layerDisplay').textContent = `0 / ${slider.max}`;
+      slider.value = slider.max; // Default to full build view!
+      document.getElementById('layerDisplay').textContent = `${slider.value} / ${slider.max}`;
 
       // Materials table setup
       const tbody = document.getElementById('matTableBody');
@@ -740,9 +1004,13 @@
           const stacks = Math.floor(count / 64);
           const rem = count % 64;
           const stackStr = stacks > 0 ? `${stacks}s + ${rem}` : `${rem}`;
+          const colorHex = '#' + getMinecraftColorHex(k).toString(16).padStart(6, '0');
           return `
             <tr>
-              <td><code style="color:var(--primary);">${escapeHtml(k)}</code></td>
+              <td>
+                <span style="display:inline-block; width:10px; height:10px; border-radius:2px; background:${colorHex}; margin-right:6px; vertical-align:middle; border:1px solid rgba(255,255,255,0.2);"></span>
+                <code style="color:var(--text);">${escapeHtml(k)}</code>
+              </td>
               <td style="font-weight:700;">${count.toLocaleString()}</td>
               <td style="color:var(--text-muted);">${stackStr}</td>
             </tr>
@@ -750,7 +1018,165 @@
         }).join('');
       }
 
-      renderCanvas();
+      build3DInstancedMesh();
+      resetCamera();
+    }
+
+    // =========================================================================
+    // ULTRA-FAST 60 FPS GPU INSTANCED MESH CREATION
+    // =========================================================================
+    function build3DInstancedMesh() {
+      if (instancedMesh) {
+        scene.remove(instancedMesh);
+        instancedMesh.geometry.dispose();
+        instancedMesh.material.dispose();
+        instancedMesh = null;
+      }
+
+      if (!selectedBlueprint || !selectedBlueprint.blocks || selectedBlueprint.blocks.length === 0) {
+        return;
+      }
+
+      // Sort blocks bottom to top by Y so adjusting mesh.count reveals layers progressively
+      currentBlueprintBlocks = [...selectedBlueprint.blocks];
+      currentBlueprintBlocks.sort((a, b) => a.y - b.y);
+
+      // Pre-compute layer cutoffs for instantaneous zero-lag layer animations
+      layerBuckets = [];
+      let curBucketIdx = 0;
+      for (let i = 0; i < currentBlueprintBlocks.length; i++) {
+        const by = currentBlueprintBlocks[i].y;
+        while (curBucketIdx <= by) {
+          layerBuckets[curBucketIdx] = i;
+          curBucketIdx++;
+        }
+      }
+      while (curBucketIdx <= selectedBlueprint.sizeY) {
+        layerBuckets[curBucketIdx] = currentBlueprintBlocks.length;
+        curBucketIdx++;
+      }
+
+      const total = currentBlueprintBlocks.length;
+      const boxGeo = new THREE.BoxGeometry(0.98, 0.98, 0.98);
+      const boxMat = new THREE.MeshLambertMaterial({ vertexColors: false });
+
+      instancedMesh = new THREE.InstancedMesh(boxGeo, boxMat, total);
+      instancedMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+
+      const dummy = new THREE.Object3D();
+      const color = new THREE.Color();
+
+      const centerX = (selectedBlueprint.sizeX || 1) / 2;
+      const centerZ = (selectedBlueprint.sizeZ || 1) / 2;
+
+      for (let i = 0; i < total; i++) {
+        const b = currentBlueprintBlocks[i];
+        // Center the structure at (0, 0, 0)
+        dummy.position.set(b.x - centerX + 0.5, b.y, b.z - centerZ + 0.5);
+        dummy.updateMatrix();
+        instancedMesh.setMatrixAt(i, dummy.matrix);
+
+        // Real Minecraft block color!
+        const hex = getMinecraftColorHex(b.material);
+        color.setHex(hex);
+        instancedMesh.setColorAt(i, color);
+      }
+
+      instancedMesh.instanceMatrix.needsUpdate = true;
+      if (instancedMesh.instanceColor) instancedMesh.instanceColor.needsUpdate = true;
+
+      // Set visible count according to slider
+      const curLayer = parseInt(document.getElementById('layerSlider').value, 10);
+      updateVisibleLayer(curLayer);
+
+      scene.add(instancedMesh);
+    }
+
+    function updateVisibleLayer(maxLayer) {
+      if (!instancedMesh || !selectedBlueprint) return;
+      const visibleCount = layerBuckets[maxLayer] !== undefined ? layerBuckets[maxLayer] : currentBlueprintBlocks.length;
+      instancedMesh.count = visibleCount;
+      instancedMesh.instanceMatrix.needsUpdate = true;
+    }
+
+    // =========================================================================
+    // SLIDER & AUTOMATIC ANIMATION CONTROLS (ZERO LAG)
+    // =========================================================================
+    function setViewMode(mode) {
+      viewMode = mode;
+      document.getElementById('tab3D').className = 'tab-btn' + (mode === '3D' ? ' active' : '');
+      document.getElementById('tab2D').className = 'tab-btn' + (mode === '2D' ? ' active' : '');
+      const hints = document.getElementById('canvasHints');
+      if (mode === '3D') {
+        hints.textContent = '🖱 Left Click: Rotate • Right Click: Pan • Scroll: Zoom';
+        onWindowResize();
+      } else {
+        hints.textContent = '2D Layer Slice View';
+        render2DSlice();
+      }
+    }
+
+    function stepLayer(delta) {
+      const slider = document.getElementById('layerSlider');
+      let val = parseInt(slider.value, 10) + delta;
+      val = Math.max(0, Math.min(parseInt(slider.max, 10), val));
+      slider.value = val;
+      onLayerChange(val);
+    }
+
+    function togglePlayAnimation() {
+      const btn = document.getElementById('playAnimBtn');
+      if (animInterval) {
+        clearInterval(animInterval);
+        animInterval = null;
+        btn.textContent = '▶';
+      } else {
+        btn.textContent = '⏸';
+        animInterval = setInterval(() => {
+          const slider = document.getElementById('layerSlider');
+          let val = parseInt(slider.value, 10) + 1;
+          if (val > parseInt(slider.max, 10)) val = 0;
+          slider.value = val;
+          onLayerChange(val);
+        }, 50); // 20 layers per second, butter-smooth!
+      }
+    }
+
+    function onLayerChange(val) {
+      document.getElementById('layerDisplay').textContent = `${val} / ${document.getElementById('layerSlider').max}`;
+      if (viewMode === '3D') {
+        updateVisibleLayer(parseInt(val, 10));
+      } else {
+        render2DSlice();
+      }
+    }
+
+    function render2DSlice() {
+      // 2D slice fallback rendering on canvas
+      const canvas = document.getElementById('previewCanvas');
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      if (!selectedBlueprint || !selectedBlueprint.blocks) return;
+
+      const layerY = parseInt(document.getElementById('layerSlider').value, 10);
+      const layerBlocks = selectedBlueprint.blocks.filter(b => b.y === layerY);
+
+      const sx = selectedBlueprint.sizeX || 1;
+      const sz = selectedBlueprint.sizeZ || 1;
+
+      const cellSize = Math.min(Math.floor(canvas.width / sx), Math.floor(canvas.height / sz), 30);
+      const offX = Math.floor((canvas.width - sx * cellSize) / 2);
+      const offY = Math.floor((canvas.height - sz * cellSize) / 2);
+
+      ctx.strokeStyle = '#1e293b';
+      ctx.strokeRect(offX, offY, sx * cellSize, sz * cellSize);
+
+      layerBlocks.forEach(b => {
+        const hex = '#' + getMinecraftColorHex(b.material).toString(16).padStart(6, '0');
+        ctx.fillStyle = hex;
+        ctx.fillRect(offX + b.x * cellSize, offY + b.z * cellSize, Math.max(1, cellSize - 1), Math.max(1, cellSize - 1));
+      });
     }
 
     // =========================================================================
@@ -792,195 +1218,6 @@
         downloadAnchor.click();
         downloadAnchor.remove();
       }
-    }
-
-    // =========================================================================
-    // 3D ISOMETRIC & 2D SLICE CANVAS RENDERER
-    // =========================================================================
-    function setViewMode(mode) {
-      viewMode = mode;
-      document.getElementById('tab3D').className = 'tab-btn' + (mode === '3D' ? ' active' : '');
-      document.getElementById('tab2D').className = 'tab-btn' + (mode === '2D' ? ' active' : '');
-      renderCanvas();
-    }
-
-    function zoomIn() { zoomLevel = Math.min(3.5, zoomLevel + 0.2); renderCanvas(); }
-    function zoomOut() { zoomLevel = Math.max(0.4, zoomLevel - 0.2); renderCanvas(); }
-    function rotateView() { currentRotation = (currentRotation + 90) % 360; renderCanvas(); }
-    function resetView() { zoomLevel = 1.0; currentRotation = 0; renderCanvas(); }
-
-    function stepLayer(delta) {
-      const slider = document.getElementById('layerSlider');
-      let val = parseInt(slider.value, 10) + delta;
-      val = Math.max(0, Math.min(parseInt(slider.max, 10), val));
-      slider.value = val;
-      onLayerChange(val);
-    }
-
-    function togglePlayAnimation() {
-      const btn = document.getElementById('playAnimBtn');
-      if (animInterval) {
-        clearInterval(animInterval);
-        animInterval = null;
-        btn.textContent = '▶';
-      } else {
-        btn.textContent = '⏸';
-        animInterval = setInterval(() => {
-          const slider = document.getElementById('layerSlider');
-          let val = parseInt(slider.value, 10) + 1;
-          if (val > parseInt(slider.max, 10)) val = 0;
-          slider.value = val;
-          onLayerChange(val);
-        }, 120);
-      }
-    }
-
-    function onLayerChange(val) {
-      document.getElementById('layerDisplay').textContent = `${val} / ${document.getElementById('layerSlider').max}`;
-      renderCanvas();
-    }
-
-    function renderCanvas() {
-      const canvas = document.getElementById('previewCanvas');
-      const ctx = canvas.getContext('2d');
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      if (!selectedBlueprint || !selectedBlueprint.blocks || selectedBlueprint.blocks.length === 0) {
-        ctx.strokeStyle = '#1e293b';
-        ctx.lineWidth = 1;
-        for (let i = 0; i < canvas.width; i += 30) {
-          ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
-        }
-        for (let j = 0; j < canvas.height; j += 30) {
-          ctx.beginPath(); ctx.moveTo(0, j); ctx.lineTo(canvas.width, j); ctx.stroke();
-        }
-        return;
-      }
-
-      const curLayer = parseInt(document.getElementById('layerSlider').value, 10);
-      const sx = selectedBlueprint.sizeX || 1;
-      const sy = selectedBlueprint.sizeY || 1;
-      const sz = selectedBlueprint.sizeZ || 1;
-
-      if (viewMode === '2D') {
-        render2DSlice(ctx, canvas.width, canvas.height, curLayer, sx, sz);
-      } else {
-        render3DIsometric(ctx, canvas.width, canvas.height, curLayer, sx, sy, sz);
-      }
-    }
-
-    function render2DSlice(ctx, w, h, layerY, sx, sz) {
-      const layerBlocks = selectedBlueprint.blocks.filter(b => b.y === layerY);
-      const baseCell = Math.min(Math.floor(w / sx), Math.floor(h / sz), 30);
-      const cellSize = Math.max(2, Math.floor(baseCell * zoomLevel));
-
-      const offX = Math.floor((w - sx * cellSize) / 2);
-      const offY = Math.floor((h - sz * cellSize) / 2);
-
-      ctx.strokeStyle = '#1e293b';
-      ctx.lineWidth = 1;
-      ctx.strokeRect(offX, offY, sx * cellSize, sz * cellSize);
-
-      layerBlocks.forEach(b => {
-        let x = b.x, z = b.z;
-        if (currentRotation === 90) { const tx = x; x = sz - 1 - z; z = tx; }
-        else if (currentRotation === 180) { x = sx - 1 - x; z = sz - 1 - z; }
-        else if (currentRotation === 270) { const tx = x; x = z; z = sx - 1 - tx; }
-
-        ctx.fillStyle = hashColor(b.material || b.blockState);
-        ctx.fillRect(offX + x * cellSize, offY + z * cellSize, Math.max(1, cellSize - 1), Math.max(1, cellSize - 1));
-      });
-    }
-
-    function render3DIsometric(ctx, w, h, maxLayer, sx, sy, sz) {
-      const blocks = selectedBlueprint.blocks.filter(b => b.y <= maxLayer);
-      
-      const maxDim = Math.max(sx, sy, sz);
-      const tileSize = Math.max(3, Math.floor((w / (maxDim * 2.2)) * zoomLevel));
-      const tileWidth = tileSize * 2;
-      const tileHeight = tileSize;
-      const blockHeight = tileSize * 1.2;
-
-      const originX = w / 2;
-      const originY = h * 0.7;
-
-      blocks.sort((a, b) => {
-        if (a.y !== b.y) return a.y - b.y;
-        return (a.x + a.z) - (b.x + b.z);
-      });
-
-      blocks.forEach(b => {
-        let x = b.x, z = b.z;
-        if (currentRotation === 90) { const tx = x; x = sz - 1 - z; z = tx; }
-        else if (currentRotation === 180) { x = sx - 1 - x; z = sz - 1 - z; }
-        else if (currentRotation === 270) { const tx = x; x = z; z = sx - 1 - tx; }
-
-        const px = originX + (x - z) * (tileWidth / 2);
-        const py = originY + (x + z) * (tileHeight / 2) - b.y * blockHeight;
-
-        drawIsoVoxel(ctx, px, py, tileWidth, tileHeight, blockHeight, hashColor(b.material || b.blockState));
-      });
-    }
-
-    function drawIsoVoxel(ctx, x, y, tw, th, bh, hexColor) {
-      const hw = tw / 2;
-      const hh = th / 2;
-
-      // Top face
-      ctx.fillStyle = hexColor;
-      ctx.beginPath();
-      ctx.moveTo(x, y - bh);
-      ctx.lineTo(x + hw, y - bh + hh);
-      ctx.lineTo(x, y - bh + th);
-      ctx.lineTo(x - hw, y - bh + hh);
-      ctx.closePath();
-      ctx.fill();
-
-      // Left face
-      ctx.fillStyle = shadeColor(hexColor, -25);
-      ctx.beginPath();
-      ctx.moveTo(x - hw, y - bh + hh);
-      ctx.lineTo(x, y - bh + th);
-      ctx.lineTo(x, y + th);
-      ctx.lineTo(x - hw, y + hh);
-      ctx.closePath();
-      ctx.fill();
-
-      // Right face
-      ctx.fillStyle = shadeColor(hexColor, -45);
-      ctx.beginPath();
-      ctx.moveTo(x, y - bh + th);
-      ctx.lineTo(x + hw, y - bh + hh);
-      ctx.lineTo(x + hw, y + hh);
-      ctx.lineTo(x, y + th);
-      ctx.closePath();
-      ctx.fill();
-    }
-
-    function hashColor(str) {
-      if (!str) return '#38bdf8';
-      let hash = 0;
-      for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
-      const c = (hash & 0x00FFFFFF).toString(16).toUpperCase();
-      return '#' + '00000'.substring(0, 6 - c.length) + c;
-    }
-
-    function shadeColor(color, percent) {
-      let R = parseInt(color.substring(1,3), 16);
-      let G = parseInt(color.substring(3,5), 16);
-      let B = parseInt(color.substring(5,7), 16);
-      R = Math.max(0, Math.min(255, parseInt(R * (100 + percent) / 100)));
-      G = Math.max(0, Math.min(255, parseInt(G * (100 + percent) / 100)));
-      B = Math.max(0, Math.min(255, parseInt(B * (100 + percent) / 100)));
-      return '#' + ((1 << 24) + (R << 16) + (G << 8) + B).toString(16).slice(1);
-    }
-
-    function setupCanvasInteraction() {
-      const canvas = document.getElementById('previewCanvas');
-      canvas.addEventListener('wheel', (e) => {
-        e.preventDefault();
-        if (e.deltaY < 0) zoomIn(); else zoomOut();
-      });
     }
 
     function escapeHtml(str) {
