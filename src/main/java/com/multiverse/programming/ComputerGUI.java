@@ -2,11 +2,13 @@
 package com.multiverse.programming;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.List;
 
@@ -33,8 +35,10 @@ public final class ComputerGUI {
 
         ItemStack frame = new ItemStack(Material.BLACK_STAINED_GLASS_PANE);
         ItemMeta frameMeta = frame.getItemMeta();
-        frameMeta.setDisplayName(" ");
-        frame.setItemMeta(frameMeta);
+        if (frameMeta != null) {
+            frameMeta.setDisplayName(" ");
+            frame.setItemMeta(frameMeta);
+        }
 
         for (int i = 1; i < BUTTON_SLOT; i++) {
             inv.setItem(i, frame.clone());
@@ -42,15 +46,21 @@ public final class ComputerGUI {
 
         ItemStack button = new ItemStack(Material.EMERALD);
         ItemMeta buttonMeta = button.getItemMeta();
-        buttonMeta.setDisplayName(buttonLabel);
-        buttonMeta.setLore(List.of("§7Checks the disk's code for errors."));
-        button.setItemMeta(buttonMeta);
+        if (buttonMeta != null) {
+            buttonMeta.setDisplayName(buttonLabel);
+            buttonMeta.setLore(List.of("§7Checks the disk's code for errors."));
+            button.setItemMeta(buttonMeta);
+        }
         inv.setItem(BUTTON_SLOT, button);
 
         return inv;
     }
 
-    public static void pressButton(Player player, Inventory inv, String prefix, long timeoutMs) {
+    public static void pressButton(JavaPlugin plugin, Player player, Inventory inv, String prefix, long timeoutMs) {
+        pressButton(plugin, player, inv, null, prefix, timeoutMs);
+    }
+
+    public static void pressButton(JavaPlugin plugin, Player player, Inventory inv, Location computerLoc, String prefix, long timeoutMs) {
         ItemStack disk = inv.getItem(DISK_SLOT);
         if (disk == null || disk.getType().isAir()) {
             player.sendMessage(prefix + " §cThere is no floppy disk in the slot.");
@@ -70,14 +80,32 @@ public final class ComputerGUI {
         }
 
         player.sendMessage(prefix + " §7Running program…");
-        LuaRunner.Result result = LuaRunner.execute(code, timeoutMs);
 
-        if (!result.output().isEmpty()) {
-            for (String line : result.output().split("\n")) {
-                player.sendMessage("§f" + line);
-            }
-        } else if (result.ok()) {
-            player.sendMessage(prefix + " §7(no output)");
-        }
+        // Run asynchronously so the Minecraft server main thread NEVER freezes!
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            MultiverseProgrammingPlugin mvPlugin = (plugin instanceof MultiverseProgrammingPlugin mp) ? mp : null;
+            LuaRunner.Result result = (mvPlugin != null)
+                    ? LuaRunner.execute(mvPlugin, computerLoc, code, timeoutMs)
+                    : LuaRunner.execute(code, timeoutMs);
+
+            // Report results back to the player
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                if (!player.isOnline()) {
+                    return;
+                }
+                if (!result.output().isEmpty()) {
+                    for (String line : result.output().split("\n")) {
+                        player.sendMessage("§f" + line);
+                    }
+                } else if (result.ok()) {
+                    player.sendMessage(prefix + " §7(no output)");
+                }
+            });
+        });
+    }
+
+    public static void pressButton(Player player, Inventory inv, String prefix, long timeoutMs) {
+        JavaPlugin plugin = JavaPlugin.getPlugin(MultiverseProgrammingPlugin.class);
+        pressButton(plugin, player, inv, null, prefix, timeoutMs);
     }
 }

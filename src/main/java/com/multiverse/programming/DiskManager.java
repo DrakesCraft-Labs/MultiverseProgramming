@@ -6,48 +6,170 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public final class DiskManager {
 
     public static final String NAME = "Floppy Disk";
+    public static final String COMPUTER_NAME = "Computer";
     public static final String ADVANCED_COMPUTER_NAME = "Advanced Computer";
+    public static final String MONITOR_NAME = "Display Monitor";
+    public static final String CRAFTER_NAME = "Auto-Crafter";
+    public static final String TRANSPOSER_NAME = "Inventory Transposer";
+    public static final String SPEAKER_NAME = "Sound Synthesizer";
+    public static final String TURTLE_NAME = "Programmable Turtle";
 
     private DiskManager() {
     }
 
     public static ItemStack createFloppyDisk() {
         ItemStack disk = new ItemStack(Material.WRITABLE_BOOK);
-        BookMeta meta = (BookMeta) disk.getItemMeta();
-        meta.setDisplayName(NAME);
-        meta.setLore(List.of(
-                "§7Write your program on the pages.",
-                "§7Insert it into the computer's disk slot."
-        ));
-        meta.setPages("-- Write your program here\n-- Example:\n-- print(\"hello world\")");
-        disk.setItemMeta(meta);
+        ItemMeta rawMeta = disk.getItemMeta();
+        if (rawMeta instanceof BookMeta meta) {
+            meta.setDisplayName(NAME);
+            meta.setLore(List.of(
+                    "§7Write your program on the pages.",
+                    "§7Insert it into the computer's disk slot."
+            ));
+            meta.setPages("-- Write your program here\n-- Example:\n-- print(\"hello world\")");
+            disk.setItemMeta(meta);
+        } else if (rawMeta != null) {
+            rawMeta.setDisplayName(NAME);
+            disk.setItemMeta(rawMeta);
+        }
         return disk;
     }
 
     public static ItemStack createComputer() {
-        ItemStack computer = new ItemStack(Material.LECTERN);
+        return createComputer(Material.LECTERN);
+    }
+
+    public static ItemStack createComputer(Material material) {
+        Material type = (material != null && material.isItem()) ? material : Material.LECTERN;
+        ItemStack computer = new ItemStack(type);
         ItemMeta meta = computer.getItemMeta();
-        meta.setDisplayName("Computer");
-        meta.setLore(List.of("§7Place it and right-click it to open the GUI."));
-        computer.setItemMeta(meta);
+        if (meta != null) {
+            meta.setDisplayName(COMPUTER_NAME);
+            meta.setLore(List.of("§7Place it and right-click it to open the GUI."));
+            computer.setItemMeta(meta);
+        }
         return computer;
     }
 
     public static ItemStack createAdvancedComputer() {
-        ItemStack computer = new ItemStack(Material.ENCHANTING_TABLE);
+        return createAdvancedComputer(Material.ENCHANTING_TABLE);
+    }
+
+    public static ItemStack createAdvancedComputer(Material material) {
+        Material type = (material != null && material.isItem()) ? material : Material.ENCHANTING_TABLE;
+        ItemStack computer = new ItemStack(type);
         ItemMeta meta = computer.getItemMeta();
-        meta.setDisplayName(ADVANCED_COMPUTER_NAME);
-        meta.setLore(List.of(
-                "§7Runs looping programs without the short timeout.",
-                "§7Keeps the disk inside its inventory."
-        ));
-        computer.setItemMeta(meta);
+        if (meta != null) {
+            meta.setDisplayName(ADVANCED_COMPUTER_NAME);
+            meta.setLore(List.of(
+                    "§7Runs looping programs without the short timeout.",
+                    "§7Keeps the disk inside its inventory."
+            ));
+            computer.setItemMeta(meta);
+        }
         return computer;
+    }
+
+    public static ItemStack createMonitor() {
+        return createMonitor(Material.OCHRE_FROGLIGHT);
+    }
+
+    public static ItemStack createMonitor(Material material) {
+        Material type = (material != null && material.isItem()) ? material : Material.OCHRE_FROGLIGHT;
+        ItemStack item = new ItemStack(type);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            meta.setDisplayName(MONITOR_NAME);
+            meta.setLore(List.of(
+                    "§7Place adjacent to a Computer.",
+                    "§7Allows Lua scripts to project floating text in the world."
+            ));
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    public static ItemStack createCrafter() {
+        return createCrafter(Material.CRAFTER);
+    }
+
+    public static ItemStack createCrafter(Material material) {
+        Material type = (material != null && material.isItem()) ? material : Material.CRAFTER;
+        ItemStack item = new ItemStack(type);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            meta.setDisplayName(CRAFTER_NAME);
+            meta.setLore(List.of(
+                    "§7Place adjacent to a Computer.",
+                    "§7Automates Minecraft 1.21 crafting recipes via Lua."
+            ));
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    public static ItemStack createTransposer() {
+        return createTransposer(Material.HOPPER);
+    }
+
+    public static ItemStack createTransposer(Material material) {
+        Material type = (material != null && material.isItem()) ? material : Material.HOPPER;
+        ItemStack item = new ItemStack(type);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            meta.setDisplayName(TRANSPOSER_NAME);
+            meta.setLore(List.of(
+                    "§7Place adjacent to a Computer.",
+                    "§7Inspects and moves items between adjacent chests and containers."
+            ));
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    public static ItemStack createSpeaker() {
+        return createSpeaker(Material.NOTE_BLOCK);
+    }
+
+    public static ItemStack createSpeaker(Material material) {
+        Material type = (material != null && material.isItem()) ? material : Material.NOTE_BLOCK;
+        ItemStack item = new ItemStack(type);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            meta.setDisplayName(SPEAKER_NAME);
+            meta.setLore(List.of(
+                    "§7Place adjacent to a Computer.",
+                    "§7Plays musical notes, custom frequencies, and audio effects."
+            ));
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    public static ItemStack createTurtle() {
+        return createTurtle(Material.DISPENSER);
+    }
+
+    public static ItemStack createTurtle(Material material) {
+        Material type = (material != null && material.isItem()) ? material : Material.DISPENSER;
+        ItemStack item = new ItemStack(type);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            meta.setDisplayName(TURTLE_NAME);
+            meta.setLore(List.of(
+                    "§7Mobile robotic computer & constructor.",
+                    "§7Place it and right-click to open its GUI.",
+                    "§7Connects with Web Portal & builds Blueprints."
+            ));
+            item.setItemMeta(meta);
+        }
+        return item;
     }
 
     public static boolean isDisk(ItemStack item) {
@@ -62,10 +184,16 @@ public final class DiskManager {
         if (!isDisk(disk)) {
             return "";
         }
-        BookMeta meta = (BookMeta) disk.getItemMeta();
-        if (meta == null || !meta.hasPages()) {
+        ItemMeta rawMeta = disk.getItemMeta();
+        if (!(rawMeta instanceof BookMeta meta) || !meta.hasPages()) {
             return "";
         }
-        return String.join("\n", meta.getPages());
+        List<String> validPages = new ArrayList<>();
+        for (String page : meta.getPages()) {
+            if (page != null) {
+                validPages.add(page);
+            }
+        }
+        return String.join("\n", validPages);
     }
 }

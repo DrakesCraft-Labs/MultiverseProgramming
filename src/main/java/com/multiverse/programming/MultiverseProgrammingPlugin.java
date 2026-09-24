@@ -1,53 +1,136 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package com.multiverse.programming;
 
-import org.bukkit.Material;
+import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.java.JavaPlugin;
 
-public final class MultiverseProgrammingPlugin extends JavaPlugin {
+public class MultiverseProgrammingPlugin extends JavaPlugin {
 
-    private long timeoutMs;
-    private long advancedTimeoutMs;
+    private ConfigManager configManager;
+    private RecipeManager recipeManager;
+    private ComputerListener computerListener;
+    private com.multiverse.programming.blueprint.BlueprintManager blueprintManager;
+    private com.multiverse.programming.turtle.TurtleManager turtleManager;
+    private com.multiverse.programming.turtle.TurtleListener turtleListener;
+    private com.multiverse.programming.web.WebServerManager webServerManager;
 
     @Override
     public void onEnable() {
         saveDefaultConfig();
 
-        Material block = readBlock("computer-block", Material.LECTERN);
-        Material advancedBlock = readBlock("advanced-computer-block", Material.ENCHANTING_TABLE);
-        timeoutMs = getConfig().getLong("execution-timeout-ms", 3000L);
-        advancedTimeoutMs = getConfig().getLong("advanced-execution-timeout-ms", 0L);
+        configManager = new ConfigManager(this);
+        configManager.load();
 
-        getServer().getPluginManager().registerEvents(new ComputerListener(this, block, advancedBlock), this);
-        getCommand("pc").setExecutor(new ComputerCommand(this));
-        getCommand("pc").setTabCompleter(new ComputerCommand(this));
+        recipeManager = new RecipeManager(this);
+        recipeManager.registerAll(
+                configManager.getComputerBlock(),
+                configManager.getAdvancedComputerBlock(),
+                configManager.isEnableComputerRecipe()
+        );
 
-        new RecipeManager(this).registerAll(block);
+        computerListener = new ComputerListener(
+                this,
+                configManager.getComputerBlock(),
+                configManager.getAdvancedComputerBlock()
+        );
+        getServer().getPluginManager().registerEvents(computerListener, this);
 
-        getLogger().info("MultiverseProgramming enabled (computer: " + block.name()
-                + ", advanced: " + advancedBlock.name() + ").");
+        // Initialize Blueprints, Turtles, and Web Server
+        blueprintManager = new com.multiverse.programming.blueprint.BlueprintManager(this);
+        blueprintManager.loadAll();
+
+        turtleManager = new com.multiverse.programming.turtle.TurtleManager(this);
+        turtleListener = new com.multiverse.programming.turtle.TurtleListener(this);
+        getServer().getPluginManager().registerEvents(turtleListener, this);
+
+        webServerManager = new com.multiverse.programming.web.WebServerManager(this);
+        webServerManager.start();
+
+        ComputerCommand commandHandler = new ComputerCommand(this);
+        PluginCommand pcCommand = getCommand("pc");
+        if (pcCommand != null) {
+            pcCommand.setExecutor(commandHandler);
+            pcCommand.setTabCompleter(commandHandler);
+        }
+
+        getLogger().info("MultiverseProgramming enabled (computer: " + configManager.getComputerBlock().name()
+                + ", advanced: " + configManager.getAdvancedComputerBlock().name()
+                + ", turtle: " + configManager.getTurtleBlock().name() + ").");
     }
 
     @Override
     public void onDisable() {
+        if (webServerManager != null) {
+            webServerManager.stop();
+        }
+        if (turtleManager != null) {
+            turtleManager.cancelAll();
+        }
         ComputerListener.cancelAll();
+        if (recipeManager != null) {
+            recipeManager.unregisterAll();
+        }
+        LuaRunner.shutdownPool();
         getLogger().info("MultiverseProgramming disabled.");
+    }
+
+    /**
+     * Safely reloads plugin configuration, updates event listeners and re-registers crafting recipes.
+     */
+    public void reloadPluginConfig() {
+        if (configManager != null) {
+            configManager.load();
+            if (computerListener != null) {
+                computerListener.updateMaterials(
+                        configManager.getComputerBlock(),
+                        configManager.getAdvancedComputerBlock()
+                );
+            }
+            if (recipeManager != null) {
+                recipeManager.registerAll(
+                        configManager.getComputerBlock(),
+                        configManager.getAdvancedComputerBlock(),
+                        configManager.isEnableComputerRecipe()
+                );
+            }
+            getLogger().info("Configuration reloaded (computer: " + configManager.getComputerBlock().name()
+                    + ", advanced: " + configManager.getAdvancedComputerBlock().name() + ").");
+        }
     }
 
     public String getPrefix() {
         return "§8[§bComputer§8]";
     }
 
+    public ConfigManager getConfigManager() {
+        return configManager;
+    }
+
+    public RecipeManager getRecipeManager() {
+        return recipeManager;
+    }
+
+    public ComputerListener getComputerListener() {
+        return computerListener;
+    }
+
     public long getTimeoutMs() {
-        return timeoutMs;
+        return configManager != null ? configManager.getTimeoutMs() : 3000L;
     }
 
     public long getAdvancedTimeoutMs() {
-        return advancedTimeoutMs;
+        return configManager != null ? configManager.getAdvancedTimeoutMs() : 0L;
     }
 
-    private Material readBlock(String key, Material defaultValue) {
-        Material block = Material.matchMaterial(getConfig().getString(key, defaultValue.name()));
-        return block != null ? block : defaultValue;
+    public com.multiverse.programming.blueprint.BlueprintManager getBlueprintManager() {
+        return blueprintManager;
+    }
+
+    public com.multiverse.programming.turtle.TurtleManager getTurtleManager() {
+        return turtleManager;
+    }
+
+    public com.multiverse.programming.web.WebServerManager getWebServerManager() {
+        return webServerManager;
     }
 }

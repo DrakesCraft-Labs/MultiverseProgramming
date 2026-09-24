@@ -4,17 +4,25 @@ package com.multiverse.programming;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockBurnEvent;
+import org.bukkit.event.block.BlockExplodeEvent;
+import org.bukkit.event.block.BlockPistonExtendEvent;
+import org.bukkit.event.block.BlockPistonRetractEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.world.WorldUnloadEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitTask;
@@ -35,15 +43,21 @@ public final class ComputerListener implements Listener {
     }
 
     private final MultiverseProgrammingPlugin plugin;
-    private final Material computerBlock;
-    private final Material advancedComputerBlock;
+    private Material computerBlock;
+    private Material advancedComputerBlock;
 
     private static final Map<Location, ItemStack> advancedDisks = new HashMap<>();
     private static final Map<Location, RunningEntry> runningPrograms = new HashMap<>();
     private static final Map<UUID, BlockRef> openByPlayer = new HashMap<>();
+    private static final Map<UUID, Long> lastClickTime = new HashMap<>();
 
     public ComputerListener(MultiverseProgrammingPlugin plugin, Material computerBlock, Material advancedComputerBlock) {
         this.plugin = plugin;
+        this.computerBlock = computerBlock;
+        this.advancedComputerBlock = advancedComputerBlock;
+    }
+
+    public void updateMaterials(Material computerBlock, Material advancedComputerBlock) {
         this.computerBlock = computerBlock;
         this.advancedComputerBlock = advancedComputerBlock;
     }
@@ -54,6 +68,16 @@ public final class ComputerListener implements Listener {
             entry.cleanup().cancel();
         }
         runningPrograms.clear();
+        openByPlayer.clear();
+        lastClickTime.clear();
+    }
+
+    public static Map<Location, ItemStack> getAdvancedDisks() {
+        return advancedDisks;
+    }
+
+    public boolean isComputerBlock(Material mat) {
+        return mat != null && (mat == computerBlock || mat == advancedComputerBlock);
     }
 
     @EventHandler
@@ -77,6 +101,12 @@ public final class ComputerListener implements Listener {
 
         event.setCancelled(true);
         Player player = event.getPlayer();
+
+        if (!player.hasPermission("multiverseprogramming.use")) {
+            player.sendMessage(plugin.getPrefix() + " §cYou don't have permission to use computers.");
+            return;
+        }
+
         openByPlayer.put(player.getUniqueId(), new BlockRef(advanced, block.getLocation()));
 
         if (!advanced) {
@@ -105,7 +135,8 @@ public final class ComputerListener implements Listener {
 
         ClickType click = event.getClick();
         if (click == ClickType.SHIFT_LEFT || click == ClickType.SHIFT_RIGHT
-                || click == ClickType.DOUBLE_CLICK || click == ClickType.NUMBER_KEY) {
+                || click == ClickType.DOUBLE_CLICK || click == ClickType.NUMBER_KEY
+                || click == ClickType.SWAP_OFFHAND) {
             event.setCancelled(true);
             return;
         }
@@ -133,6 +164,14 @@ public final class ComputerListener implements Listener {
                 player.sendMessage(plugin.getPrefix() + " §cOnly a " + DiskManager.NAME + " can be inserted here.");
             }
         } else if (raw == ComputerGUI.BUTTON_SLOT) {
+            long now = System.currentTimeMillis();
+            long delay = plugin.getConfigManager().getPreventSpamDelayMs();
+            Long last = lastClickTime.get(player.getUniqueId());
+            if (last != null && (now - last) < delay) {
+                return;
+            }
+            lastClickTime.put(player.getUniqueId(), now);
+
             BlockRef ref = openByPlayer.get(player.getUniqueId());
             if (ref == null || ref.advanced() != advanced) {
                 return;
@@ -140,7 +179,7 @@ public final class ComputerListener implements Listener {
             if (advanced) {
                 pressAdvanced(player, event.getInventory(), ref.location());
             } else {
-                ComputerGUI.pressButton(player, event.getInventory(), plugin.getPrefix(), plugin.getTimeoutMs());
+                ComputerGUI.pressButton(plugin, player, event.getInventory(), ref.location(), plugin.getPrefix(), plugin.getTimeoutMs());
             }
         }
     }
@@ -177,10 +216,12 @@ public final class ComputerListener implements Listener {
         ItemStack disk = event.getInventory().getItem(ComputerGUI.DISK_SLOT);
 
         if (advanced) {
-            if (disk == null || disk.getType().isAir()) {
-                advancedDisks.remove(ref != null ? ref.location() : null);
-            } else if (ref != null) {
-                advancedDisks.put(ref.location(), disk.clone());
+            if (ref != null) {
+                if (disk == null || disk.getType().isAir()) {
+                    advancedDisks.remove(ref.location());
+                } else {
+                    advancedDisks.put(ref.location(), disk.clone());
+                }
             }
             return;
         }
@@ -200,6 +241,8 @@ public final class ComputerListener implements Listener {
     public void onPlayerQuit(PlayerQuitEvent event) {
         UUID uuid = event.getPlayer().getUniqueId();
         openByPlayer.remove(uuid);
+        lastClickTime.remove(uuid);
+
         List<Location> toStop = new ArrayList<>();
         for (Map.Entry<Location, RunningEntry> e : runningPrograms.entrySet()) {
             if (e.getValue().player().equals(uuid)) {
@@ -211,6 +254,90 @@ public final class ComputerListener implements Listener {
             if (entry != null) {
                 stopEntry(loc, entry);
             }
+        }
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onBlockBreak(BlockBreakEvent event) {
+        handleBlockRemoved(event.getBlock());
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onBlockExplode(BlockExplodeEvent event) {
+        for (Block block : event.blockList()) {
+            handleBlockRemoved(block);
+        }
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onEntityExplode(EntityExplodeEvent event) {
+        for (Block block : event.blockList()) {
+            handleBlockRemoved(block);
+        }
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onBlockBurn(BlockBurnEvent event) {
+        handleBlockRemoved(event.getBlock());
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onPistonExtend(BlockPistonExtendEvent event) {
+        for (Block b : event.getBlocks()) {
+            if (isComputerBlock(b.getType())) {
+                event.setCancelled(true);
+                return;
+            }
+        }
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onPistonRetract(BlockPistonRetractEvent event) {
+        for (Block b : event.getBlocks()) {
+            if (isComputerBlock(b.getType())) {
+                event.setCancelled(true);
+                return;
+            }
+        }
+    }
+
+    @EventHandler
+    public void onWorldUnload(WorldUnloadEvent event) {
+        World world = event.getWorld();
+        List<Location> toRemove = new ArrayList<>();
+        for (Map.Entry<Location, RunningEntry> entry : runningPrograms.entrySet()) {
+            if (world.equals(entry.getKey().getWorld())) {
+                toRemove.add(entry.getKey());
+            }
+        }
+        for (Location loc : toRemove) {
+            RunningEntry entry = runningPrograms.remove(loc);
+            if (entry != null) {
+                entry.program().cancel();
+                entry.cleanup().cancel();
+            }
+        }
+        advancedDisks.keySet().removeIf(loc -> world.equals(loc.getWorld()));
+    }
+
+    private void handleBlockRemoved(Block block) {
+        if (block == null) {
+            return;
+        }
+        Location loc = block.getLocation();
+        RunningEntry running = runningPrograms.remove(loc);
+        if (running != null) {
+            running.program().cancel();
+            running.cleanup().cancel();
+        }
+
+        ItemStack disk = advancedDisks.remove(loc);
+        if (disk != null && !disk.getType().isAir() && plugin.getConfigManager().isDropDisksOnBreak()) {
+            block.getWorld().dropItemNaturally(loc, disk);
+        }
+
+        if (block.getType() == plugin.getConfigManager().getMonitorBlock()) {
+            com.multiverse.programming.peripheral.MonitorPeripheral.removeDisplayAt(loc);
         }
     }
 
@@ -252,12 +379,13 @@ public final class ComputerListener implements Listener {
         UUID uuid = player.getUniqueId();
         Consumer<String> onLine = line -> Bukkit.getScheduler().runTask(plugin, () -> {
             Player target = Bukkit.getPlayer(uuid);
-            if (target != null) {
+            if (target != null && target.isOnline()) {
                 target.sendMessage("§f" + line);
             }
         });
 
-        LuaRunner.LuaProgram program = LuaRunner.runStreaming(code, plugin.getAdvancedTimeoutMs(), onLine);
+        int maxLines = plugin.getConfigManager().getMaxStreamLines();
+        LuaRunner.LuaProgram program = LuaRunner.runStreaming(plugin, loc, true, code, plugin.getAdvancedTimeoutMs(), maxLines, onLine);
 
         BukkitTask[] cleanup = new BukkitTask[1];
         cleanup[0] = Bukkit.getScheduler().runTaskTimer(plugin, () -> {

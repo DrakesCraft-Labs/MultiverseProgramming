@@ -1,10 +1,8 @@
-# Recipes
+# Crafting Recipes
 
-Every custom item is obtainable in survival by crafting — no commands required for regular players.
+All custom items can be obtained via vanilla crafting in survival mode.
 
 ## Floppy Disk
-
-Shape (exactly as in the crafting table):
 
 ```text
 +---+---+---+
@@ -16,12 +14,10 @@ Shape (exactly as in the crafting table):
 +---+---+---+
 ```
 
-**Legend:** `P` = Paper · `I` = Iron Ingot
+**Legend:** `P` = Paper · `I` = Iron Ingot  
 **Result:** 1 **Floppy Disk**
 
-## Computer (lectern)
-
-The computer is a lectern. Shape (the vanilla lectern recipe):
+## Computer (Lectern)
 
 ```text
 +---+---+---+
@@ -33,12 +29,10 @@ The computer is a lectern. Shape (the vanilla lectern recipe):
 +---+---+---+
 ```
 
-**Legend:** `S` = Wooden Slab (any wood type) · `B` = Bookshelf
-**Result:** 1 **Computer** (lectern)
+**Legend:** `S` = Wooden Slab (any wood) · `B` = Bookshelf  
+**Result:** 1 **Computer** (Lectern)
 
-## Advanced Computer (enchanting table)
-
-The advanced computer is an **enchanting table** and depends on the regular computer — craft that first (vanilla lectern recipe), then:
+## Advanced Computer (Enchanting Table)
 
 ```text
 +---+---+---+
@@ -50,9 +44,86 @@ The advanced computer is an **enchanting table** and depends on the regular comp
 +---+---+---+
 ```
 
-**Legend:** `C` = Computer (lectern) · `D` = Diamond · `O` = Obsidian
-**Result:** 1 **Advanced Computer** (enchanting table)
+**Legend:** `C` = Computer (Lectern) · `D` = Diamond · `O` = Obsidian  
+**Result:** 1 **Advanced Computer** (Enchanting Table)
 
-## Note for admins
+## Display Monitor (Holographic Screen)
 
-Operators can get the items directly with `/pc give <item>` (`floppydisk`, `computer`, `advancedcomputer`). This uses the `multiverseprogramming.admin` permission (default `op`) and is **not** granted to normal survival players.
+```text
++---+---+---+
+| G | G | G |
++---+---+---+
+| G | L | G |
++---+---+---+
+| R | R | R |
++---+---+---+
+```
+
+**Legend:** `G` = Glass · `L` = Glowstone · `R` = Redstone Dust  
+**Result:** 1 **Display Monitor**
+
+## Auto-Crafter (1.21 Assembler)
+
+```text
++---+---+---+
+| I | I | I |
++---+---+---+
+| I | C | I |
++---+---+---+
+| R | D | R |
++---+---+---+
+```
+
+**Legend:** `I` = Iron Ingot · `C` = Crafting Table · `R` = Redstone Dust · `D` = Dropper  
+**Result:** 1 **Auto-Crafter**
+
+## Inventory Transposer (Container Router)
+
+```text
++---+---+---+
+| I |   | I |
++---+---+---+
+| I | C | I |
++---+---+---+
+|   | R |   |
++---+---+---+
+```
+
+**Legend:** `I` = Iron Ingot · `C` = Chest · `R` = Redstone Dust  
+**Result:** 1 **Inventory Transposer**
+
+## Sound Synthesizer (Audio Speaker)
+
+```text
++---+---+---+
+| P | P | P |
++---+---+---+
+| P | N | P |
++---+---+---+
+| P | R | P |
++---+---+---+
+```
+
+**Legend:** `P` = Wooden Planks · `N` = Note Block · `R` = Redstone Dust  
+**Result:** 1 **Sound Synthesizer**
+
+## Programmable Turtle (Robotic Mobile Computer & Constructor)
+
+```text
++---+---+---+
+| I | C | I |
++---+---+---+
+| I | P | I |
++---+---+---+
+| I | R | I |
++---+---+---+
+```
+
+**Legend:** `I` = Iron Ingot · `C` = Chest · `P` = Computer (Lectern) · `R` = Redstone Dust  
+**Result:** 1 **Programmable Turtle** (Robotic Dispenser)
+
+## Note for Administrators
+
+Operators can dispense items directly using:
+`/pc give <player> <floppydisk|computer|advancedcomputer|monitor|crafter|transposer|speaker|turtle>`
+Requires permission `multiverseprogramming.admin`.

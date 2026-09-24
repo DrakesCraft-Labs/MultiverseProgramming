@@ -1,13 +1,98 @@
-# Block that acts as a computer (right-click opens the GUI).
+# ===================================================================== #
+#                   MultiverseProgramming Configuration                 #
+# ===================================================================== #
+
+# Block that acts as a standard computer (right-click opens the GUI).
+# Must be a valid placeable block and item (e.g. LECTERN, CRAFTING_TABLE, NOTE_BLOCK).
 computer-block: LECTERN
 
-# Maximum execution time of a program, in milliseconds.
+# Maximum execution time of a program on a standard computer, in milliseconds.
+# Prevents long or infinite loops from hanging threads. Default: 3000 ms.
 execution-timeout-ms: 3000
 
 # Block that acts as an advanced computer.
-# Loops and programs can run without the short timeout (configured below).
+# Loops and long-running programs can run here. Keeps the disk inside when closed.
+# Must be different from computer-block (e.g. ENCHANTING_TABLE, OBSERVER, LODESTONE).
 advanced-computer-block: ENCHANTING_TABLE
 
 # Maximum execution time of a program on an advanced computer, in milliseconds.
 # Use 0 for no limit.
 advanced-execution-timeout-ms: 0
+
+# Maximum number of lines that a program can print or stream before execution is stopped.
+# Protects server chat and memory from runaway print loops.
+max-stream-lines: 10000
+
+# Minimum delay in milliseconds between button presses per player to prevent spamming.
+prevent-spam-delay-ms: 500
+
+# If true, when an advanced computer is broken or exploded, any disk inside drops naturally.
+drop-disks-on-break: true
+
+# If true, registers the crafting recipe for the computer block (slabs + bookshelf).
+enable-computer-recipe: true
+
+# ===================================================================== #
+#                   Peripherals & Additional Machines                  #
+# ===================================================================== #
+
+# Block that acts as a Display Monitor (adjacent to computer).
+# Displays text in the world using a floating TextDisplay entity.
+monitor-block: OCHRE_FROGLIGHT
+
+# Block that acts as an Auto-Crafter (adjacent to computer).
+# Minecraft 1.21 native Crafter block.
+crafter-block: CRAFTER
+
+# Block that acts as an Inventory Transposer (adjacent to computer).
+# Moves and filters items between adjacent containers.
+transposer-block: HOPPER
+
+# Block that acts as a Sound Synthesizer / Speaker (adjacent to computer).
+# Plays notes, frequencies, and Minecraft sound effects.
+speaker-block: NOTE_BLOCK
+
+# Maximum worker threads for running Lua scripts concurrently.
+# Protects the server from thread exhaustion when many computers run simultaneously.
+max-concurrent-programs: 8
+
+# Maximum CPU instruction quota before a program is forced to yield or sleep.
+# For advanced computers, programs auto-pause for 2 ms after this many instructions without sleep().
+max-instructions-per-slice: 1000000
+
+# ===================================================================== #
+#                   Programmable Turtle & Construction                  #
+# ===================================================================== #
+
+# Block that acts as a Turtle (robotic mobile computer & builder).
+# Default: DISPENSER.
+turtle-block: DISPENSER
+
+# Ticks between placing each block when building a blueprint.
+# 2 ticks = 10 blocks/sec (smooth and lag-free). Min 1, Max 100.
+turtle-build-delay-ticks: 2
+
+# If true, the turtle must have the required blocks in its 16 inventory slots.
+# If false, the turtle builds freely without consuming inventory items.
+turtle-require-materials: false
+
+# If true, moving and digging requires fuel (coal, blaze rods, lava).
+turtle-fuel-required: false
+
+# ===================================================================== #
+#                   Web Portal & Blueprint Dashboard                    #
+# ===================================================================== #
+
+# Enable the built-in HTTP Web Portal for uploading .litematic & .nbt blueprints,
+# 3D/layer visualizer, and live Turtle coordinate dispatch.
+web-portal-enabled: true
+
+# Port for the web dashboard.
+web-portal-port: 8080
+
+# Bind IP address (0.0.0.0 binds to all interfaces, 127.0.0.1 for local only).
+web-portal-bind-address: "0.0.0.0"
+
+# Optional public URL displayed to players with /pc web.
+# If empty, defaults to http://<server-ip>:<port> or http://localhost:<port>.
+web-portal-public-url: ""

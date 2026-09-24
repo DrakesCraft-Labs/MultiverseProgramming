@@ -6,9 +6,10 @@ MultiverseProgramming lleva **computadoras programables estilo ComputerCraft** a
 
 - [Primeros pasos](Getting-Started.md) — instalación, primera computadora, primer programa.
 - [Computadora y disquetes](Computer-and-Disks.md) — cómo funcionan el bloque, la interfaz y los disquetes.
-- [Recetas](Recipes.md) — recetas visuales de la mesa de crafteo de cada objeto custom.
-- [Programación en Lua](Lua-Scripting.md) — el entorno Lua, las librerías disponibles y ejemplos.
+- [Recetas](Recipes.md) — recetas visuales de la mesa de crafteo de cada objeto custom (incluyendo Tortugas y periféricos).
+- [Programación en Lua](Lua-Scripting.md) — el entorno Lua, las librerías disponibles (Tortuga, Monitor, Crafter, Transposer, Synth, Redstone) y ejemplos.
 - [Configuración](Configuration.md) — `config.yml`, comandos y permisos.
+- [Portal Blueprint Nexus](https://drakescraft-labs.github.io/MultiverseProgramming/) — visualizador web de planos y despachador de construcción para tortugas.
 
 > 🌐 Versión en inglés: [wiki/en/Home.md](../en/Home.md)
 
