@@ -154,15 +154,23 @@ public final class TurtleListener implements Listener {
                 return;
             }
 
-            // Build Control Button
+            // Task Control Button (Build / Mining)
             if (rawSlot == TurtleGUI.BUILD_BUTTON_SLOT) {
                 event.setCancelled(true);
                 if (turtle.getStatus() == Turtle.Status.BUILDING) {
                     turtle.pauseBuild();
                     player.sendMessage(plugin.getPrefix() + " §eConstruction paused.");
+                } else if (turtle.getStatus() == Turtle.Status.MINING) {
+                    turtle.pauseQuarry();
+                    player.sendMessage(plugin.getPrefix() + " §eQuarry excavation paused.");
                 } else if (turtle.getStatus() == Turtle.Status.PAUSED) {
-                    turtle.resumeBuild();
-                    player.sendMessage(plugin.getPrefix() + " §aConstruction resumed.");
+                    if (turtle.isQuarryPaused()) {
+                        turtle.resumeQuarry();
+                        player.sendMessage(plugin.getPrefix() + " §aQuarry excavation resumed.");
+                    } else {
+                        turtle.resumeBuild();
+                        player.sendMessage(plugin.getPrefix() + " §aConstruction resumed.");
+                    }
                 }
                 gui.setupGUI();
                 return;

@@ -311,4 +311,129 @@ class TurtleTest {
         assertEquals(3, active.sizeZ());
         assertEquals("minecraft:oak_stairs[facing=east]", active.blocks().get(0).material());
     }
+
+    @Test
+    @DisplayName("startQuarry fails if lateral engine block is missing")
+    void testQuarryRequiresAttachedEngineLateralValidation() {
+        Turtle turtle = new Turtle(mockPlugin, "T-001", startLoc, BlockFace.NORTH, null);
+        java.util.concurrent.atomic.AtomicBoolean errorCalled = new java.util.concurrent.atomic.AtomicBoolean(false);
+
+        boolean started = turtle.startQuarry(5, 5, 40, true, null, err -> {
+            errorCalled.set(true);
+            assertTrue(err.contains("lateral side"));
+        });
+
+        assertFalse(started);
+        assertTrue(errorCalled.get());
+        assertEquals(Turtle.Status.ERROR, turtle.getStatus());
+        assertTrue(turtle.getStatusMessage().contains("lateral side"));
+    }
+
+    @Test
+    @DisplayName("Turtle accurately detects lateral Quarry Engine on left and right sides")
+    void testDetectLateralQuarryEngine() {
+        Turtle turtle = new Turtle(mockPlugin, "T-001", startLoc, BlockFace.NORTH, null);
+
+        Block turtleBlock = mock(Block.class);
+        Block leftBlock = mock(Block.class);
+        Block rightBlock = mock(Block.class);
+
+        when(mockWorld.getBlockAt(startLoc)).thenReturn(turtleBlock);
+        when(turtleBlock.getRelative(BlockFace.WEST)).thenReturn(leftBlock);
+        when(turtleBlock.getRelative(BlockFace.EAST)).thenReturn(rightBlock);
+
+        // Neither is blast furnace
+        when(leftBlock.getType()).thenReturn(Material.AIR);
+        when(rightBlock.getType()).thenReturn(Material.AIR);
+        assertNull(turtle.findLateralQuarrySide());
+        assertFalse(turtle.hasQuarryEngineAttached());
+
+        // Left is blast furnace (Quarry block)
+        when(leftBlock.getType()).thenReturn(Material.BLAST_FURNACE);
+        assertEquals(Turtle.LateralSide.LEFT, turtle.findLateralQuarrySide());
+        assertTrue(turtle.hasQuarryEngineAttached());
+
+        // Right is blast furnace
+        when(leftBlock.getType()).thenReturn(Material.AIR);
+        when(rightBlock.getType()).thenReturn(Material.BLAST_FURNACE);
+        assertEquals(Turtle.LateralSide.RIGHT, turtle.findLateralQuarrySide());
+        assertTrue(turtle.hasQuarryEngineAttached());
+    }
+
+    @Test
+    @DisplayName("consumeQuarryFuel consumes fuel at 1.20x rate (+20%)")
+    void testQuarryFuelConsumption20Percent() {
+        Turtle turtle = new Turtle(mockPlugin, "T-001", startLoc, BlockFace.NORTH, null);
+        turtle.setFuel(100);
+
+        // Call 1: +1.20 -> deduct 1, rem 0.20 -> fuel 99
+        assertTrue(turtle.consumeQuarryFuel());
+        assertEquals(99, turtle.getFuel());
+
+        // Call 2: +1.20 -> 1.40 -> deduct 1, rem 0.40 -> fuel 98
+        assertTrue(turtle.consumeQuarryFuel());
+        assertEquals(98, turtle.getFuel());
+
+        // Call 3: +1.20 -> 1.60 -> deduct 1, rem 0.60 -> fuel 97
+        assertTrue(turtle.consumeQuarryFuel());
+        assertEquals(97, turtle.getFuel());
+
+        // Call 4: +1.20 -> 1.80 -> deduct 1, rem 0.80 -> fuel 96
+        assertTrue(turtle.consumeQuarryFuel());
+        assertEquals(96, turtle.getFuel());
+
+        // Call 5: +1.20 -> 2.00 -> deduct 2, rem 0.00 -> fuel 94
+        assertTrue(turtle.consumeQuarryFuel());
+        assertEquals(94, turtle.getFuel());
+
+        // In 5 calls, exactly 6 fuel consumed (6 / 5 = 1.20x)
+    }
+
+    @Test
+    @DisplayName("relocateTurtleWithEngine moves turtle and attached engine in lockstep")
+    void testRelocateTurtleWithEngine() {
+        Turtle turtle = new Turtle(mockPlugin, "T-001", startLoc, BlockFace.NORTH, null);
+        turtle.setQuarryLateralSide(Turtle.LateralSide.LEFT);
+
+        Block turtleBlock = mock(Block.class);
+        when(mockWorld.getBlockAt(startLoc)).thenReturn(turtleBlock);
+
+        Location newLoc = new Location(mockWorld, 10, 64, 21);
+        Block newTurtleBlock = mock(Block.class);
+        when(mockWorld.getBlockAt(newLoc)).thenReturn(newTurtleBlock);
+
+        turtle.relocateTurtleWithEngine(mockWorld, newLoc, BlockFace.NORTH);
+        assertEquals(newLoc, turtle.getLocation());
+    }
+
+    @Test
+    @DisplayName("TurtlePeripheral Lua bindings for quarry engine operations")
+    void testTurtleLuaQuarryBindings() {
+        MultiverseProgrammingPlugin mvPlugin = mock(MultiverseProgrammingPlugin.class);
+        when(mvPlugin.isEnabled()).thenReturn(true);
+        Turtle turtle = new Turtle(mvPlugin, "T-001", startLoc, BlockFace.NORTH, null);
+
+        TurtlePeripheral peripheral = new TurtlePeripheral(mvPlugin, turtle);
+        Globals globals = LuaRunner.sandbox();
+        globals.set("turtle", peripheral.toLuaTable());
+
+        String script = """
+            local hasEngine = turtle.hasQuarryEngine()
+            local ok, err = turtle.quarry(5, 5, 40)
+            local status = turtle.getQuarryStatus()
+            turtle.pauseQuarry()
+            turtle.resumeQuarry()
+            turtle.stopQuarry()
+            return hasEngine, ok, err, status.active, status.status
+        """;
+
+        LuaValue chunk = globals.load(script);
+        var res = chunk.invoke();
+
+        assertFalse(res.arg(1).toboolean());
+        assertFalse(res.arg(2).toboolean());
+        assertTrue(res.arg(3).tojstring().contains("lateral side"));
+        assertFalse(res.arg(4).toboolean());
+        assertEquals("ERROR", res.arg(5).tojstring());
+    }
 }

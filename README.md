@@ -68,7 +68,7 @@ Built and verified for **Purpur / Paper 1.21.11** with **Java 21**.
 - **Cartographer & Map Renderer** (`cartographer`): Geographic radar, biome query, vanilla map creation (`FILLED_MAP`), and ASCII topography monitor projection.
 - **Potion & Alchemical Synthesizer** (`alchemist`): Automated brewing stand queries, recipe synthesis directly from adjacent containers, modifier and splash support.
 - **Farming / Harvesting Module** (`farmer`): Inspects crop maturity, auto-harvests mature crops, replants seeds, and fertilizes with bone meal from adjacent chests.
-- **Quarry Engine / Autonomous Excavator** (`quarry`): Layer-by-layer volumetric column excavation ($W \times L$ down to target $Y$), liquid clearing, container drop deposits, and full CoreProtect audit logging.
+- **Quarry Engine / Excavator Upgrade** (`quarry` & Turtle upgrade): Autonomous layer-by-layer excavation ($W \times L$ down to target $Y$). Can be attached laterally to a Turtle as a mobile upgrade module (travels in lockstep with the turtle, automatically deploys holographic fuel & storage chests, auto-pauses when storage fills up, and consumes 20% more fuel).
 - **NPC Chatbot & Quest Interposer** (`npc`): Interactive NPC dialogues, chat choice menus, floating TextDisplay holograms, and player interaction responses.
 
 ---

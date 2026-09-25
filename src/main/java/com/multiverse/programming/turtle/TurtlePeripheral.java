@@ -370,6 +370,90 @@ public final class TurtlePeripheral implements Peripheral {
             }
         });
 
+        // 6. Quarry Engine Upgrade API
+        t.set("hasQuarryEngine", new ZeroArgFunction() {
+            @Override
+            public LuaValue call() {
+                return LuaBoolean.valueOf(turtle.hasQuarryEngineAttached());
+            }
+        });
+
+        t.set("quarry", new VarArgFunction() {
+            @Override
+            public Varargs invoke(Varargs args) {
+                if (args.narg() < 3) {
+                    return varargsOf(LuaBoolean.FALSE, LuaString.valueOf("Usage: turtle.quarry(width, length, targetY, [handleLiquids])"));
+                }
+                int width = args.checkint(1);
+                int length = args.checkint(2);
+                int targetY = args.checkint(3);
+                boolean handleLiquids = args.narg() < 4 || args.checkboolean(4);
+
+                boolean started = SyncDispatcher.sync(plugin, () ->
+                        turtle.startQuarry(width, length, targetY, handleLiquids, null, null)
+                );
+
+                if (!started) {
+                    return varargsOf(LuaBoolean.FALSE, LuaString.valueOf(turtle.getStatusMessage()));
+                }
+                return varargsOf(LuaBoolean.TRUE, LuaString.valueOf("Quarry excavation started"));
+            }
+        });
+
+        t.set("startQuarry", t.get("quarry"));
+
+        t.set("pauseQuarry", new ZeroArgFunction() {
+            @Override
+            public LuaValue call() {
+                turtle.pauseQuarry();
+                return LuaBoolean.TRUE;
+            }
+        });
+
+        t.set("resumeQuarry", new ZeroArgFunction() {
+            @Override
+            public LuaValue call() {
+                turtle.resumeQuarry();
+                return LuaBoolean.TRUE;
+            }
+        });
+
+        t.set("stopQuarry", new ZeroArgFunction() {
+            @Override
+            public LuaValue call() {
+                turtle.cancelQuarry();
+                return LuaBoolean.TRUE;
+            }
+        });
+
+        t.set("cancelQuarry", t.get("stopQuarry"));
+
+        t.set("getQuarryStatus", new ZeroArgFunction() {
+            @Override
+            public LuaValue call() {
+                LuaTable s = new LuaTable();
+                s.set("active", LuaBoolean.valueOf(turtle.isQuarryActive()));
+                s.set("paused", LuaBoolean.valueOf(turtle.isQuarryPaused()));
+                s.set("status", turtle.getStatus().name());
+                s.set("message", turtle.getStatusMessage());
+                s.set("blocksMined", turtle.getQuarryBlocksMined());
+                s.set("totalBlocks", turtle.getQuarryTotalBlocks());
+                s.set("percentage", turtle.getQuarryProgressPercentage());
+                s.set("currentY", turtle.getQuarryCurrentY());
+                s.set("targetY", turtle.getQuarryTargetY());
+                Turtle.LateralSide side = turtle.getQuarryLateralSide();
+                if (side != null) {
+                    s.set("side", side.name().toLowerCase(Locale.ROOT));
+                } else {
+                    Turtle.LateralSide detected = turtle.findLateralQuarrySide();
+                    if (detected != null) {
+                        s.set("side", detected.name().toLowerCase(Locale.ROOT));
+                    }
+                }
+                return s;
+            }
+        });
+
         return t;
     }
 

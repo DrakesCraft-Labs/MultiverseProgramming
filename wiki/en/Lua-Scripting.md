@@ -330,6 +330,46 @@ turtle.cancelBuild()
 > **Construction Supply & Fuel Chests**:
 > When `turtle-require-materials` or `turtle-fuel-required` are enabled on the server, the turtle automatically spawns designated supply chests with floating holograms (`"Place construction blocks here"` and `"Place fuel here"`). The turtle pulls blocks and fuel directly from these chests as needed.
 
+### Quarry Engine Upgrade (Autonomous Volumetric Excavation)
+
+The **Quarry Engine** (`BLAST_FURNACE` by default) can be attached to the Turtle as a mobile excavation upgrade module:
+
+- **Lateral Attachment Requirement:** The Quarry Engine block must be placed directly adjacent to the **left** or **right** of the turtle before launching the program.
+- **Physical Movement:** Once activated, the quarry engine attaches to the turtle and travels in lockstep across coordinates and rotations as the turtle excavates.
+- **Dual Supply & Storage Chests:** At launch, the turtle automatically places:
+  1. `📦 Mined Blocks Storage`: Stores all extracted block drops.
+  2. `⚡ Place fuel here`: Replenishes turtle fuel during operation.
+- **Full Storage Detection:** If the mined blocks storage chest fills up, the turtle automatically pauses mining (`"Paused: Mined blocks storage chest is full"`) to prevent lost items. Empty the chest and resume via `turtle.resumeQuarry()` or the in-game GUI.
+- **+20% Fuel Consumption:** As an active heavy attachment, the turtle consumes 20% more fuel (1.20x rate) during operations.
+
+```lua
+-- 1. Check if the lateral engine is attached
+if not turtle.hasQuarryEngine() then
+  print("Please attach a Quarry Engine to the left or right of the turtle!")
+  return
+end
+
+-- 2. Start volumetric excavation: turtle.quarry(width, length, targetY, [handleLiquids])
+-- Mines a 16x16 column down to layer Y=11, clearing water/lava by default
+local ok, err = turtle.quarry(16, 16, 11, true)
+if not ok then
+  print("Failed to start quarry: " .. err)
+  return
+end
+print("Quarry excavation started!")
+
+-- 3. Query quarry status and progress
+local q = turtle.getQuarryStatus()
+print("Status: " .. q.status .. " (" .. q.message .. ")")
+print("Progress: " .. q.percentage .. "% (" .. q.blocksMined .. "/" .. q.totalBlocks .. ")")
+print("Current Layer: Y=" .. q.currentY .. " Target: Y=" .. q.targetY .. " Side: " .. (q.side or "none"))
+
+-- 4. Manual pause, resume, and cancel controls
+turtle.pauseQuarry()
+turtle.resumeQuarry()
+turtle.stopQuarry()
+```
+
 ---
 
 ## 6. Web Portal & Blueprint Dashboard

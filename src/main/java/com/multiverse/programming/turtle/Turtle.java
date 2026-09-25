@@ -42,8 +42,14 @@ public final class Turtle {
         IDLE,
         MOVING,
         BUILDING,
+        MINING,
         PAUSED,
         ERROR
+    }
+
+    public enum LateralSide {
+        LEFT,
+        RIGHT
     }
 
     private final String id;
@@ -70,6 +76,25 @@ public final class Turtle {
     private org.bukkit.entity.Entity constructionHologram;
     private Location fuelChestLoc;
     private org.bukkit.entity.Entity fuelHologram;
+
+    // Active Quarry Engine Upgrade fields
+    private BukkitTask quarryTask;
+    private LateralSide quarryLateralSide;
+    private Location quarryStartLocation;
+    private Location quarryStorageChestLoc;
+    private org.bukkit.entity.Entity quarryStorageHologram;
+    private Location quarryFuelChestLoc;
+    private org.bukkit.entity.Entity quarryFuelHologram;
+    private int quarryBlocksMined = 0;
+    private int quarryTotalBlocks = 0;
+    private int quarryWidth = 0;
+    private int quarryLength = 0;
+    private int quarryTargetY = 0;
+    private int quarryCurY = 0;
+    private int quarryStepX = 0;
+    private int quarryStepZ = 0;
+    private boolean quarryHandleLiquids = true;
+    private int quarryFuelPoints = 0;
 
     public Turtle(org.bukkit.plugin.java.JavaPlugin plugin, String id, Location location, BlockFace facing, UUID owner) {
         this.plugin = Objects.requireNonNull(plugin, "plugin cannot be null");
@@ -227,6 +252,7 @@ public final class Turtle {
     }
 
     public synchronized boolean turnLeft() {
+        BlockFace oldFacing = this.facing;
         this.facing = switch (facing) {
             case NORTH -> BlockFace.WEST;
             case WEST -> BlockFace.SOUTH;
@@ -234,11 +260,31 @@ public final class Turtle {
             case EAST -> BlockFace.NORTH;
             default -> BlockFace.NORTH;
         };
+
+        if (quarryLateralSide != null && location != null && location.getWorld() != null) {
+            World world = location.getWorld();
+            BlockFace lateralFace = getLateralFace(this.facing, quarryLateralSide);
+            Block newEngineBlock = location.getBlock().getRelative(lateralFace);
+            BlockFace oldLateralFace = getLateralFace(oldFacing, quarryLateralSide);
+            Block oldEngineBlock = location.getBlock().getRelative(oldLateralFace);
+            if (newEngineBlock != null && !newEngineBlock.isPassable() && !newEngineBlock.isEmpty()
+                    && oldEngineBlock != null && !newEngineBlock.getLocation().equals(oldEngineBlock.getLocation())) {
+                this.facing = oldFacing;
+                return false;
+            }
+            SyncDispatcher.sync(plugin, () -> {
+                relocateTurtleWithEngine(world, this.location, this.facing);
+                return null;
+            });
+            return true;
+        }
+
         updateBlockFacing();
         return true;
     }
 
     public synchronized boolean turnRight() {
+        BlockFace oldFacing = this.facing;
         this.facing = switch (facing) {
             case NORTH -> BlockFace.EAST;
             case EAST -> BlockFace.SOUTH;
@@ -246,6 +292,25 @@ public final class Turtle {
             case WEST -> BlockFace.NORTH;
             default -> BlockFace.NORTH;
         };
+
+        if (quarryLateralSide != null && location != null && location.getWorld() != null) {
+            World world = location.getWorld();
+            BlockFace lateralFace = getLateralFace(this.facing, quarryLateralSide);
+            Block newEngineBlock = location.getBlock().getRelative(lateralFace);
+            BlockFace oldLateralFace = getLateralFace(oldFacing, quarryLateralSide);
+            Block oldEngineBlock = location.getBlock().getRelative(oldLateralFace);
+            if (newEngineBlock != null && !newEngineBlock.isPassable() && !newEngineBlock.isEmpty()
+                    && oldEngineBlock != null && !newEngineBlock.getLocation().equals(oldEngineBlock.getLocation())) {
+                this.facing = oldFacing;
+                return false;
+            }
+            SyncDispatcher.sync(plugin, () -> {
+                relocateTurtleWithEngine(world, this.location, this.facing);
+                return null;
+            });
+            return true;
+        }
+
         updateBlockFacing();
         return true;
     }
@@ -277,6 +342,24 @@ public final class Turtle {
 
             if (!targetBlock.isPassable() && !targetBlock.isEmpty()) {
                 return false; // Obstacle
+            }
+
+            if (quarryLateralSide != null) {
+                BlockFace lateralFace = getLateralFace(facing, quarryLateralSide);
+                Block targetEngineBlock = targetBlock.getRelative(lateralFace);
+                Location currEngineLoc = currentBlock.getRelative(lateralFace).getLocation();
+                if (targetEngineBlock != null && !targetEngineBlock.isPassable() && !targetEngineBlock.isEmpty()
+                        && !targetEngineBlock.getLocation().equals(location)
+                        && !targetEngineBlock.getLocation().equals(currEngineLoc)) {
+                    return false; // Engine obstructed
+                }
+
+                if (!consumeQuarryFuel()) {
+                    return false;
+                }
+
+                relocateTurtleWithEngine(world, targetBlock.getLocation(), facing);
+                return true;
             }
 
             Material mat = currentBlock.getType();
@@ -1048,6 +1131,549 @@ public final class Turtle {
             buildTask.cancel();
             buildTask = null;
         }
+    }
+
+    // =========================================================================
+    // Quarry Engine Attachment & Autonomous Excavation
+    // =========================================================================
+
+    public static BlockFace getLeftFace(BlockFace face) {
+        return switch (face) {
+            case NORTH -> BlockFace.WEST;
+            case WEST -> BlockFace.SOUTH;
+            case SOUTH -> BlockFace.EAST;
+            case EAST -> BlockFace.NORTH;
+            default -> BlockFace.WEST;
+        };
+    }
+
+    public static BlockFace getRightFace(BlockFace face) {
+        return switch (face) {
+            case NORTH -> BlockFace.EAST;
+            case EAST -> BlockFace.SOUTH;
+            case SOUTH -> BlockFace.WEST;
+            case WEST -> BlockFace.NORTH;
+            default -> BlockFace.EAST;
+        };
+    }
+
+    public static BlockFace getLateralFace(BlockFace currentFacing, LateralSide side) {
+        return (side == LateralSide.LEFT) ? getLeftFace(currentFacing) : getRightFace(currentFacing);
+    }
+
+    public Material getQuarryBlockMaterial() {
+        if (plugin instanceof MultiverseProgrammingPlugin mvp) {
+            if (mvp.getConfigManager() != null) {
+                return mvp.getConfigManager().getQuarryBlock();
+            }
+        }
+        return Material.BLAST_FURNACE;
+    }
+
+    public LateralSide findLateralQuarrySide() {
+        if (location == null || location.getWorld() == null) return null;
+        Material qMat = getQuarryBlockMaterial();
+        Block b = location.getBlock();
+        if (b == null) return null;
+        BlockFace left = getLeftFace(this.facing);
+        Block leftBlock = b.getRelative(left);
+        if (leftBlock != null && leftBlock.getType() == qMat) {
+            return LateralSide.LEFT;
+        }
+        BlockFace right = getRightFace(this.facing);
+        Block rightBlock = b.getRelative(right);
+        if (rightBlock != null && rightBlock.getType() == qMat) {
+            return LateralSide.RIGHT;
+        }
+        return null;
+    }
+
+    public boolean hasQuarryEngineAttached() {
+        return findLateralQuarrySide() != null || quarryLateralSide != null;
+    }
+
+    public LateralSide getQuarryLateralSide() {
+        return quarryLateralSide;
+    }
+
+    public void setQuarryLateralSide(LateralSide side) {
+        this.quarryLateralSide = side;
+    }
+
+    public Location getQuarryStorageChestLoc() {
+        return quarryStorageChestLoc;
+    }
+
+    public Location getQuarryFuelChestLoc() {
+        return quarryFuelChestLoc;
+    }
+
+    private void setupQuarryChests(Location startLoc) {
+        World world = startLoc.getWorld();
+        if (world == null) return;
+
+        BlockFace back = this.facing.getOppositeFace();
+        BlockFace left = getLeftFace(this.facing);
+        BlockFace right = getRightFace(this.facing);
+
+        // Position 1 (Output / Mined Blocks): directly behind turtle
+        Block chest1 = startLoc.getBlock().getRelative(back);
+        // Position 2 (Fuel Chest): adjacent to chest1
+        Block chest2 = chest1.getRelative(left);
+        if (!chest2.isEmpty() && !chest2.isPassable() && chest2.getType() != Material.CHEST && chest2.getType() != Material.BARREL) {
+            chest2 = chest1.getRelative(right);
+        }
+        if (!chest2.isEmpty() && !chest2.isPassable() && chest2.getType() != Material.CHEST && chest2.getType() != Material.BARREL) {
+            chest2 = startLoc.getBlock().getRelative(back, 2);
+        }
+
+        if (chest1.getType() != Material.CHEST && chest1.getType() != Material.BARREL) {
+            chest1.setType(Material.CHEST, false);
+        }
+        if (chest2.getType() != Material.CHEST && chest2.getType() != Material.BARREL) {
+            chest2.setType(Material.CHEST, false);
+        }
+
+        this.quarryStorageChestLoc = chest1.getLocation();
+        this.quarryFuelChestLoc = chest2.getLocation();
+        this.fuelChestLoc = chest2.getLocation();
+
+        cleanupQuarryHolograms();
+        spawnQuarryHologram(quarryStorageChestLoc, "§e📦 Mined Blocks Storage", true);
+        spawnQuarryHologram(quarryFuelChestLoc, "§6⚡ Place fuel here", false);
+    }
+
+    private void spawnQuarryHologram(Location chestLoc, String text, boolean isStorage) {
+        World world = chestLoc.getWorld();
+        if (world == null) return;
+        Location holoLoc = chestLoc.clone().add(0.5, 1.25, 0.5);
+        try {
+            org.bukkit.entity.TextDisplay td = world.spawn(holoLoc, org.bukkit.entity.TextDisplay.class, display -> {
+                display.setText(text);
+                display.setBillboard(org.bukkit.entity.Display.Billboard.CENTER);
+                display.setDefaultBackground(false);
+                display.setSeeThrough(true);
+            });
+            if (isStorage) {
+                this.quarryStorageHologram = td;
+            } else {
+                this.quarryFuelHologram = td;
+            }
+        } catch (Throwable fallback) {
+            try {
+                org.bukkit.entity.ArmorStand stand = world.spawn(holoLoc.clone().subtract(0, 1.0, 0), org.bukkit.entity.ArmorStand.class, as -> {
+                    as.setCustomName(text);
+                    as.setCustomNameVisible(true);
+                    as.setVisible(false);
+                    as.setGravity(false);
+                    as.setMarker(true);
+                });
+                if (isStorage) {
+                    this.quarryStorageHologram = stand;
+                } else {
+                    this.quarryFuelHologram = stand;
+                }
+            } catch (Throwable ignored) {}
+        }
+    }
+
+    private void cleanupQuarryHolograms() {
+        if (quarryStorageHologram != null && quarryStorageHologram.isValid()) {
+            try { quarryStorageHologram.remove(); } catch (Throwable ignored) {}
+            quarryStorageHologram = null;
+        }
+        if (quarryFuelHologram != null && quarryFuelHologram.isValid()) {
+            try { quarryFuelHologram.remove(); } catch (Throwable ignored) {}
+            quarryFuelHologram = null;
+        }
+    }
+
+    public synchronized boolean isQuarryStorageFull() {
+        if (quarryStorageChestLoc == null || quarryStorageChestLoc.getWorld() == null) {
+            return false;
+        }
+        Block block = quarryStorageChestLoc.getBlock();
+        if (block != null && block.getState() instanceof org.bukkit.block.Container container) {
+            Inventory inv = container.getInventory();
+            if (inv.firstEmpty() != -1) {
+                return false;
+            }
+            for (ItemStack item : inv.getContents()) {
+                if (item != null && item.getAmount() < item.getMaxStackSize()) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+
+    public synchronized boolean depositToQuarryStorage(ItemStack drop) {
+        if (drop == null || drop.getType().isAir()) return true;
+        if (quarryStorageChestLoc == null || quarryStorageChestLoc.getWorld() == null) {
+            return false;
+        }
+
+        Block block = quarryStorageChestLoc.getBlock();
+        if (block != null && block.getState() instanceof org.bukkit.block.Container container) {
+            Inventory inv = container.getInventory();
+            java.util.HashMap<Integer, ItemStack> remaining = inv.addItem(drop);
+            if (!remaining.isEmpty()) {
+                for (ItemStack rem : remaining.values()) {
+                    addToInventory(rem);
+                }
+                return false;
+            }
+            return true;
+        }
+        return false;
+    }
+
+    public synchronized boolean consumeQuarryFuel() {
+        quarryFuelPoints += 120;
+        int toDeduct = quarryFuelPoints / 100;
+        if (toDeduct <= 0) {
+            return true;
+        }
+        quarryFuelPoints %= 100;
+
+        boolean required = true;
+        if (plugin instanceof MultiverseProgrammingPlugin mvp) {
+            if (mvp.getConfigManager() != null) {
+                required = mvp.getConfigManager().isTurtleFuelRequired();
+            }
+        }
+
+        if (this.fuel < toDeduct) {
+            refuel(0);
+        }
+
+        if (this.fuel >= toDeduct) {
+            this.fuel -= toDeduct;
+            return true;
+        }
+
+        return !required;
+    }
+
+    public synchronized void relocateTurtleWithEngine(World world, Location newLoc, BlockFace newFacing) {
+        if (world == null || this.location == null) return;
+
+        Material turtleMat = (plugin instanceof MultiverseProgrammingPlugin mvp && mvp.getConfigManager() != null)
+                ? mvp.getConfigManager().getTurtleBlock()
+                : Material.DISPENSER;
+        Material quarryMat = getQuarryBlockMaterial();
+
+        Location oldLoc = this.location.clone();
+        BlockFace oldFacing = this.facing;
+
+        Location oldEngineLoc = null;
+        if (quarryLateralSide != null && oldLoc != null) {
+            Block b = oldLoc.getBlock();
+            if (b != null) {
+                Block rel = b.getRelative(getLateralFace(oldFacing, quarryLateralSide));
+                if (rel != null) oldEngineLoc = rel.getLocation();
+            }
+        }
+
+        Location newEngineLoc = null;
+        if (quarryLateralSide != null && newLoc != null) {
+            Block b = newLoc.getBlock();
+            if (b != null) {
+                Block rel = b.getRelative(getLateralFace(newFacing, quarryLateralSide));
+                if (rel != null) newEngineLoc = rel.getLocation();
+            }
+        }
+
+        if (oldEngineLoc != null && !oldEngineLoc.equals(newLoc) && !oldEngineLoc.equals(newEngineLoc)) {
+            Block b = oldEngineLoc.getBlock();
+            if (b != null) b.setType(Material.AIR, false);
+        }
+        if (!oldLoc.equals(newLoc) && !oldLoc.equals(newEngineLoc)) {
+            Block b = oldLoc.getBlock();
+            if (b != null) b.setType(Material.AIR, false);
+        }
+
+        Block newTurtleBlock = newLoc.getBlock();
+        if (newTurtleBlock != null) {
+            newTurtleBlock.setType(turtleMat, false);
+            if (newTurtleBlock.getBlockData() instanceof Directional dir) {
+                try {
+                    dir.setFacing(newFacing);
+                    newTurtleBlock.setBlockData(dir, false);
+                } catch (Throwable ignored) {}
+            }
+        }
+
+        if (newEngineLoc != null) {
+            Block newEngineBlock = newEngineLoc.getBlock();
+            if (newEngineBlock != null) {
+                newEngineBlock.setType(quarryMat, false);
+            }
+            try {
+                world.spawnParticle(Particle.FLAME, newEngineLoc.clone().add(0.5, 0.5, 0.5), 3, 0.1, 0.1, 0.1, 0.01);
+            } catch (Throwable ignored) {}
+        }
+
+        this.location = newLoc.clone();
+        this.facing = newFacing;
+
+        TurtleManager tm = getTurtleManager();
+        if (tm != null) {
+            tm.updateTurtleLocation(this, oldLoc, this.location);
+        }
+
+        try {
+            world.playSound(newLoc, Sound.BLOCK_IRON_TRAPDOOR_CLOSE, 0.4f, 1.6f);
+            world.spawnParticle(Particle.SMOKE, oldLoc.getX() + 0.5, oldLoc.getY() + 0.5, oldLoc.getZ() + 0.5, 2, 0.05, 0.05, 0.05, 0.01);
+        } catch (Throwable ignored) {}
+    }
+
+    public synchronized boolean startQuarry(
+            int width,
+            int length,
+            int targetYLevel,
+            boolean handleLiquids,
+            Runnable onDone,
+            Consumer<String> onError
+    ) {
+        cancelQuarry();
+        cancelBuild();
+
+        if (location == null || location.getWorld() == null) {
+            failQuarry("Turtle world is unloaded", onError);
+            return false;
+        }
+
+        World world = location.getWorld();
+
+        LateralSide side = findLateralQuarrySide();
+        if (side == null) {
+            failQuarry("No Quarry Engine attached to the lateral side of the turtle", onError);
+            return false;
+        }
+        this.quarryLateralSide = side;
+
+        width = Math.max(1, Math.min(64, width));
+        length = Math.max(1, Math.min(64, length));
+        int minY = Math.max(world.getMinHeight(), targetYLevel);
+
+        this.quarryWidth = width;
+        this.quarryLength = length;
+        this.quarryTargetY = minY;
+        this.quarryHandleLiquids = handleLiquids;
+        this.quarryStartLocation = location.clone();
+
+        int startY = location.getBlockY() - 1;
+        if (startY < minY) {
+            failQuarry("Target Y level (" + minY + ") is above excavation start level (" + startY + ")", onError);
+            return false;
+        }
+
+        if (plugin instanceof MultiverseProgrammingPlugin mvp) {
+            com.multiverse.programming.protection.ProtectionManager pm = mvp.getProtectionManager();
+            if (pm != null) {
+                BlockFace forward = this.facing;
+                BlockFace lateral = getRightFace(this.facing);
+                int minX = location.getBlockX() + Math.min(forward.getModX() * length, lateral.getModX() * width);
+                int maxX = location.getBlockX() + Math.max(forward.getModX() * length, lateral.getModX() * width);
+                int minZ = location.getBlockZ() + Math.min(forward.getModZ() * length, lateral.getModZ() * width);
+                int maxZ = location.getBlockZ() + Math.max(forward.getModZ() * length, lateral.getModZ() * width);
+                Location c1 = new Location(world, minX, minY, minZ);
+                Location c2 = new Location(world, maxX, startY, maxZ);
+                if (pm.checkBuildArea(this.owner, c1, null) != null || pm.checkBuildArea(this.owner, c2, null) != null) {
+                    failQuarry("Protected region claim prevents quarry excavation", onError);
+                    return false;
+                }
+            }
+        }
+
+        setupQuarryChests(this.location);
+
+        this.quarryBlocksMined = 0;
+        this.quarryTotalBlocks = width * length * (startY - minY + 1);
+        this.quarryCurY = startY;
+        this.quarryStepX = 0;
+        this.quarryStepZ = 0;
+        this.quarryFuelPoints = 0;
+        this.status = Status.MINING;
+        this.statusMessage = "Quarry excavation starting at Y=" + quarryCurY;
+
+        if (Bukkit.getScheduler() != null && plugin != null) {
+            this.quarryTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+                if (status == Status.PAUSED) {
+                    return;
+                }
+
+                if (quarryCurY < quarryTargetY) {
+                    finishQuarry(onDone);
+                    return;
+                }
+
+                BlockFace f = this.facing;
+                BlockFace lat = getRightFace(this.facing);
+
+                int d = quarryStepZ + 1;
+                int w = quarryStepX;
+
+                int bx = quarryStartLocation.getBlockX() + (f.getModX() * d) + (lat.getModX() * w);
+                int bz = quarryStartLocation.getBlockZ() + (f.getModZ() * d) + (lat.getModZ() * w);
+                int by = quarryCurY;
+
+                if (!consumeQuarryFuel()) {
+                    this.status = Status.PAUSED;
+                    this.statusMessage = "Paused: Out of fuel (place fuel in Fuel Chest)";
+                    if (onError != null) onError.accept("Turtle is out of fuel for quarry operation");
+                    return;
+                }
+
+                Location adjLoc = new Location(world, bx, Math.min(world.getMaxHeight() - 1, by + 1), bz);
+                if (!adjLoc.equals(this.location)) {
+                    relocateTurtleWithEngine(world, adjLoc, this.facing);
+                }
+
+                Block blockToMine = world.getBlockAt(bx, by, bz);
+                Material mat = blockToMine.getType();
+
+                if (isIllegalBlock(mat) || mat == Material.BEDROCK) {
+                    // Skip unmineable blocks
+                } else if (mat == Material.WATER || mat == Material.LAVA) {
+                    if (quarryHandleLiquids) {
+                        blockToMine.setType(Material.AIR, false);
+                    }
+                } else if (!mat.isAir()) {
+                    if (isQuarryStorageFull()) {
+                        this.status = Status.PAUSED;
+                        this.statusMessage = "Paused: Mined blocks storage chest is full";
+                        if (onError != null) onError.accept("Quarry storage chest is full");
+                        return;
+                    }
+
+                    Collection<ItemStack> drops = blockToMine.getDrops();
+                    Location bLoc = blockToMine.getLocation();
+                    BlockData oldData = blockToMine.getBlockData();
+
+                    blockToMine.setType(Material.AIR, false);
+                    CoreProtectBridge.logRemoval(owner, id, bLoc, mat, oldData);
+
+                    for (ItemStack drop : drops) {
+                        if (drop == null || drop.getType().isAir()) continue;
+                        boolean stored = depositToQuarryStorage(drop);
+                        if (!stored) {
+                            this.status = Status.PAUSED;
+                            this.statusMessage = "Paused: Mined blocks storage chest is full";
+                            if (onError != null) onError.accept("Quarry storage chest is full");
+                            return;
+                        }
+                    }
+                    quarryBlocksMined++;
+                }
+
+                quarryStepX++;
+                if (quarryStepX >= quarryWidth) {
+                    quarryStepX = 0;
+                    quarryStepZ++;
+                    if (quarryStepZ >= quarryLength) {
+                        quarryStepZ = 0;
+                        quarryCurY--;
+                        int pct = (int) (((double) quarryBlocksMined / Math.max(1, quarryTotalBlocks)) * 100);
+                        this.statusMessage = String.format(Locale.ROOT, "Quarry digging layer Y=%d (%d%% - %d blocks)",
+                                quarryCurY, pct, quarryBlocksMined);
+                    }
+                }
+            }, 1L, 1L);
+        }
+
+        return true;
+    }
+
+    private void finishQuarry(Runnable onDone) {
+        cancelQuarryTask();
+        this.status = Status.IDLE;
+        this.statusMessage = "Quarry completed (" + quarryBlocksMined + " blocks mined)";
+        if (quarryStartLocation != null && quarryStartLocation.getWorld() != null) {
+            relocateTurtleWithEngine(quarryStartLocation.getWorld(), quarryStartLocation, this.facing);
+            quarryStartLocation.getWorld().playSound(quarryStartLocation, Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.2f);
+        }
+        if (onDone != null) {
+            onDone.run();
+        }
+    }
+
+    private void failQuarry(String error, Consumer<String> onError) {
+        cleanupQuarryHolograms();
+        cancelQuarryTask();
+        this.status = Status.ERROR;
+        this.statusMessage = "Error: " + error;
+        if (onError != null) {
+            onError.accept(error);
+        }
+    }
+
+    public synchronized void pauseQuarry() {
+        if (status == Status.MINING) {
+            this.status = Status.PAUSED;
+            this.statusMessage = "Quarry paused at Y=" + quarryCurY;
+        }
+    }
+
+    public synchronized void resumeQuarry() {
+        if (status == Status.PAUSED && quarryTask != null) {
+            if (quarryStorageChestLoc != null) {
+                for (int i = 0; i < 16; i++) {
+                    if (inventory[i] != null && !inventory[i].getType().isAir()) {
+                        depositToQuarryStorage(inventory[i]);
+                    }
+                }
+            }
+            this.status = Status.MINING;
+            this.statusMessage = "Resuming quarry at Y=" + quarryCurY;
+        }
+    }
+
+    public synchronized void cancelQuarry() {
+        cleanupQuarryHolograms();
+        cancelQuarryTask();
+        if (status == Status.MINING || status == Status.PAUSED) {
+            this.status = Status.IDLE;
+            this.statusMessage = "Idle";
+        }
+    }
+
+    private void cancelQuarryTask() {
+        if (quarryTask != null) {
+            quarryTask.cancel();
+            quarryTask = null;
+        }
+    }
+
+    public synchronized boolean isQuarryActive() {
+        return (status == Status.MINING || (status == Status.PAUSED && quarryTask != null));
+    }
+
+    public synchronized boolean isQuarryPaused() {
+        return status == Status.PAUSED && quarryTask != null;
+    }
+
+    public synchronized int getQuarryBlocksMined() {
+        return quarryBlocksMined;
+    }
+
+    public synchronized int getQuarryTotalBlocks() {
+        return quarryTotalBlocks;
+    }
+
+    public synchronized int getQuarryCurrentY() {
+        return quarryCurY;
+    }
+
+    public synchronized int getQuarryTargetY() {
+        return quarryTargetY;
+    }
+
+    public synchronized double getQuarryProgressPercentage() {
+        if (quarryTotalBlocks <= 0) return 0.0;
+        return Math.min(100.0, Math.round(((double) quarryBlocksMined / quarryTotalBlocks) * 1000.0) / 10.0);
     }
 
     public static BlockData parseBlockData(String blockState) {

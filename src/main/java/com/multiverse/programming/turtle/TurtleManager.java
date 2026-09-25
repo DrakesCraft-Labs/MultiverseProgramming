@@ -65,6 +65,7 @@ public final class TurtleManager {
         Turtle removed = turtlesByLocation.remove(blockLoc);
         if (removed != null) {
             removed.cancelBuild();
+            removed.cancelQuarry();
             turtlesById.remove(removed.getId());
         }
         return removed;
@@ -100,6 +101,7 @@ public final class TurtleManager {
     public synchronized void cancelAll() {
         for (Turtle turtle : turtlesById.values()) {
             turtle.cancelBuild();
+            turtle.cancelQuarry();
         }
         turtlesByLocation.clear();
         turtlesById.clear();

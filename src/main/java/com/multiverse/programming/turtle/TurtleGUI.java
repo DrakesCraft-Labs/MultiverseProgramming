@@ -87,16 +87,31 @@ public final class TurtleGUI implements InventoryHolder {
                 )
         ));
 
-        // 4. Build Status Button
-        String statusText = turtle.getStatus() == Turtle.Status.BUILDING ? "§e⏳ Building..." : "§7Status: " + turtle.getStatus().name();
+        // 4. Operation / Build Status Button
+        String statusText;
+        double pct;
+        if (turtle.getStatus() == Turtle.Status.BUILDING) {
+            statusText = "§e⏳ Building...";
+            pct = turtle.getProgressPercentage();
+        } else if (turtle.getStatus() == Turtle.Status.MINING) {
+            statusText = "§6⛏ Mining (Quarry)...";
+            pct = turtle.getQuarryProgressPercentage();
+        } else if (turtle.getStatus() == Turtle.Status.PAUSED) {
+            statusText = "§e⏸ Paused";
+            pct = turtle.isQuarryPaused() ? turtle.getQuarryProgressPercentage() : turtle.getProgressPercentage();
+        } else {
+            statusText = "§7Status: " + turtle.getStatus().name();
+            pct = 0.0;
+        }
+
         inventory.setItem(BUILD_BUTTON_SLOT, createItem(
                 Material.ANVIL,
-                "§6🏗 Build Control",
+                "§6🏗 Task Control",
                 List.of(
                         statusText,
                         "§7" + turtle.getStatusMessage(),
-                        String.format(Locale.ROOT, "§7Progress: %.1f%%", turtle.getProgressPercentage()),
-                        "§8Click to pause / resume current build."
+                        String.format(Locale.ROOT, "§7Progress: %.1f%%", pct),
+                        "§8Click to pause / resume active task."
                 )
         ));
 
