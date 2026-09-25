@@ -1092,6 +1092,20 @@
       return base;
     }
 
+    const DANGEROUS_BLOCKS = new Set([
+      'BEDROCK', 'BARRIER', 'COMMAND_BLOCK', 'CHAIN_COMMAND_BLOCK', 'REPEATING_COMMAND_BLOCK',
+      'STRUCTURE_BLOCK', 'STRUCTURE_VOID', 'JIGSAW', 'LIGHT', 'END_PORTAL', 'END_PORTAL_FRAME',
+      'END_GATEWAY', 'REINFORCED_DEEPSLATE'
+    ]);
+
+    function isDangerousBlock(name) {
+      if (!name) return false;
+      let clean = name.toUpperCase();
+      if (clean.includes('[')) clean = clean.substring(0, clean.indexOf('['));
+      if (clean.startsWith('MINECRAFT:')) clean = clean.substring('MINECRAFT:'.length);
+      return DANGEROUS_BLOCKS.has(clean);
+    }
+
     function getPlacementPriority(state) {
       if (state.includes('half=upper') || state.includes('part=head')) return 3;
       if (state.includes('half=lower') || state.includes('part=foot') || state.includes('_DOOR') || state.includes('_BED')) return 2;
@@ -1159,7 +1173,7 @@
           const pIdx = Number(val & mask);
           if (pIdx >= 0 && pIdx < palette.length) {
             const mat = palette[pIdx];
-            if (mat !== 'AIR' && mat !== 'CAVE_AIR' && mat !== 'VOID_AIR') {
+            if (mat !== 'AIR' && mat !== 'CAVE_AIR' && mat !== 'VOID_AIR' && !isDangerousBlock(mat)) {
               const y = Math.floor(i / (rx * rz)) % ry;
               const z = Math.floor(i / rx) % rz;
               const x = i % rx;
@@ -1217,7 +1231,7 @@
         root.blocks.forEach(b => {
           const state = b.state || 0;
           const mat = palette[state] || 'AIR';
-          if (mat !== 'AIR' && mat !== 'CAVE_AIR' && mat !== 'VOID_AIR' && b.pos && b.pos.length >= 3) {
+          if (mat !== 'AIR' && mat !== 'CAVE_AIR' && mat !== 'VOID_AIR' && !isDangerousBlock(mat) && b.pos && b.pos.length >= 3) {
             blocks.push({ x: b.pos[0], y: b.pos[1], z: b.pos[2], material: mat });
             const itemKey = resolveItemName(mat);
             const isUpper = mat.includes('half=upper') || mat.includes('part=head');

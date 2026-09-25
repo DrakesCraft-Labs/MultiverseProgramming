@@ -254,4 +254,17 @@ class BlueprintParserTest {
         assertEquals("FLOWER_POT", BlueprintParser.resolveItemName("POTTED_POPPY"));
         assertEquals("STONE", BlueprintParser.resolveItemName("STONE"));
     }
+
+    @Test
+    @DisplayName("Verify dangerous block filtering matches namespaces and properties")
+    void testDangerousBlockDetection() {
+        assertTrue(BlueprintSecurityValidator.isDangerousBlock("BEDROCK"));
+        assertTrue(BlueprintSecurityValidator.isDangerousBlock("minecraft:bedrock"));
+        assertTrue(BlueprintSecurityValidator.isDangerousBlock("minecraft:bedrock[some_prop=val]"));
+        assertTrue(BlueprintSecurityValidator.isDangerousBlock("minecraft:command_block"));
+        assertTrue(BlueprintSecurityValidator.isDangerousBlock("minecraft:barrier"));
+        assertTrue(BlueprintSecurityValidator.isDangerousBlock("minecraft:structure_block"));
+        assertFalse(BlueprintSecurityValidator.isDangerousBlock("minecraft:stone"));
+        assertFalse(BlueprintSecurityValidator.isDangerousBlock("minecraft:oak_planks"));
+    }
 }

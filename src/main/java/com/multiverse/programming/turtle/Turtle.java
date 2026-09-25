@@ -310,7 +310,7 @@ public final class Turtle {
     private boolean digFace(BlockFace face) {
         return SyncDispatcher.sync(plugin, () -> {
             Block target = location.getBlock().getRelative(face);
-            if (target.isEmpty() || target.getType() == Material.BEDROCK || target.getType() == Material.BARRIER) {
+            if (target.isEmpty() || isIllegalBlock(target.getType())) {
                 return false;
             }
 
@@ -351,7 +351,7 @@ public final class Turtle {
             synchronized (this) {
                 stack = inventory[selectedSlot];
             }
-            if (stack == null || stack.getAmount() <= 0 || !stack.getType().isBlock()) {
+            if (stack == null || stack.getAmount() <= 0 || !stack.getType().isBlock() || isIllegalBlock(stack.getType())) {
                 return false;
             }
 
@@ -481,7 +481,7 @@ public final class Turtle {
             BlockData blockData = parseBlockData(pb.material());
             Material blockMat = (blockData != null) ? blockData.getMaterial() : parseMaterialFromBlockState(pb.material());
 
-            if (blockMat == null || blockMat.isAir()) {
+            if (blockMat == null || blockMat.isAir() || isIllegalBlock(blockMat)) {
                 currentBlockIndex.incrementAndGet();
                 return;
             }
@@ -600,7 +600,7 @@ public final class Turtle {
             }
             // Clear obstructed blocks without drops
             for (Block b : obstructed) {
-                if (b.getType() != Material.BEDROCK && b.getType() != Material.BARRIER) {
+                if (!isIllegalBlock(b.getType())) {
                     b.setType(Material.AIR, false);
                 }
             }
@@ -916,5 +916,16 @@ public final class Turtle {
         clean = clean.trim().toUpperCase(Locale.ROOT);
         Material mat = Material.matchMaterial(clean);
         return mat != null ? mat : Material.AIR;
+    }
+
+    public static boolean isIllegalBlock(Material mat) {
+        if (mat == null) return false;
+        return switch (mat) {
+            case BEDROCK, BARRIER, STRUCTURE_BLOCK, STRUCTURE_VOID, JIGSAW,
+                 COMMAND_BLOCK, CHAIN_COMMAND_BLOCK, REPEATING_COMMAND_BLOCK,
+                 LIGHT, END_PORTAL, END_PORTAL_FRAME, END_GATEWAY,
+                 REINFORCED_DEEPSLATE -> true;
+            default -> false;
+        };
     }
 }

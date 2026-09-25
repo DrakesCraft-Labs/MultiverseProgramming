@@ -16,17 +16,31 @@ public final class BlueprintSecurityValidator {
 
     public static final Set<String> DANGEROUS_BLOCKS = Set.of(
             "BEDROCK",
+            "BARRIER",
             "COMMAND_BLOCK",
             "CHAIN_COMMAND_BLOCK",
             "REPEATING_COMMAND_BLOCK",
             "STRUCTURE_BLOCK",
             "STRUCTURE_VOID",
             "JIGSAW",
-            "BARRIER",
             "LIGHT",
+            "END_PORTAL",
             "END_PORTAL_FRAME",
-            "END_GATEWAY"
+            "END_GATEWAY",
+            "REINFORCED_DEEPSLATE"
     );
+
+    public static boolean isDangerousBlock(String material) {
+        if (material == null || material.isBlank()) return false;
+        String clean = material.trim().toUpperCase(Locale.ROOT);
+        if (clean.contains("[")) {
+            clean = clean.substring(0, clean.indexOf('['));
+        }
+        if (clean.startsWith("MINECRAFT:")) {
+            clean = clean.substring("MINECRAFT:".length());
+        }
+        return DANGEROUS_BLOCKS.contains(clean);
+    }
 
     private BlueprintSecurityValidator() {
     }
@@ -99,13 +113,13 @@ public final class BlueprintSecurityValidator {
         boolean modified = false;
 
         for (Blueprint.PlacementBlock block : bp.blocks()) {
-            String mat = block.material().toUpperCase(Locale.ROOT);
-            if (DANGEROUS_BLOCKS.contains(mat)) {
+            if (isDangerousBlock(block.material())) {
                 modified = true;
                 continue; // Strip illegal block
             }
             sanitizedBlocks.add(block);
-            sanitizedMaterials.put(mat, sanitizedMaterials.getOrDefault(mat, 0) + 1);
+            String itemKey = BlueprintParser.resolveItemName(block.material());
+            sanitizedMaterials.put(itemKey, sanitizedMaterials.getOrDefault(itemKey, 0) + 1);
         }
 
         if (!modified) {

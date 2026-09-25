@@ -267,4 +267,16 @@ class TurtleTest {
         assertEquals(Material.OAK_HANGING_SIGN, Turtle.getItemMaterialForBlock(Material.OAK_WALL_HANGING_SIGN));
         assertEquals(Material.STONE, Turtle.getItemMaterialForBlock(Material.STONE));
     }
+
+    @Test
+    @DisplayName("isIllegalBlock detects unplaceable / admin-only blocks")
+    void testIsIllegalBlock() {
+        assertTrue(Turtle.isIllegalBlock(Material.BEDROCK));
+        assertTrue(Turtle.isIllegalBlock(Material.BARRIER));
+        assertTrue(Turtle.isIllegalBlock(Material.COMMAND_BLOCK));
+        assertTrue(Turtle.isIllegalBlock(Material.STRUCTURE_BLOCK));
+        assertTrue(Turtle.isIllegalBlock(Material.END_PORTAL));
+        assertFalse(Turtle.isIllegalBlock(Material.STONE));
+        assertFalse(Turtle.isIllegalBlock(Material.OAK_PLANKS));
+    }
 }
