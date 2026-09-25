@@ -307,10 +307,11 @@ print("Diseño: " .. bp.name)
 print("Dimensiones: " .. bp.sizeX .. "x" .. bp.sizeY .. "x" .. bp.sizeZ)
 print("Bloques totales: " .. bp.totalBlocks)
 
--- Iniciar construcción en las coordenadas especificadas con rotación opcional y limpieza
--- turtle.build(bpId, x, y, z, [limpiar], [orientacion])
+-- Iniciar construcción en coordenadas relativas (relX, relY, relZ) respecto a la posición de la tortuga:
+-- turtle.build(bpId, relX, relY, relZ, [limpiar], [orientacion])
+-- Usa (0, 0, 0) para construir comenzando exactamente en la ubicación de la tortuga.
 -- orientacion puede ser "NORTH", "EAST", "SOUTH", "WEST", o grados (0, 90, 180, 270)
-local ok, err = turtle.build("BP-A1B2", 100, 64, 200, false, "EAST")
+local ok, err = turtle.build("BP-A1B2", 0, 0, 0, false, "EAST")
 if not ok then
   print("Error al iniciar construcción: " .. err)
 end

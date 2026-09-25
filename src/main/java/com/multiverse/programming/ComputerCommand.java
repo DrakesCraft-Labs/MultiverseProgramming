@@ -180,33 +180,23 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage(plugin.getPrefix() + " §cTarget coordinates (X Y Z) are mandatory. The turtle will not build without coordinates.");
             sender.sendMessage(" §7Usage: §e/mvprog build <blueprintId|code|url> <x> <y> <z> [turtleId] [clear] [orientation]");
             sender.sendMessage(" §7Or: §e/mvprog build <blueprintId|code|url> <turtleId> <x> <y> <z> [clear] [orientation]");
+            sender.sendMessage(" §7Note: §aCoordinates are relative to the turtle: use §e~ ~ ~ §aor §e0 0 0 §ato build at turtle position.");
             return;
         }
 
         String bpId = args[1];
         String turtleId = null;
-        int x, y, z;
+        String rawX, rawY, rawZ;
         boolean clearBlocks = false;
         int rotationDegrees = 0;
 
-        boolean isCoordArg2;
-        try {
-            Integer.parseInt(args[2]);
-            isCoordArg2 = true;
-        } catch (NumberFormatException e) {
-            isCoordArg2 = false;
-        }
+        boolean isCoordArg2 = isCoordinateToken(args[2]);
 
         if (isCoordArg2) {
             // Format: /mvprog build <bp> <x> <y> <z> [turtleId] [clear] [orientation]
-            try {
-                x = Integer.parseInt(args[2]);
-                y = Integer.parseInt(args[3]);
-                z = Integer.parseInt(args[4]);
-            } catch (NumberFormatException e) {
-                sender.sendMessage(plugin.getPrefix() + " §cInvalid coordinates. X, Y, and Z must be integers.");
-                return;
-            }
+            rawX = args[2];
+            rawY = args[3];
+            rawZ = args[4];
             for (int i = 5; i < args.length; i++) {
                 String val = args[i];
                 if (val.equalsIgnoreCase("clear") || val.equalsIgnoreCase("force") || val.equalsIgnoreCase("true")) {
@@ -225,14 +215,9 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
                 sender.sendMessage(" §7Usage: §e/mvprog build " + bpId + " " + turtleId + " <x> <y> <z> [clear] [orientation]");
                 return;
             }
-            try {
-                x = Integer.parseInt(args[3]);
-                y = Integer.parseInt(args[4]);
-                z = Integer.parseInt(args[5]);
-            } catch (NumberFormatException e) {
-                sender.sendMessage(plugin.getPrefix() + " §cInvalid coordinates. X, Y, and Z must be integers.");
-                return;
-            }
+            rawX = args[3];
+            rawY = args[4];
+            rawZ = args[5];
             for (int i = 6; i < args.length; i++) {
                 String val = args[i];
                 if (val.equalsIgnoreCase("clear") || val.equalsIgnoreCase("force") || val.equalsIgnoreCase("true")) {
@@ -241,6 +226,11 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
                     rotationDegrees = BlueprintRotator.normalizeRotation(val);
                 }
             }
+        }
+
+        if (!isCoordinateToken(rawX) || !isCoordinateToken(rawY) || !isCoordinateToken(rawZ)) {
+            sender.sendMessage(plugin.getPrefix() + " §cInvalid coordinates. X, Y, and Z must be relative numbers or ~ tokens (e.g. 0 0 0 or ~ ~ ~).");
+            return;
         }
 
         var turtleManager = plugin.getTurtleManager();
@@ -285,7 +275,15 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
             return;
         }
 
-        final org.bukkit.Location origin = new org.bukkit.Location(world, x, y, z);
+        int baseX = targetTurtle.getLocation().getBlockX();
+        int baseY = targetTurtle.getLocation().getBlockY();
+        int baseZ = targetTurtle.getLocation().getBlockZ();
+
+        int targetX = parseRelativeCoord(rawX, baseX);
+        int targetY = parseRelativeCoord(rawY, baseY);
+        int targetZ = parseRelativeCoord(rawZ, baseZ);
+
+        final org.bukkit.Location origin = new org.bukkit.Location(world, targetX, targetY, targetZ);
         final boolean finalClear = clearBlocks;
         final int finalRotation = rotationDegrees;
 
@@ -312,6 +310,35 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
         }
     }
 
+    private boolean isCoordinateToken(String s) {
+        if (s == null || s.isBlank()) return false;
+        if (s.equals("~")) return true;
+        if (s.startsWith("~")) {
+            try {
+                Integer.parseInt(s.substring(1));
+                return true;
+            } catch (NumberFormatException e) {
+                return false;
+            }
+        }
+        try {
+            Integer.parseInt(s);
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    private int parseRelativeCoord(String token, int base) {
+        if (token.equals("~")) {
+            return base;
+        }
+        if (token.startsWith("~")) {
+            return base + Integer.parseInt(token.substring(1));
+        }
+        return base + Integer.parseInt(token);
+    }
+
     private boolean isOrientationToken(String s) {
         if (s == null) return false;
         String upper = s.toUpperCase(Locale.ROOT);
@@ -326,8 +353,12 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
                 err -> sender.sendMessage(plugin.getPrefix() + " §cTurtle " + targetTurtle.getId() + " error: " + err)
         );
         if (started) {
+            int relX = origin.getBlockX() - targetTurtle.getLocation().getBlockX();
+            int relY = origin.getBlockY() - targetTurtle.getLocation().getBlockY();
+            int relZ = origin.getBlockZ() - targetTurtle.getLocation().getBlockZ();
             sender.sendMessage(plugin.getPrefix() + " §aDispatched build §e" + bp.name() + " §ato Turtle §e" + targetTurtle.getId()
                     + " §aat [" + origin.getBlockX() + ", " + origin.getBlockY() + ", " + origin.getBlockZ() + "]"
+                    + " §7(Relative: " + (relX >= 0 ? "+" : "") + relX + ", " + (relY >= 0 ? "+" : "") + relY + ", " + (relZ >= 0 ? "+" : "") + relZ + ")"
                     + (rotationDegrees != 0 ? " §6(Rotation: " + rotationDegrees + "°)§a" : "")
                     + (clearBlocks ? " §c(Area auto-cleared without drops)§a." : "."));
         }
@@ -692,12 +723,12 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
                     List<String> ids = plugin.getBlueprintManager().getAllBlueprints().stream().map(com.multiverse.programming.blueprint.Blueprint::id).toList();
                     return StringUtil.copyPartialMatches(args[1], ids, completions);
                 }
-            } else if (args.length == 3) {
-                List<String> suggestions = new ArrayList<>();
-                if (plugin.getTurtleManager() != null) {
+            } else if (args.length >= 3 && args.length <= 5) {
+                List<String> suggestions = new ArrayList<>(List.of("~", "0"));
+                if (args.length == 3 && plugin.getTurtleManager() != null) {
                     suggestions.addAll(plugin.getTurtleManager().getAllTurtles().stream().map(com.multiverse.programming.turtle.Turtle::getId).toList());
                 }
-                return StringUtil.copyPartialMatches(args[2], suggestions, completions);
+                return StringUtil.copyPartialMatches(args[args.length - 1], suggestions, completions);
             } else if (args.length >= 6) {
                 List<String> options = new ArrayList<>(List.of("clear", "NORTH", "EAST", "SOUTH", "WEST", "0", "90", "180", "270"));
                 if (plugin.getTurtleManager() != null) {

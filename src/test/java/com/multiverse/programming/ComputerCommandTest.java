@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package com.multiverse.programming;
 
+import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -12,6 +14,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.contains;
@@ -182,6 +185,49 @@ class ComputerCommandTest {
 
         assertTrue(command.onCommand(admin, mockCmd, "mvprog", new String[]{"build", "TEST-BP"}));
         verify(admin).sendMessage(contains("coordinates (X Y Z) are mandatory"));
+    }
+
+    @Test
+    @DisplayName("/mvprog build resolves relative coordinates (~ ~ ~ and offsets) to turtle position")
+    void testBuildWithRelativeCoordinates() {
+        Player admin = mock(Player.class);
+        when(admin.hasPermission("multiverseprogramming.admin")).thenReturn(true);
+        World mockWorld = mock(World.class);
+        when(admin.getWorld()).thenReturn(mockWorld);
+
+        com.multiverse.programming.turtle.TurtleManager tm = mock(com.multiverse.programming.turtle.TurtleManager.class);
+        when(plugin.getTurtleManager()).thenReturn(tm);
+
+        Location turtleLoc = new Location(mockWorld, 100, 64, 200);
+        com.multiverse.programming.turtle.Turtle turtle = mock(com.multiverse.programming.turtle.Turtle.class);
+        when(turtle.getId()).thenReturn("T-001");
+        when(turtle.getLocation()).thenReturn(turtleLoc);
+        when(tm.getTurtleById("T-001")).thenReturn(turtle);
+        when(tm.getAllTurtles()).thenReturn(List.of(turtle));
+
+        com.multiverse.programming.blueprint.BlueprintManager bpManager = mock(com.multiverse.programming.blueprint.BlueprintManager.class);
+        when(plugin.getBlueprintManager()).thenReturn(bpManager);
+        com.multiverse.programming.blueprint.Blueprint bp = new com.multiverse.programming.blueprint.Blueprint(
+                "TEST-BP", "Test", "Author", "litematic", 1, 1, 1, 1, Map.of(), List.of(), System.currentTimeMillis());
+        when(bpManager.getBlueprint("TEST-BP")).thenReturn(bp);
+
+        com.multiverse.programming.ConfigManager cm = mock(com.multiverse.programming.ConfigManager.class);
+        when(plugin.getConfigManager()).thenReturn(cm);
+        when(cm.getTurtleBuildDelayTicks()).thenReturn(1);
+        when(cm.isTurtleRequireMaterials()).thenReturn(false);
+
+        // 1. Test ~ ~ ~
+        when(turtle.startBuild(any(), any(), anyInt(), anyBoolean(), anyBoolean(), anyInt(), any(), any())).thenReturn(true);
+        assertTrue(command.onCommand(admin, mockCmd, "mvprog", new String[]{"build", "TEST-BP", "~", "~", "~", "T-001"}));
+        verify(turtle).startBuild(eq(bp), eq(new Location(mockWorld, 100, 64, 200)), eq(1), eq(false), eq(false), eq(0), any(), any());
+
+        // 2. Test relative offset ~5 ~0 ~-2
+        assertTrue(command.onCommand(admin, mockCmd, "mvprog", new String[]{"build", "TEST-BP", "~5", "~0", "~-2", "T-001"}));
+        verify(turtle).startBuild(eq(bp), eq(new Location(mockWorld, 105, 64, 198)), eq(1), eq(false), eq(false), eq(0), any(), any());
+
+        // 3. Test plain relative numbers 0 0 0
+        assertTrue(command.onCommand(admin, mockCmd, "mvprog", new String[]{"build", "TEST-BP", "0", "0", "0", "T-001"}));
+        verify(turtle, atLeastOnce()).startBuild(eq(bp), eq(new Location(mockWorld, 100, 64, 200)), eq(1), eq(false), eq(false), eq(0), any(), any());
     }
 
     @Test

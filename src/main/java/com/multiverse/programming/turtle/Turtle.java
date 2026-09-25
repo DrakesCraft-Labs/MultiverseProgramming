@@ -227,6 +227,10 @@ public final class Turtle {
         return activeBlueprint;
     }
 
+    public synchronized Location getBuildOrigin() {
+        return buildOrigin != null ? buildOrigin.clone() : null;
+    }
+
     public int getCurrentBlockIndex() {
         return currentBlockIndex.get();
     }
@@ -749,7 +753,7 @@ public final class Turtle {
         }
 
         // Region claims protection check (WorldGuard / ProtectionStones)
-        if (plugin instanceof MultiverseProgrammingPlugin mvp) {
+        if (plugin instanceof MultiverseProgrammingPlugin mvp && mvp.getProtectionManager() != null) {
             String protectionError = mvp.getProtectionManager().checkBuildArea(this.owner, origin, bp);
             if (protectionError != null) {
                 failBuild(protectionError, onError);

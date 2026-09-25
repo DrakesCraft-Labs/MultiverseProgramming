@@ -84,8 +84,8 @@ Built and verified for **Purpur / Paper 1.21.11** with **Java 21**.
 ### Example Lua Construction Program
 
 ```lua
--- Start autonomous construction with 90-degree clockwise rotation (facing EAST)
-local ok, err = turtle.build("BP-CASTLE", 100, 64, 200, false, "EAST")
+-- Start autonomous construction at relative coordinates (0, 0, 0 for current position) with 90-degree rotation (facing EAST)
+local ok, err = turtle.build("BP-CASTLE", 0, 0, 0, false, "EAST")
 if not ok then
   print("Build error: " .. err)
 else

@@ -280,12 +280,12 @@ public final class TurtlePeripheral implements Peripheral {
                 }
 
                 if (args.narg() < 4) {
-                    return varargsOf(LuaBoolean.FALSE, LuaString.valueOf("Coordinates (x, y, z) are mandatory for turtle.build(bpId, x, y, z, [clear], [orientation])"));
+                    return varargsOf(LuaBoolean.FALSE, LuaString.valueOf("Relative coordinates (x, y, z) are mandatory for turtle.build(bpId, x, y, z, [clear], [orientation]). Use (0, 0, 0) to build at the turtle's location."));
                 }
 
-                int x = args.checkint(2);
-                int y = args.checkint(3);
-                int z = args.checkint(4);
+                int relX = args.checkint(2);
+                int relY = args.checkint(3);
+                int relZ = args.checkint(4);
                 boolean clearBlocks = false;
                 int rotationDegrees = 0;
 
@@ -308,10 +308,14 @@ public final class TurtlePeripheral implements Peripheral {
                     }
                 }
 
-                if (turtle.getLocation().getWorld() == null) {
+                Location tLoc = turtle.getLocation();
+                if (tLoc == null || tLoc.getWorld() == null) {
                     return varargsOf(LuaBoolean.FALSE, LuaString.valueOf("Turtle world is unloaded"));
                 }
-                Location origin = new Location(turtle.getLocation().getWorld(), x, y, z);
+                Location origin = new Location(tLoc.getWorld(),
+                        tLoc.getBlockX() + relX,
+                        tLoc.getBlockY() + relY,
+                        tLoc.getBlockZ() + relZ);
 
                 int delay = plugin.getConfigManager().getTurtleBuildDelayTicks();
                 boolean requireMaterials = plugin.getConfigManager().isTurtleRequireMaterials();

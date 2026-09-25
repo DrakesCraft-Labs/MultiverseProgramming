@@ -158,10 +158,10 @@
       <div style="font-size:0.88rem; color:var(--text-muted); display:flex; flex-direction:column; gap:12px; line-height:1.5;">
         <p><strong style="color:#fff;" data-i18n="help1Title">1. Código Universal de Plano (Estilo Pastebin):</strong> <span data-i18n="help1Text">Cada diseño tiene un código único (ej: BP-NETHER-PORTAL). ¡No necesitas configurar coordenadas manuales en la web!</span></p>
         <p><strong style="color:#fff;" data-i18n="help2Title">2. Posiciona tu Tortuga:</strong> <span data-i18n="help2Text">Coloca el bloque de la Tortuga mirando hacia donde deseas construir. La tortuga construye hacia el frente y hacia arriba.</span></p>
-        <p><strong style="color:#fff;" data-i18n="help3Title">3. Ejecuta la Construcción:</strong> <span data-i18n="help3Text">Dentro de Minecraft (Admin), especifica las coordenadas donde construir (opcional 'clear' para destruir obstáculos sin drops):</span></p>
-        <div style="background:#070a13; padding:10px 14px; border-radius:6px; font-family:monospace; color:var(--primary);">/pc build &lt;CODE&gt; &lt;X&gt; &lt;Y&gt; &lt;Z&gt; [clear]</div>
+        <p><strong style="color:#fff;" data-i18n="help3Title">3. Ejecuta la Construcción:</strong> <span data-i18n="help3Text">Dentro de Minecraft (Admin), especifica las coordenadas relativas a la tortuga (opcional 'clear' para destruir obstáculos sin drops):</span></p>
+        <div style="background:#070a13; padding:10px 14px; border-radius:6px; font-family:monospace; color:var(--primary);">/mvprog build &lt;CODE&gt; ~ ~ ~ [clear]</div>
         <p data-i18n="help4Text">O en un programa Lua dentro de la Tortuga:</p>
-        <div style="background:#070a13; padding:10px 14px; border-radius:6px; font-family:monospace; color:var(--accent);">turtle.build("&lt;CODE&gt;", x, y, z, [clear])</div>
+        <div style="background:#070a13; padding:10px 14px; border-radius:6px; font-family:monospace; color:var(--accent);">turtle.build("&lt;CODE&gt;", 0, 0, 0, [clear])</div>
         <p><strong style="color:#fff;" data-i18n="helpCameraTitle">4. Controles de Cámara 3D:</strong></p>
         <ul style="padding-left: 20px;">
           <li data-i18n="helpCamRot">Click Izquierdo + Arrastrar: Rotación libre 360° en todos los ángulos.</li>
@@ -279,7 +279,7 @@
         <div class="code-header">
           <span data-i18n="chatCmdLabel">🎮 Comando de Chat (Admin)</span>
         </div>
-        <div class="code-display" id="inGameCommandDisplay" style="font-size:0.88rem; color:#fff;">/pc build BP-NETHER-PORTAL ~ ~ ~</div>
+        <div class="code-display" id="inGameCommandDisplay" style="font-size:0.88rem; color:#fff;">/mvprog build BP-NETHER-PORTAL ~ ~ ~</div>
         <button class="copy-btn" onclick="copyInGameCommand()">
           <span data-i18n="copyChatBtn">⚡ Copiar Comando</span>
         </button>
@@ -290,9 +290,9 @@
         <div class="code-header">
           <span data-i18n="getCmdLabel">📥 Descargar al Servidor</span>
         </div>
-        <div class="code-display" id="inGameGetCommandDisplay" style="font-size:0.88rem; color:#fff;">/pc get BP-NETHER-PORTAL</div>
+        <div class="code-display" id="inGameGetCommandDisplay" style="font-size:0.88rem; color:#fff;">/mvprog get BP-NETHER-PORTAL</div>
         <button class="copy-btn" onclick="copyInGameGetCommand()">
-          <span data-i18n="copyGetBtn">📥 Copiar /pc get</span>
+          <span data-i18n="copyGetBtn">📥 Copiar /mvprog get</span>
         </button>
       </div>
 
@@ -301,7 +301,7 @@
         <div class="code-header">
           <span data-i18n="luaCodeLabel">💻 Código Lua para Tortuga</span>
         </div>
-        <div class="code-display" id="luaCodeDisplay" style="font-size:0.85rem; color:var(--accent);">turtle.build("BP-NETHER-PORTAL", x, y, z)</div>
+        <div class="code-display" id="luaCodeDisplay" style="font-size:0.85rem; color:var(--accent);">turtle.build("BP-NETHER-PORTAL", 0, 0, 0)</div>
         <button class="copy-btn" onclick="copyLuaCode()">
           <span data-i18n="copyLuaBtn">💾 Copiar Código Lua</span>
         </button>
@@ -323,7 +323,7 @@
         </div>
         <div class="instruction-step">
           <div class="step-number">3</div>
-          <div><strong data-i18n="step3Title">Ejecuta el Comando:</strong> <span data-i18n="step3Desc">Como admin escribe /pc build &lt;CÓDIGO&gt; &lt;X&gt; &lt;Y&gt; &lt;Z&gt; [clear] en el chat, o turtle.build("&lt;CÓDIGO&gt;", x, y, z, [clear]) en un disquete.</span></div>
+          <div><strong data-i18n="step3Title">Ejecuta el Comando:</strong> <span data-i18n="step3Desc">Como admin escribe /mvprog build &lt;CÓDIGO&gt; ~ ~ ~ [clear] en el chat, o turtle.build("&lt;CÓDIGO&gt;", 0, 0, 0, [clear]) en un disquete.</span></div>
         </div>
       </div>
 
@@ -517,7 +517,7 @@
         chatCmdLabel: '🎮 Comando de Chat (Admin)',
         copyChatBtn: '⚡ Copiar Comando',
         getCmdLabel: '📥 Descargar al Servidor',
-        copyGetBtn: '📥 Copiar /pc get',
+        copyGetBtn: '📥 Copiar /mvprog get',
         luaCodeLabel: '💻 Código Lua para Tortuga',
         copyLuaBtn: '💾 Copiar Código Lua',
         howToBuildTitle: 'Cómo Construir en Minecraft',
@@ -526,7 +526,7 @@
         step2Title: 'Provee Combustible y Bloques:',
         step2Desc: 'Si tu servidor lo requiere, pon carbón y los materiales necesarios dentro del inventario de la Tortuga.',
         step3Title: 'Ejecuta el Comando:',
-        step3Desc: 'Como admin escribe /pc build <CÓDIGO> <X> <Y> <Z> [clear] en el chat o turtle.build("<CÓDIGO>", x, y, z, [clear]) en un disquete.',
+        step3Desc: 'Como admin escribe /mvprog build <CÓDIGO> ~ ~ ~ [clear] en el chat o turtle.build("<CÓDIGO>", 0, 0, 0, [clear]) en un disquete (coordenadas relativas a la tortuga).',
         downloadBtn: '⬇ Descargar Archivo del Plano',
         toastProcessing: '⚡ Procesando ',
         toastCloudUploading: '☁️ Subiendo a Cloud Pastebin...',
@@ -596,7 +596,7 @@
         chatCmdLabel: '🎮 Chat Command (Admin)',
         copyChatBtn: '⚡ Copy Chat Command',
         getCmdLabel: '📥 Download to Server',
-        copyGetBtn: '📥 Copy /pc get',
+        copyGetBtn: '📥 Copy /mvprog get',
         luaCodeLabel: '💻 Turtle Lua Code',
         copyLuaBtn: '💾 Copy Lua Code',
         howToBuildTitle: 'How to Build in Minecraft',
@@ -605,7 +605,7 @@
         step2Title: 'Provide Fuel / Materials:',
         step2Desc: 'If configured on your server, put fuel (coal) and required blocks inside the Turtle.',
         step3Title: 'Run Command:',
-        step3Desc: 'As admin type /pc build <CODE> <X> <Y> <Z> [clear] in chat or run turtle.build("<CODE>", x, y, z, [clear]) in a floppy disk.',
+        step3Desc: 'As admin type /mvprog build <CODE> ~ ~ ~ [clear] in chat or run turtle.build("<CODE>", 0, 0, 0, [clear]) on a floppy disk (relative coordinates to turtle).',
         downloadBtn: '⬇ Download Blueprint File',
         toastProcessing: '⚡ Processing ',
         toastCloudUploading: '☁️ Uploading to Cloud Pastebin...',
@@ -1461,10 +1461,10 @@
       // Update In-Game Code Display & Copy Boxes
       const activeCode = bp.cloudCode || bp.id;
       document.getElementById('bpCodeDisplay').textContent = activeCode;
-      document.getElementById('inGameCommandDisplay').textContent = `/pc build ${activeCode} ~ ~ ~`;
+      document.getElementById('inGameCommandDisplay').textContent = `/mvprog build ${activeCode} ~ ~ ~`;
       const getDisplay = document.getElementById('inGameGetCommandDisplay');
-      if (getDisplay) getDisplay.textContent = `/pc get ${activeCode}`;
-      document.getElementById('luaCodeDisplay').textContent = `turtle.build("${activeCode}", x, y, z)`;
+      if (getDisplay) getDisplay.textContent = `/mvprog get ${activeCode}`;
+      document.getElementById('luaCodeDisplay').textContent = `turtle.build("${activeCode}", 0, 0, 0)`;
 
       // Slider setup
       const slider = document.getElementById('layerSlider');
@@ -1678,7 +1678,7 @@
       if (!selectedBlueprint) return;
       const t = I18N[currentLang] || I18N.es;
       const code = selectedBlueprint.cloudCode || selectedBlueprint.id;
-      const cmd = `/pc build ${code} ~ ~ ~`;
+      const cmd = `/mvprog build ${code} ~ ~ ~`;
       navigator.clipboard.writeText(cmd).then(() => {
         showToast(t.toastCopied + ' ' + cmd);
       });
@@ -1688,7 +1688,7 @@
       if (!selectedBlueprint) return;
       const t = I18N[currentLang] || I18N.es;
       const code = selectedBlueprint.cloudCode || selectedBlueprint.id;
-      const cmd = `/pc get ${code}`;
+      const cmd = `/mvprog get ${code}`;
       navigator.clipboard.writeText(cmd).then(() => {
         showToast(t.toastCopied + ' ' + cmd);
       });
@@ -1698,7 +1698,7 @@
       if (!selectedBlueprint) return;
       const t = I18N[currentLang] || I18N.es;
       const code = selectedBlueprint.cloudCode || selectedBlueprint.id;
-      const lua = `turtle.build("${code}", x, y, z)`;
+      const lua = `turtle.build("${code}", 0, 0, 0)`;
       navigator.clipboard.writeText(lua).then(() => {
         showToast(t.toastCopied + ' ' + lua);
       });

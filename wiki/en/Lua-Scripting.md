@@ -286,10 +286,11 @@ print("Blueprint: " .. bp.name)
 print("Dimensions: " .. bp.sizeX .. "x" .. bp.sizeY .. "x" .. bp.sizeZ)
 print("Total Blocks: " .. bp.totalBlocks)
 
--- Start construction at specified target coordinates with optional clear and orientation
--- turtle.build(bpId, x, y, z, [clear], [orientation])
+-- Start construction at relative coordinates (relX, relY, relZ) from turtle position:
+-- turtle.build(bpId, relX, relY, relZ, [clear], [orientation])
+-- Use (0, 0, 0) to start construction exactly at the turtle's current position.
 -- orientation can be "NORTH", "EAST", "SOUTH", "WEST", or degrees (0, 90, 180, 270)
-local ok, err = turtle.build("BP-A1B2", 100, 64, 200, false, "EAST")
+local ok, err = turtle.build("BP-A1B2", 0, 0, 0, false, "EAST")
 if not ok then
   print("Failed to build: " .. err)
 end

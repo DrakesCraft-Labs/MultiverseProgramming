@@ -122,7 +122,7 @@ Todos los comandos usan el prefijo `/mvprog` (con alias `/pc`, `/computador`, `/
 ### Comandos de Administrador
 | Comando | Permiso | Descripción |
 |---|---|---|
-| `/mvprog build <bp\|código> <x> <y> <z> [tortuga] [clear] [orientación]` | `multiverseprogramming.admin` | Ordena a una tortuga construir una esquemática en coordenadas con rotación (`NORTH`, `EAST`, `SOUTH`, `WEST`, `0`, `90`, `180`, `270`) y despeje de obstáculos |
+| `/mvprog build <bp\|código> <x> <y> <z> [tortuga] [clear] [orientación]` | `multiverseprogramming.admin` | Ordena a una tortuga construir una esquemática en coordenadas relativas a la tortuga (`~ ~ ~` o `0 0 0` para su posición actual) con rotación (`NORTH`, `EAST`, `SOUTH`, `WEST`, `0`, `90`, `180`, `270`) y despeje de obstáculos |
 | `/mvprog stop [id\|all]` | `multiverseprogramming.admin` | Lista todas las tortugas del servidor con el nombre del dueño y estado, detiene cualquier tortuga por ID independientemente del dueño o detiene todas las tortugas del servidor (`all`) |
 | `/mvprog quota <jugador>` | `multiverseprogramming.admin` | Consulta el almacenamiento y cuota de un jugador específico |
 | `/mvprog getbypass <código\|url>` | `multiverseprogramming.admin` | Descarga esquemáticas omitiendo las cuotas de almacenamiento de jugadores |

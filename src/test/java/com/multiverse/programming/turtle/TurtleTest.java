@@ -243,6 +243,44 @@ class TurtleTest {
     }
 
     @Test
+    @DisplayName("Lua turtle.build computes origin relative to turtle's current position")
+    void testLuaBuildUsesRelativeCoordinates() {
+        MultiverseProgrammingPlugin mvPlugin = mock(MultiverseProgrammingPlugin.class);
+        when(mvPlugin.isEnabled()).thenReturn(true);
+        com.multiverse.programming.ConfigManager configManager = mock(com.multiverse.programming.ConfigManager.class);
+        when(mvPlugin.getConfigManager()).thenReturn(configManager);
+        when(configManager.getTurtleBuildDelayTicks()).thenReturn(1);
+        when(configManager.isTurtleRequireMaterials()).thenReturn(false);
+
+        when(mockWorld.getMinHeight()).thenReturn(-64);
+        when(mockWorld.getMaxHeight()).thenReturn(320);
+
+        // Turtle is at (10, 64, 20)
+        Turtle turtle = new Turtle(mvPlugin, "T-001", startLoc, BlockFace.NORTH, null);
+
+        com.multiverse.programming.blueprint.BlueprintManager bpManager = mock(com.multiverse.programming.blueprint.BlueprintManager.class);
+        when(mvPlugin.getBlueprintManager()).thenReturn(bpManager);
+        Blueprint bp = new Blueprint("CASTLE", "Castle", "Author", "litematic", 1, 1, 1, 1,
+                java.util.Map.of(), java.util.List.of(), System.currentTimeMillis());
+        when(bpManager.getBlueprint("CASTLE")).thenReturn(bp);
+
+        TurtlePeripheral peripheral = new TurtlePeripheral(mvPlugin, turtle);
+        Globals globals = LuaRunner.sandbox();
+        globals.set("turtle", peripheral.toLuaTable());
+
+        String script = """
+            local ok, msg = turtle.build("CASTLE", 2, -1, 5)
+            return ok, msg
+        """;
+
+        LuaValue chunk = globals.load(script);
+        var res = chunk.invoke();
+
+        assertTrue(res.arg(1).toboolean());
+        assertEquals(new Location(mockWorld, 12, 63, 25), turtle.getBuildOrigin());
+    }
+
+    @Test
     @DisplayName("parseBlockData parses Minecraft block states properly")
     void testParseBlockData() {
         assertNull(Turtle.parseBlockData(null));

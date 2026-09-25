@@ -341,7 +341,12 @@ public final class WebServerManager {
                     return;
                 }
 
-                Location targetOrigin = new Location(world, x, y, z);
+                boolean isRelative = !json.has("relative") || json.get("relative").getAsBoolean();
+                int targetX = isRelative ? turtle.getLocation().getBlockX() + x : x;
+                int targetY = isRelative ? turtle.getLocation().getBlockY() + y : y;
+                int targetZ = isRelative ? turtle.getLocation().getBlockZ() + z : z;
+
+                Location targetOrigin = new Location(world, targetX, targetY, targetZ);
                 int delay = plugin.getConfigManager().getTurtleBuildDelayTicks();
                 boolean requireMaterials = plugin.getConfigManager().isTurtleRequireMaterials();
 
@@ -365,7 +370,7 @@ public final class WebServerManager {
 
                 JsonObject resp = new JsonObject();
                 resp.addProperty("ok", true);
-                resp.addProperty("message", "Build dispatched to " + turtle.getId() + " at " + x + "," + y + "," + z);
+                resp.addProperty("message", "Build dispatched to " + turtle.getId() + " at " + targetX + "," + targetY + "," + targetZ + " (relative: " + x + "," + y + "," + z + ")");
                 sendJsonResponse(exchange, 200, gson.toJson(resp));
             } catch (Exception e) {
                 JsonObject err = new JsonObject();
