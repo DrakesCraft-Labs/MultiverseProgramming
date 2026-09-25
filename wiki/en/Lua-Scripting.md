@@ -351,6 +351,28 @@ turtle.resumeQuarry()
 turtle.stopQuarry()
 ```
 
+### Turtle Management, Ownership & Stop Controls
+
+Placed turtles automatically remember the **Player UUID** of the player who placed them. This ownership is persisted in the block's `PersistentDataContainer` (PDC) and stored in `turtles.yml` so it survives server restarts and world unloads.
+
+#### Protection & Anti-Griefing
+- **Anti-Break Protection:** Only the owning player or a server administrator (`multiverseprogramming.admin`) can break/disassemble placed turtles.
+- **Inventory & Disk Drops:** When broken by the owner or an admin, all 16 inventory items and the inserted disk are dropped safely on the ground.
+
+#### Halting Tasks & Construction (`/mvprog stop`)
+Turtles can be halted at any moment through three mechanisms:
+1. **Chat Command (`/mvprog stop`):**
+   - Running `/mvprog stop` lists all turtles owned by you, showing their location and status (e.g. `BUILDING (45%)`, `MINING (Y=32)`, `IDLE`) with interactive `[STOP]` clickable buttons.
+   - Running `/mvprog stop <turtleId>` (e.g. `/mvprog stop T-001`) immediately halts blueprint building and quarry mining on that specific turtle. Other players cannot stop your turtles.
+   - Running `/mvprog stop all` stops all active tasks across all turtles you own.
+2. **Administrator Command (`multiverseprogramming.admin`):**
+   - Admins running `/mvprog stop` receive a global overview of all server turtles and their respective owners.
+   - Admins can stop any turtle by ID (`/mvprog stop <turtleId>`), regardless of who placed it.
+   - Admins can halt every active turtle on the server with `/mvprog stop all`.
+3. **In-Game GUI Task Button:**
+   - Right-clicking the Turtle block opens its 16-slot inventory and control panel.
+   - **Slot 4 (Task Control Anvil):** Left-click toggles pause/resume. **Right-click immediately stops/cancels** any running build or excavation.
+
 ---
 
 ## 11. Web Portal, Cloud Pastebin & Quotas

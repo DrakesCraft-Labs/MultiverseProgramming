@@ -88,6 +88,16 @@ public final class TurtleListener implements Listener {
                 player.getUniqueId()
         );
 
+        Block placedBlock = event.getBlockPlaced();
+        if (placedBlock.getState() instanceof org.bukkit.block.TileState tileState) {
+            try {
+                var pdc = tileState.getPersistentDataContainer();
+                pdc.set(new org.bukkit.NamespacedKey(plugin, "turtle_id"), org.bukkit.persistence.PersistentDataType.STRING, turtle.getId());
+                pdc.set(new org.bukkit.NamespacedKey(plugin, "turtle_owner"), org.bukkit.persistence.PersistentDataType.STRING, player.getUniqueId().toString());
+                tileState.update();
+            } catch (Throwable ignored) {}
+        }
+
         player.sendMessage(plugin.getPrefix() + " §aTurtle §e" + turtle.getId() + " §aplaced! Right-click to open its control panel.");
     }
 
@@ -102,6 +112,34 @@ public final class TurtleListener implements Listener {
         }
 
         Turtle turtle = plugin.getTurtleManager().getTurtle(block.getLocation());
+        if (turtle == null) {
+            if (block.getState() instanceof org.bukkit.block.TileState tileState) {
+                var pdc = tileState.getPersistentDataContainer();
+                org.bukkit.NamespacedKey ownerKey = new org.bukkit.NamespacedKey(plugin, "turtle_owner");
+                org.bukkit.NamespacedKey idKey = new org.bukkit.NamespacedKey(plugin, "turtle_id");
+                if (pdc.has(ownerKey, org.bukkit.persistence.PersistentDataType.STRING) || pdc.has(idKey, org.bukkit.persistence.PersistentDataType.STRING)) {
+                    String tid = pdc.get(idKey, org.bukkit.persistence.PersistentDataType.STRING);
+                    String ownerStr = pdc.get(ownerKey, org.bukkit.persistence.PersistentDataType.STRING);
+                    java.util.UUID ownerUuid = ownerStr != null ? java.util.UUID.fromString(ownerStr) : null;
+                    BlockFace face = BlockFace.NORTH;
+                    if (block.getBlockData() instanceof org.bukkit.block.data.Directional dir) {
+                        face = dir.getFacing();
+                    }
+                    turtle = plugin.getTurtleManager().restoreTurtle(tid, block.getLocation(), face, ownerUuid);
+                }
+            }
+        } else if (turtle.getOwner() == null) {
+            if (block.getState() instanceof org.bukkit.block.TileState tileState) {
+                var pdc = tileState.getPersistentDataContainer();
+                org.bukkit.NamespacedKey ownerKey = new org.bukkit.NamespacedKey(plugin, "turtle_owner");
+                if (pdc.has(ownerKey, org.bukkit.persistence.PersistentDataType.STRING)) {
+                    try {
+                        turtle.setOwner(java.util.UUID.fromString(pdc.get(ownerKey, org.bukkit.persistence.PersistentDataType.STRING)));
+                    } catch (Throwable ignored) {}
+                }
+            }
+        }
+
         if (turtle == null) {
             return;
         }
@@ -157,12 +195,22 @@ public final class TurtleListener implements Listener {
             // Task Control Button (Build / Mining)
             if (rawSlot == TurtleGUI.BUILD_BUTTON_SLOT) {
                 event.setCancelled(true);
+                if (event.isRightClick()) {
+                    boolean stopped = turtle.stopAnyWork();
+                    if (stopped) {
+                        player.sendMessage(plugin.getPrefix() + " §cActive task stopped.");
+                    } else {
+                        player.sendMessage(plugin.getPrefix() + " §eTurtle is already idle.");
+                    }
+                    gui.setupGUI();
+                    return;
+                }
                 if (turtle.getStatus() == Turtle.Status.BUILDING) {
                     turtle.pauseBuild();
-                    player.sendMessage(plugin.getPrefix() + " §eConstruction paused.");
+                    player.sendMessage(plugin.getPrefix() + " §eConstruction paused. §7(Right-click to stop)");
                 } else if (turtle.getStatus() == Turtle.Status.MINING) {
                     turtle.pauseQuarry();
-                    player.sendMessage(plugin.getPrefix() + " §eQuarry excavation paused.");
+                    player.sendMessage(plugin.getPrefix() + " §eQuarry excavation paused. §7(Right-click to stop)");
                 } else if (turtle.getStatus() == Turtle.Status.PAUSED) {
                     if (turtle.isQuarryPaused()) {
                         turtle.resumeQuarry();
@@ -298,10 +346,31 @@ public final class TurtleListener implements Listener {
             return;
         }
 
-        Turtle turtle = plugin.getTurtleManager().removeTurtle(block.getLocation());
+        Turtle turtle = plugin.getTurtleManager().getTurtle(block.getLocation());
+        if (turtle == null) {
+            if (block.getState() instanceof org.bukkit.block.TileState tileState) {
+                var pdc = tileState.getPersistentDataContainer();
+                org.bukkit.NamespacedKey idKey = new org.bukkit.NamespacedKey(plugin, "turtle_id");
+                if (pdc.has(idKey, org.bukkit.persistence.PersistentDataType.STRING)) {
+                    turtle = plugin.getTurtleManager().getTurtleById(pdc.get(idKey, org.bukkit.persistence.PersistentDataType.STRING));
+                }
+            }
+        }
+
         if (turtle == null) {
             return;
         }
+
+        Player player = event.getPlayer();
+        if (!player.hasPermission("multiverseprogramming.admin")) {
+            if (turtle.getOwner() != null && !turtle.getOwner().equals(player.getUniqueId())) {
+                player.sendMessage(plugin.getPrefix() + " §cYou cannot break a Turtle owned by another player!");
+                event.setCancelled(true);
+                return;
+            }
+        }
+
+        plugin.getTurtleManager().removeTurtle(turtle.getLocation());
 
         event.setDropItems(false);
         World world = block.getWorld();

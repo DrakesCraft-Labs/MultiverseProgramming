@@ -81,6 +81,16 @@ quarryFuelPoints %= 100;
 this.fuel -= toDeduct;
 ```
 
+### F. Ownership Persistence & Lifecycle Controls
+1. **Persistent Data Container (PDC) & File Storage (`turtles.yml`)**:
+   - `turtle_owner` (String UUID) and `turtle_id` are written into the block's `TileState.getPersistentDataContainer()` upon placement and updated during every movement/relocation step (`updateBlockPdc()`).
+   - `TurtleManager` persists all turtles in `turtles.yml` on placement, update, and server shutdown (`onDisable`), and restores them on `onEnable`.
+2. **Owner Verification & Anti-Griefing**:
+   - Regular players can only control and stop turtles where `owner.equals(player.getUniqueId())`.
+   - Breaking/disassembling a placed turtle is restricted strictly to the owner or players with `multiverseprogramming.admin`.
+3. **Execution Halting (`stopAnyWork()`)**:
+   - Calling `turtle.stopAnyWork()` cleanly cancels both active build tasks (`cancelBuild()`) and quarry tasks (`cancelQuarry()`), removes all floating holograms (`cleanupHolograms()`), and resets status to `Status.IDLE`.
+
 ---
 
 ## 3. Peripheral Architecture (`PeripheralManager.java`)

@@ -116,11 +116,14 @@ Todos los comandos usan el prefijo `/mvprog` (con alias `/pc`, `/computador`, `/
 | `/mvprog bp list` | `multiverseprogramming.use` | Lista todos los esquemas guardados en el servidor |
 | `/mvprog bp quota` | `multiverseprogramming.use` | Muestra el estado de almacenamiento |
 | `/mvprog bp delete <id>` | `multiverseprogramming.use` | Elimina un esquema propio para liberar cuota de disco |
+| `/mvprog stop [id\|all]` | `multiverseprogramming.use` | Muestra tus tortugas con botones interactivos `[STOP]`, detiene una tortuga propia por ID o detiene todas tus tortugas activas (`all`) |
+| `/mvprog turtle [list\|stop]` | `multiverseprogramming.use` | Lista tus tortugas o detiene sus operaciones de construcción y minería en curso |
 
 ### Comandos de Administrador
 | Comando | Permiso | Descripción |
 |---|---|---|
 | `/mvprog build <bp\|código> <x> <y> <z> [tortuga] [clear] [orientación]` | `multiverseprogramming.admin` | Ordena a una tortuga construir una esquemática en coordenadas con rotación (`NORTH`, `EAST`, `SOUTH`, `WEST`, `0`, `90`, `180`, `270`) y despeje de obstáculos |
+| `/mvprog stop [id\|all]` | `multiverseprogramming.admin` | Lista todas las tortugas del servidor con el nombre del dueño y estado, detiene cualquier tortuga por ID independientemente del dueño o detiene todas las tortugas del servidor (`all`) |
 | `/mvprog quota <jugador>` | `multiverseprogramming.admin` | Consulta el almacenamiento y cuota de un jugador específico |
 | `/mvprog getbypass <código\|url>` | `multiverseprogramming.admin` | Descarga esquemáticas omitiendo las cuotas de almacenamiento de jugadores |
 | `/mvprog bp clean [días]` | `multiverseprogramming.admin` | Purga esquemáticas no ancladas más antiguas que los días indicados |

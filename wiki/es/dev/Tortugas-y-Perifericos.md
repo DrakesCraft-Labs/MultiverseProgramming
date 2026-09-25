@@ -81,6 +81,16 @@ quarryFuelPoints %= 100;
 this.fuel -= toDeduct;
 ```
 
+### F. Persistencia de Propiedad y Controles de Ciclo de Vida
+1. **Persistent Data Container (PDC) y Archivo (`turtles.yml`)**:
+   - `turtle_owner` (UUID en String) y `turtle_id` se escriben en el `TileState.getPersistentDataContainer()` del bloque al ser colocado y se actualizan en cada movimiento/reubicación física (`updateBlockPdc()`).
+   - `TurtleManager` persiste todas las tortugas en `turtles.yml` al crear, mover y apagar el servidor (`onDisable`), restaurándolas limpiamente en `onEnable`.
+2. **Verificación de Propiedad y Anti-Griefing**:
+   - Los jugadores regulares solo pueden inspeccionar y detener tortugas cuyo `owner.equals(player.getUniqueId())`.
+   - La rotura/desmantelamiento de tortugas colocadas está restringida estrictamente al dueño o a jugadores con permiso de administrador (`multiverseprogramming.admin`).
+3. **Detención de Ejecución (`stopAnyWork()`)**:
+   - Invocar `turtle.stopAnyWork()` cancela de forma atómica tanto tareas de construcción (`cancelBuild()`) como de cantera (`cancelQuarry()`), elimina todos los hologramas flotantes y reestablece el estado a `Status.IDLE`.
+
 ---
 
 ## 3. Arquitectura de Periféricos (`PeripheralManager.java`)

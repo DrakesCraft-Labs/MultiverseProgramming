@@ -43,6 +43,7 @@ public class MultiverseProgrammingPlugin extends JavaPlugin {
         blueprintManager.loadAll();
 
         turtleManager = new com.multiverse.programming.turtle.TurtleManager(this);
+        turtleManager.loadAll();
         turtleListener = new com.multiverse.programming.turtle.TurtleListener(this);
         getServer().getPluginManager().registerEvents(turtleListener, this);
 

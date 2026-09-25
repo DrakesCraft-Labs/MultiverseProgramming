@@ -13,6 +13,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.StringUtil;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 
@@ -39,6 +40,8 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
             case "get", "download", "pastebin" -> handleGetCommand(sender, args, false);
             case "getbypass", "bypassget", "import" -> handleGetCommand(sender, args, true);
             case "build" -> triggerBuild(sender, args);
+            case "stop", "cancel" -> handleStopCommand(sender, args);
+            case "turtle", "turtles" -> handleTurtleSubcommand(sender, args);
             case "give" -> {
                 if (sender instanceof Player player) {
                     give(player, args);
@@ -330,6 +333,169 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
         }
     }
 
+    private void handleStopCommand(CommandSender sender, String[] args) {
+        if (!sender.hasPermission("multiverseprogramming.use")) {
+            sender.sendMessage(plugin.getPrefix() + " §cYou don't have permission to use this command.");
+            return;
+        }
+
+        var turtleManager = plugin.getTurtleManager();
+        if (turtleManager == null) {
+            sender.sendMessage(plugin.getPrefix() + " §cTurtle manager is not available.");
+            return;
+        }
+
+        boolean isAdmin = sender.hasPermission("multiverseprogramming.admin");
+        Player playerSender = (sender instanceof Player p) ? p : null;
+
+        // Subcommand: /mvprog stop (no argument or "list") -> display selection list
+        if (args.length == 1 || (args.length >= 2 && args[1].equalsIgnoreCase("list"))) {
+            if (isAdmin && playerSender == null) {
+                // Console administrator
+                displayTurtleList(sender, turtleManager.getAllTurtles(), true);
+                return;
+            }
+
+            if (isAdmin) {
+                // Admin player: display all server turtles
+                displayTurtleList(sender, turtleManager.getAllTurtles(), true);
+            } else {
+                // Regular player: display only owned turtles
+                displayTurtleList(sender, turtleManager.getTurtlesByOwner(playerSender.getUniqueId()), false);
+            }
+            return;
+        }
+
+        String target = args[1];
+
+        // Subcommand: /mvprog stop all
+        if (target.equalsIgnoreCase("all")) {
+            if (isAdmin) {
+                int stopped = 0;
+                for (var turtle : turtleManager.getAllTurtles()) {
+                    if (turtle.stopAnyWork()) {
+                        stopped++;
+                    }
+                }
+                if (stopped > 0) {
+                    sender.sendMessage(plugin.getPrefix() + " §aSuccessfully stopped " + stopped + " active turtle(s) across the server.");
+                } else {
+                    sender.sendMessage(plugin.getPrefix() + " §eNo active turtles were currently working on the server.");
+                }
+            } else {
+                int stopped = 0;
+                for (var turtle : turtleManager.getTurtlesByOwner(playerSender.getUniqueId())) {
+                    if (turtle.stopAnyWork()) {
+                        stopped++;
+                    }
+                }
+                if (stopped > 0) {
+                    sender.sendMessage(plugin.getPrefix() + " §aSuccessfully stopped " + stopped + " of your active turtle(s).");
+                } else {
+                    sender.sendMessage(plugin.getPrefix() + " §eNone of your turtles were actively working.");
+                }
+            }
+            return;
+        }
+
+        // Subcommand: /mvprog stop <turtleId>
+        var turtle = turtleManager.getTurtleById(target);
+        if (turtle == null) {
+            sender.sendMessage(plugin.getPrefix() + " §cTurtle §e" + target + " §cnot found.");
+            return;
+        }
+
+        if (!isAdmin && playerSender != null) {
+            if (turtle.getOwner() == null || !turtle.getOwner().equals(playerSender.getUniqueId())) {
+                sender.sendMessage(plugin.getPrefix() + " §cYou do not own turtle §e" + target + "§c! You can only stop your own turtles.");
+                return;
+            }
+        }
+
+        boolean wasWorking = turtle.stopAnyWork();
+        String ownerInfo = (isAdmin && turtle.getOwner() != null) ? " §7(Owner: §f" + turtle.getOwnerName() + "§7)" : "";
+        if (wasWorking) {
+            sender.sendMessage(plugin.getPrefix() + " §aTurtle §e" + turtle.getId() + " §ahas been stopped." + ownerInfo);
+        } else {
+            sender.sendMessage(plugin.getPrefix() + " §eTurtle §6" + turtle.getId() + " §eis already idle." + ownerInfo);
+        }
+    }
+
+    private void displayTurtleList(CommandSender sender, Collection<com.multiverse.programming.turtle.Turtle> turtles, boolean isAdmin) {
+        if (turtles == null || turtles.isEmpty()) {
+            if (isAdmin) {
+                sender.sendMessage(plugin.getPrefix() + " §7No turtles are currently registered on the server.");
+            } else {
+                sender.sendMessage(plugin.getPrefix() + " §cYou do not own any placed turtles.");
+                sender.sendMessage(" §7Place a Turtle block in the world to start using it.");
+            }
+            return;
+        }
+
+        sender.sendMessage(plugin.getPrefix() + " §b=== " + (isAdmin ? "All Server Turtles" : "Your Turtles") + " ===");
+        for (var t : turtles) {
+            var loc = t.getLocation();
+            String locStr = (loc.getWorld() != null ? loc.getWorld().getName() + " " : "")
+                    + "(" + loc.getBlockX() + ", " + loc.getBlockY() + ", " + loc.getBlockZ() + ")";
+            String statusStr;
+            if (t.getStatus() == com.multiverse.programming.turtle.Turtle.Status.BUILDING) {
+                statusStr = "§aBUILDING (" + String.format(Locale.ROOT, "%.1f%%", t.getProgressPercentage()) + ")";
+            } else if (t.getStatus() == com.multiverse.programming.turtle.Turtle.Status.MINING) {
+                statusStr = "§6MINING (Y=" + t.getQuarryCurrentY() + ", " + String.format(Locale.ROOT, "%.1f%%", t.getQuarryProgressPercentage()) + ")";
+            } else if (t.getStatus() == com.multiverse.programming.turtle.Turtle.Status.PAUSED) {
+                statusStr = "§ePAUSED (" + t.getStatusMessage() + ")";
+            } else if (t.getStatus() == com.multiverse.programming.turtle.Turtle.Status.MOVING) {
+                statusStr = "§bMOVING";
+            } else if (t.getStatus() == com.multiverse.programming.turtle.Turtle.Status.ERROR) {
+                statusStr = "§cERROR (" + t.getStatusMessage() + ")";
+            } else {
+                statusStr = "§7IDLE";
+            }
+
+            String ownerSuffix = isAdmin ? " §7| Owner: §f" + t.getOwnerName() : "";
+
+            if (sender instanceof Player player) {
+                try {
+                    net.kyori.adventure.text.Component line = net.kyori.adventure.text.Component.text()
+                            .append(net.kyori.adventure.text.Component.text(" §e" + t.getId() + ownerSuffix + " §7| Loc: §f" + locStr + " §7| " + statusStr + " "))
+                            .append(net.kyori.adventure.text.Component.text("[STOP]", net.kyori.adventure.text.format.NamedTextColor.RED)
+                                    .clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand("/mvprog stop " + t.getId()))
+                                    .hoverEvent(net.kyori.adventure.text.event.HoverEvent.showText(net.kyori.adventure.text.Component.text("Click to stop turtle " + t.getId(), net.kyori.adventure.text.format.NamedTextColor.RED))))
+                            .build();
+                    player.sendMessage(line);
+                } catch (Throwable fallback) {
+                    player.sendMessage(" §e" + t.getId() + ownerSuffix + " §7| Loc: §f" + locStr + " §7| " + statusStr + " §c[Type: /mvprog stop " + t.getId() + "]");
+                }
+            } else {
+                sender.sendMessage(" §e" + t.getId() + ownerSuffix + " §7| Loc: §f" + locStr + " §7| " + statusStr);
+            }
+        }
+        sender.sendMessage(" §7Run §e/mvprog stop <id> §7to stop a specific turtle, or §e/mvprog stop all §7to stop all.");
+    }
+
+    private void handleTurtleSubcommand(CommandSender sender, String[] args) {
+        if (args.length == 1) {
+            handleStopCommand(sender, new String[]{"stop"});
+            return;
+        }
+        String sub = args[1].toLowerCase(Locale.ROOT);
+        if (sub.equals("list")) {
+            handleStopCommand(sender, new String[]{"stop", "list"});
+        } else if (sub.equals("stop") || sub.equals("cancel")) {
+            if (args.length >= 3) {
+                handleStopCommand(sender, new String[]{"stop", args[2]});
+            } else {
+                handleStopCommand(sender, new String[]{"stop"});
+            }
+        } else {
+            if (args.length >= 3 && (args[2].equalsIgnoreCase("stop") || args[2].equalsIgnoreCase("cancel"))) {
+                handleStopCommand(sender, new String[]{"stop", args[1]});
+            } else {
+                handleStopCommand(sender, new String[]{"stop", args[1]});
+            }
+        }
+    }
+
     private void handleGetCommand(CommandSender sender, String[] args, boolean isBypass) {
         boolean bypass = isBypass || (args.length > 2 && args[2].equalsIgnoreCase("bypass") && sender.hasPermission("multiverseprogramming.admin"));
         if (bypass) {
@@ -424,11 +590,14 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(" §e/mvprog get <code|url> §8- §7download blueprint from cloud pastebin/github");
         sender.sendMessage(" §e/mvprog quota §8- §7view your blueprint storage quota and remaining space");
         sender.sendMessage(" §e/mvprog bp [list|quota|delete] §8- §7manage blueprints and check storage quota");
+        sender.sendMessage(" §e/mvprog stop [id|all] §8- §7stop active turtle construction/quarry or list your turtles");
+        sender.sendMessage(" §e/mvprog turtle [list|stop] §8- §7manage and inspect your placed turtles");
         if (sender.hasPermission("multiverseprogramming.admin")) {
             sender.sendMessage(" §6=== Admin Commands ===");
             sender.sendMessage(" §6/mvprog quota <player> §8- §7view specific player's storage quota");
             sender.sendMessage(" §6/mvprog getbypass <code|url> §8- §7download blueprint bypassing storage quotas");
             sender.sendMessage(" §6/mvprog build <bp|code> <x> <y> <z> [turtle] [clear] [orientation] §8- §7order turtle to build");
+            sender.sendMessage(" §6/mvprog stop [id|all] §8- §7stop any turtle (or all turtles) across the server");
             sender.sendMessage(" §6/mvprog bp clean [days] §8- §7purge old unpinned blueprints");
             sender.sendMessage(" §6/mvprog give <item> §8- §7give custom programming item");
             sender.sendMessage(" §6/mvprog reload §8- §7reload configuration and recipes");
@@ -449,6 +618,8 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
             subcommands.add("blueprint");
             subcommands.add("blueprints");
             subcommands.add("bp");
+            subcommands.add("stop");
+            subcommands.add("turtle");
             if (sender.hasPermission("multiverseprogramming.admin")) {
                 subcommands.add("getbypass");
                 subcommands.add("build");
@@ -456,6 +627,35 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
                 subcommands.add("reload");
             }
             return StringUtil.copyPartialMatches(args[0], subcommands, completions);
+        }
+        if (args.length == 2 && (args[0].equalsIgnoreCase("stop") || args[0].equalsIgnoreCase("cancel"))) {
+            List<String> options = new ArrayList<>();
+            options.add("all");
+            options.add("list");
+            if (plugin.getTurtleManager() != null) {
+                if (sender.hasPermission("multiverseprogramming.admin")) {
+                    options.addAll(plugin.getTurtleManager().getAllTurtles().stream().map(com.multiverse.programming.turtle.Turtle::getId).toList());
+                } else if (sender instanceof Player p) {
+                    options.addAll(plugin.getTurtleManager().getTurtlesByOwner(p.getUniqueId()).stream().map(com.multiverse.programming.turtle.Turtle::getId).toList());
+                }
+            }
+            return StringUtil.copyPartialMatches(args[1], options, completions);
+        }
+        if (args.length == 2 && (args[0].equalsIgnoreCase("turtle") || args[0].equalsIgnoreCase("turtles"))) {
+            List<String> options = new ArrayList<>(List.of("list", "stop"));
+            return StringUtil.copyPartialMatches(args[1], options, completions);
+        }
+        if (args.length == 3 && (args[0].equalsIgnoreCase("turtle") || args[0].equalsIgnoreCase("turtles")) && args[1].equalsIgnoreCase("stop")) {
+            List<String> options = new ArrayList<>();
+            options.add("all");
+            if (plugin.getTurtleManager() != null) {
+                if (sender.hasPermission("multiverseprogramming.admin")) {
+                    options.addAll(plugin.getTurtleManager().getAllTurtles().stream().map(com.multiverse.programming.turtle.Turtle::getId).toList());
+                } else if (sender instanceof Player p) {
+                    options.addAll(plugin.getTurtleManager().getTurtlesByOwner(p.getUniqueId()).stream().map(com.multiverse.programming.turtle.Turtle::getId).toList());
+                }
+            }
+            return StringUtil.copyPartialMatches(args[2], options, completions);
         }
         if (args.length == 2 && args[0].equalsIgnoreCase("quota") && sender.hasPermission("multiverseprogramming.admin")) {
             List<String> playerNames = Bukkit.getOnlinePlayers().stream().map(Player::getName).toList();

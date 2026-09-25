@@ -375,6 +375,28 @@ turtle.resumeQuarry()
 turtle.stopQuarry()
 ```
 
+### Gestión de Tortugas, Propiedad y Controles de Detención
+
+Las tortugas colocadas en el mundo recuerdan automáticamente el **UUID del jugador** que las colocó. Esta propiedad queda persistida en el `PersistentDataContainer` (PDC) del bloque y en el archivo `turtles.yml`, garantizando que nunca se pierda tras reinicios del servidor o descargas de chunks.
+
+#### Protección y Anti-Griefing
+- **Protección contra destrucción no autorizada:** Solo el jugador dueño o un administrador del servidor (`multiverseprogramming.admin`) pueden romper o desmontar las tortugas colocadas.
+- **Caída segura de inventario y disco:** Al desmontar la tortuga, se sueltan en el suelo los 16 ítems de su inventario, el disco insertado y el ítem de la propia tortuga.
+
+#### Detener Tareas y Construcción (`/mvprog stop`)
+Las tortugas pueden detenerse de inmediato a través de tres métodos:
+1. **Comando de Chat (`/mvprog stop`):**
+   - Ejecutar `/mvprog stop` muestra una lista de tus tortugas con coordenadas y estado en vivo (p. ej. `BUILDING (45%)`, `MINING (Y=32)`, `IDLE`) con botones interactivos `[STOP]` en el chat.
+   - Ejecutar `/mvprog stop <id>` (p. ej. `/mvprog stop T-001`) cancela inmediatamente la construcción o excavación en esa tortuga específica. Los demás jugadores no pueden detener tus tortugas.
+   - Ejecutar `/mvprog stop all` detiene todas las tareas activas de todas las tortugas que te pertenecen.
+2. **Comando de Administrador (`multiverseprogramming.admin`):**
+   - Los administradores que ejecuten `/mvprog stop` ven todas las tortugas del servidor indicando el nombre de cada dueño.
+   - Los administradores pueden detener cualquier tortuga por su identificador (`/mvprog stop <id>`) sin importar de quién sea.
+   - Los administradores pueden detener todas las tortugas del servidor a la vez con `/mvprog stop all`.
+3. **Botón en la Interfaz Gráfica (GUI):**
+   - Haz clic derecho sobre la tortuga para abrir su panel de control e inventario de 16 casillas.
+   - **Casilla 4 (Yunque de Control de Tareas):** Clic izquierdo pausa o reanuda. **Clic derecho detiene y cancela inmediatamente** cualquier construcción o minería activa.
+
 ---
 
 ## 11. Portal Web, Nube Pastebin y Cuotas

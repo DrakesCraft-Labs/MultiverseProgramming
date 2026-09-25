@@ -127,6 +127,15 @@ public final class Turtle {
         this.owner = owner;
     }
 
+    public String getOwnerName() {
+        if (owner == null) return "None";
+        try {
+            org.bukkit.OfflinePlayer op = Bukkit.getOfflinePlayer(owner);
+            if (op.getName() != null) return op.getName();
+        } catch (Throwable ignored) {}
+        return owner.toString();
+    }
+
     public synchronized Location getLocation() {
         return location.clone();
     }
@@ -373,6 +382,7 @@ public final class Turtle {
                 } catch (IllegalArgumentException ignored) {
                 }
             }
+            updateBlockPdc(targetBlock);
 
             Location oldLoc = this.location.clone();
             this.location = targetBlock.getLocation();
@@ -383,6 +393,21 @@ public final class Turtle {
             world.playSound(this.location, Sound.BLOCK_IRON_TRAPDOOR_CLOSE, 0.4f, 1.8f);
             return true;
         });
+    }
+
+    public void updateBlockPdc(Block block) {
+        if (block != null && block.getState() instanceof org.bukkit.block.TileState tileState) {
+            try {
+                var pdc = tileState.getPersistentDataContainer();
+                if (this.id != null) {
+                    pdc.set(new org.bukkit.NamespacedKey(plugin, "turtle_id"), org.bukkit.persistence.PersistentDataType.STRING, this.id);
+                }
+                if (this.owner != null) {
+                    pdc.set(new org.bukkit.NamespacedKey(plugin, "turtle_owner"), org.bukkit.persistence.PersistentDataType.STRING, this.owner.toString());
+                }
+                tileState.update();
+            } catch (Throwable ignored) {}
+        }
     }
 
     // =========================================================================
@@ -901,6 +926,7 @@ public final class Turtle {
                     newBlock.setBlockData(dir, false);
                 } catch (Throwable ignored) {}
             }
+            updateBlockPdc(newBlock);
         }
 
         Location oldLoc = this.location.clone();
@@ -1131,6 +1157,30 @@ public final class Turtle {
             buildTask.cancel();
             buildTask = null;
         }
+    }
+
+    public synchronized boolean isBuilding() {
+        return status == Status.BUILDING || (status == Status.PAUSED && buildTask != null);
+    }
+
+    public synchronized boolean isWorking() {
+        return isBuilding() || isQuarryActive() || status == Status.MOVING;
+    }
+
+    /**
+     * Stops and cancels any active work, blueprint construction, or quarry excavation on this turtle.
+     * Resets status to IDLE and cleans up all holograms and scheduled tasks.
+     * @return true if an active or paused task was cancelled, false if already idle.
+     */
+    public synchronized boolean stopAnyWork() {
+        boolean wasBusy = (buildTask != null || quarryTask != null
+                || status == Status.BUILDING || status == Status.MINING
+                || status == Status.MOVING || status == Status.PAUSED);
+        cancelBuild();
+        cancelQuarry();
+        this.status = Status.IDLE;
+        this.statusMessage = "Idle";
+        return wasBusy;
     }
 
     // =========================================================================
@@ -1403,6 +1453,7 @@ public final class Turtle {
                     newTurtleBlock.setBlockData(dir, false);
                 } catch (Throwable ignored) {}
             }
+            updateBlockPdc(newTurtleBlock);
         }
 
         if (newEngineLoc != null) {

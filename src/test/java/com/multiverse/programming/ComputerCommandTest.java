@@ -272,4 +272,144 @@ class ComputerCommandTest {
         verify(admin).sendMessage(contains("Player: §fOtherPlayer"));
         verify(admin).sendMessage(contains("Storage Used: §e2.00 MB"));
     }
+
+    @Test
+    @DisplayName("Admin can run /mvprog stop all and stops all active turtles")
+    void testAdminStopAll() {
+        CommandSender admin = mock(CommandSender.class);
+        when(admin.hasPermission("multiverseprogramming.use")).thenReturn(true);
+        when(admin.hasPermission("multiverseprogramming.admin")).thenReturn(true);
+
+        com.multiverse.programming.turtle.TurtleManager tm = mock(com.multiverse.programming.turtle.TurtleManager.class);
+        when(plugin.getTurtleManager()).thenReturn(tm);
+
+        com.multiverse.programming.turtle.Turtle t1 = mock(com.multiverse.programming.turtle.Turtle.class);
+        when(t1.stopAnyWork()).thenReturn(true);
+        when(tm.getAllTurtles()).thenReturn(List.of(t1));
+
+        assertTrue(command.onCommand(admin, mockCmd, "mvprog", new String[]{"stop", "all"}));
+        verify(t1).stopAnyWork();
+        verify(admin).sendMessage(contains("Successfully stopped 1 active turtle"));
+    }
+
+    @Test
+    @DisplayName("Admin can run /mvprog stop <id> to stop any player's turtle")
+    void testAdminStopAnyTurtle() {
+        CommandSender admin = mock(CommandSender.class);
+        when(admin.hasPermission("multiverseprogramming.use")).thenReturn(true);
+        when(admin.hasPermission("multiverseprogramming.admin")).thenReturn(true);
+
+        com.multiverse.programming.turtle.TurtleManager tm = mock(com.multiverse.programming.turtle.TurtleManager.class);
+        when(plugin.getTurtleManager()).thenReturn(tm);
+
+        com.multiverse.programming.turtle.Turtle t1 = mock(com.multiverse.programming.turtle.Turtle.class);
+        when(t1.getId()).thenReturn("T-001");
+        when(t1.stopAnyWork()).thenReturn(true);
+        when(tm.getTurtleById("T-001")).thenReturn(t1);
+
+        assertTrue(command.onCommand(admin, mockCmd, "mvprog", new String[]{"stop", "T-001"}));
+        verify(t1).stopAnyWork();
+        verify(admin).sendMessage(contains("Turtle §eT-001 §ahas been stopped"));
+    }
+
+    @Test
+    @DisplayName("Player can stop their own turtle with /mvprog stop <id>")
+    void testPlayerStopOwnTurtle() {
+        Player player = mock(Player.class);
+        java.util.UUID uuid = java.util.UUID.randomUUID();
+        when(player.getUniqueId()).thenReturn(uuid);
+        when(player.hasPermission("multiverseprogramming.use")).thenReturn(true);
+        when(player.hasPermission("multiverseprogramming.admin")).thenReturn(false);
+
+        com.multiverse.programming.turtle.TurtleManager tm = mock(com.multiverse.programming.turtle.TurtleManager.class);
+        when(plugin.getTurtleManager()).thenReturn(tm);
+
+        com.multiverse.programming.turtle.Turtle t1 = mock(com.multiverse.programming.turtle.Turtle.class);
+        when(t1.getId()).thenReturn("T-002");
+        when(t1.getOwner()).thenReturn(uuid);
+        when(t1.stopAnyWork()).thenReturn(true);
+        when(tm.getTurtleById("T-002")).thenReturn(t1);
+
+        assertTrue(command.onCommand(player, mockCmd, "mvprog", new String[]{"stop", "T-002"}));
+        verify(t1).stopAnyWork();
+        verify(player).sendMessage(contains("Turtle §eT-002 §ahas been stopped"));
+    }
+
+    @Test
+    @DisplayName("Player is denied when trying to stop another player's turtle")
+    void testPlayerStopOtherTurtleDenied() {
+        Player player = mock(Player.class);
+        java.util.UUID myUuid = java.util.UUID.randomUUID();
+        java.util.UUID otherUuid = java.util.UUID.randomUUID();
+        when(player.getUniqueId()).thenReturn(myUuid);
+        when(player.hasPermission("multiverseprogramming.use")).thenReturn(true);
+        when(player.hasPermission("multiverseprogramming.admin")).thenReturn(false);
+
+        com.multiverse.programming.turtle.TurtleManager tm = mock(com.multiverse.programming.turtle.TurtleManager.class);
+        when(plugin.getTurtleManager()).thenReturn(tm);
+
+        com.multiverse.programming.turtle.Turtle t1 = mock(com.multiverse.programming.turtle.Turtle.class);
+        when(t1.getId()).thenReturn("T-005");
+        when(t1.getOwner()).thenReturn(otherUuid);
+        when(tm.getTurtleById("T-005")).thenReturn(t1);
+
+        assertTrue(command.onCommand(player, mockCmd, "mvprog", new String[]{"stop", "T-005"}));
+        verify(t1, never()).stopAnyWork();
+        verify(player).sendMessage(contains("You do not own turtle"));
+    }
+
+    @Test
+    @DisplayName("Player /mvprog stop with no args displays owned turtles")
+    void testPlayerStopNoArgsListsOwnedTurtles() {
+        Player player = mock(Player.class);
+        java.util.UUID myUuid = java.util.UUID.randomUUID();
+        when(player.getUniqueId()).thenReturn(myUuid);
+        when(player.hasPermission("multiverseprogramming.use")).thenReturn(true);
+        when(player.hasPermission("multiverseprogramming.admin")).thenReturn(false);
+
+        com.multiverse.programming.turtle.TurtleManager tm = mock(com.multiverse.programming.turtle.TurtleManager.class);
+        when(plugin.getTurtleManager()).thenReturn(tm);
+
+        com.multiverse.programming.turtle.Turtle t1 = mock(com.multiverse.programming.turtle.Turtle.class);
+        when(t1.getId()).thenReturn("T-001");
+        when(t1.getLocation()).thenReturn(new org.bukkit.Location(null, 10, 64, 20));
+        when(t1.getStatus()).thenReturn(com.multiverse.programming.turtle.Turtle.Status.IDLE);
+        when(tm.getTurtlesByOwner(myUuid)).thenReturn(List.of(t1));
+
+        assertTrue(command.onCommand(player, mockCmd, "mvprog", new String[]{"stop"}));
+        verify(player).sendMessage(contains("Your Turtles"));
+    }
+
+    @Test
+    @DisplayName("Tab completion for /mvprog stop shows all turtles for admin but only owned for player")
+    void testStopTabCompletionOwnership() {
+        Player admin = mock(Player.class);
+        when(admin.hasPermission("multiverseprogramming.admin")).thenReturn(true);
+
+        Player player = mock(Player.class);
+        java.util.UUID myUuid = java.util.UUID.randomUUID();
+        when(player.getUniqueId()).thenReturn(myUuid);
+        when(player.hasPermission("multiverseprogramming.admin")).thenReturn(false);
+
+        com.multiverse.programming.turtle.TurtleManager tm = mock(com.multiverse.programming.turtle.TurtleManager.class);
+        when(plugin.getTurtleManager()).thenReturn(tm);
+
+        com.multiverse.programming.turtle.Turtle t1 = mock(com.multiverse.programming.turtle.Turtle.class);
+        when(t1.getId()).thenReturn("T-001");
+        com.multiverse.programming.turtle.Turtle t2 = mock(com.multiverse.programming.turtle.Turtle.class);
+        when(t2.getId()).thenReturn("T-002");
+
+        when(tm.getAllTurtles()).thenReturn(List.of(t1, t2));
+        when(tm.getTurtlesByOwner(myUuid)).thenReturn(List.of(t1));
+
+        List<String> adminCompletions = command.onTabComplete(admin, mockCmd, "mvprog", new String[]{"stop", ""});
+        assertTrue(adminCompletions.contains("all"));
+        assertTrue(adminCompletions.contains("T-001"));
+        assertTrue(adminCompletions.contains("T-002"));
+
+        List<String> userCompletions = command.onTabComplete(player, mockCmd, "mvprog", new String[]{"stop", ""});
+        assertTrue(userCompletions.contains("all"));
+        assertTrue(userCompletions.contains("T-001"));
+        assertFalse(userCompletions.contains("T-002"));
+    }
 }

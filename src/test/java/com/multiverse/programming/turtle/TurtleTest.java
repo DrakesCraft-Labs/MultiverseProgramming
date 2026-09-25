@@ -436,4 +436,59 @@ class TurtleTest {
         assertFalse(res.arg(4).toboolean());
         assertEquals("ERROR", res.arg(5).tojstring());
     }
+
+    @Test
+    @DisplayName("stopAnyWork stops active tasks and resets to IDLE")
+    void testStopAnyWork() {
+        Turtle turtle = new Turtle(mockPlugin, "T-001", startLoc, BlockFace.NORTH, null);
+        assertFalse(turtle.stopAnyWork()); // was already idle
+        assertEquals(Turtle.Status.IDLE, turtle.getStatus());
+    }
+
+    @Test
+    @DisplayName("getOwnerName returns None for null and UUID/name when present")
+    void testGetOwnerName() {
+        Turtle turtle1 = new Turtle(mockPlugin, "T-001", startLoc, BlockFace.NORTH, null);
+        assertEquals("None", turtle1.getOwnerName());
+
+        UUID uuid = UUID.randomUUID();
+        Turtle turtle2 = new Turtle(mockPlugin, "T-002", startLoc, BlockFace.NORTH, uuid);
+        assertNotNull(turtle2.getOwnerName());
+        assertNotEquals("None", turtle2.getOwnerName());
+    }
+
+    @Test
+    @DisplayName("TurtleManager creates, restores, and filters turtles by owner")
+    void testTurtleManagerOwnerOperations() {
+        MultiverseProgrammingPlugin mvPlugin = mock(MultiverseProgrammingPlugin.class);
+        when(mvPlugin.getDataFolder()).thenReturn(null);
+
+        TurtleManager tm = new TurtleManager(mvPlugin);
+        UUID owner1 = UUID.randomUUID();
+        UUID owner2 = UUID.randomUUID();
+
+        Location loc1 = new Location(mockWorld, 10, 64, 20);
+        Location loc2 = new Location(mockWorld, 15, 64, 25);
+
+        Turtle t1 = tm.createTurtle(loc1, BlockFace.NORTH, owner1);
+        Turtle t2 = tm.createTurtle(loc2, BlockFace.SOUTH, owner2);
+
+        assertEquals(owner1, t1.getOwner());
+        assertEquals(owner2, t2.getOwner());
+
+        var owner1Turtles = tm.getTurtlesByOwner(owner1);
+        assertEquals(1, owner1Turtles.size());
+        assertEquals(t1.getId(), owner1Turtles.get(0).getId());
+
+        var owner2Turtles = tm.getTurtlesByOwner(owner2);
+        assertEquals(1, owner2Turtles.size());
+        assertEquals(t2.getId(), owner2Turtles.get(0).getId());
+
+        // Restore turtle with custom ID
+        Location loc3 = new Location(mockWorld, 20, 64, 30);
+        Turtle t3 = tm.restoreTurtle("T-099", loc3, BlockFace.EAST, owner1);
+        assertEquals("T-099", t3.getId());
+        assertEquals(owner1, t3.getOwner());
+        assertEquals(2, tm.getTurtlesByOwner(owner1).size());
+    }
 }

@@ -116,11 +116,14 @@ All commands are prefixed with `/mvprog` (aliases `/pc`, `/computador`, `/comput
 | `/mvprog bp list` | `multiverseprogramming.use` | Lists all saved blueprints and sizes |
 | `/mvprog bp quota` | `multiverseprogramming.use` | Shows storage quota status |
 | `/mvprog bp delete <id>` | `multiverseprogramming.use` | Deletes a personal blueprint to free up quota |
+| `/mvprog stop [id\|all]` | `multiverseprogramming.use` | Displays your placed turtles with interactive `[STOP]` buttons, stops a specific owned turtle by ID, or stops all your active turtles (`all`) |
+| `/mvprog turtle [list\|stop]` | `multiverseprogramming.use` | Lists your placed turtles or halts their active build and mining operations |
 
 ### Administrator Commands
 | Command | Permission | Description |
 |---|---|---|
 | `/mvprog build <bp\|code> <x> <y> <z> [turtle] [clear] [orientation]` | `multiverseprogramming.admin` | Orders a turtle to construct a blueprint at coordinates with optional orientation (`NORTH`, `EAST`, `SOUTH`, `WEST`, `0`, `90`, `180`, `270`) and obstruction clearing |
+| `/mvprog stop [id\|all]` | `multiverseprogramming.admin` | Lists all server turtles with owner names, stops any turtle by ID regardless of owner, or halts all active turtles across the entire server (`all`) |
 | `/mvprog quota <player>` | `multiverseprogramming.admin` | Checks storage quota and disk usage of a specific player |
 | `/mvprog getbypass <code\|url>` | `multiverseprogramming.admin` | Downloads blueprints bypassing personal storage quotas |
 | `/mvprog bp clean [days]` | `multiverseprogramming.admin` | Purges unpinned blueprints older than specified days |

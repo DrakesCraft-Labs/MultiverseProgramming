@@ -111,7 +111,8 @@ public final class TurtleGUI implements InventoryHolder {
                         statusText,
                         "§7" + turtle.getStatusMessage(),
                         String.format(Locale.ROOT, "§7Progress: %.1f%%", pct),
-                        "§8Click to pause / resume active task."
+                        "§8Left-click to pause / resume.",
+                        "§8Right-click to stop / cancel task."
                 )
         ));
 
