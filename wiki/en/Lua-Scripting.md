@@ -370,9 +370,7 @@ turtle.resumeQuarry()
 turtle.stopQuarry()
 ```
 
----
-
-## 6. Web Portal & Blueprint Dashboard
+## 12. Web Portal, Cloud Pastebin & Quotas
 
 Players can access the built-in **Web Portal** by executing in-game:
 ```text
@@ -381,7 +379,18 @@ Players can access the built-in **Web Portal** by executing in-game:
 
 ### Web Portal Features:
 1. **File Upload Dropzone:** Drag and drop `.litematic` (Litematica) or `.nbt` (Vanilla Structure) files directly from your browser.
-2. **Layer-by-Layer Visualizer:** Interactive 2D/3D slice visualizer with a Y-layer slider and block colors.
+2. **Layer-by-Layer Visualizer:** Interactive 3D WebGL (Three.js) slice visualizer with a Y-layer slider, block colors, and 2D sliced layer preview.
 3. **Materials Required:** Instant breakdown of needed blocks and item counts.
 4. **Remote Dispatch to Turtles:** Select any online Turtle, enter coordinates, and click **"⚡ INITIATE CONSTRUCTION"**.
 5. **Live Job Monitoring:** Real-time progress bar with pause/cancel controls.
+
+### Universal Cloud Pastebin & Storage Quotas:
+- **Download Blueprint from Cloud Pastebin / GitHub:**  
+  `/mvprog get <code|url>`  
+  Instantly fetches blueprints stored on Bytebin, GitHub, or public URLs and caches them locally for turtles to build.
+- **Check Storage Quota & Free Space:**  
+  `/mvprog quota`  
+  Displays your total blueprint disk storage usage (in MB) and remaining available quota.
+- **Manage Loaded Blueprints:**  
+  `/mvprog bp list` — Lists all registered blueprints and author tags.  
+  `/mvprog bp delete <blueprintId>` — Deletes a blueprint owned by you.

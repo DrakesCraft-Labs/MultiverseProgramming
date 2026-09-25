@@ -110,6 +110,159 @@ speaker.playTone(440.0)
 speaker.playSound("entity.player.levelup", 1.0, 1.2)
 ```
 
+### 5. Block & Entity Scanner (`scanner`)
+
+Escanea entidades, jugadores y bloques circundantes dentro de un radio configurable.
+
+```lua
+-- Escanear entidades cercanas (radio máximo 32)
+local entidades = scanner.scanEntities(16)
+for i, ent in ipairs(entidades) do
+  print(ent.name .. " (" .. ent.type .. ") a distancia " .. math.floor(ent.distance))
+end
+
+-- Escanear jugadores cercanos con su nivel de vida y hambre
+local jugadores = scanner.scanPlayers(32)
+for i, p in ipairs(jugadores) do
+  print(p.name .. " Vida: " .. p.health .. " Hambre: " .. p.foodLevel)
+end
+
+-- Escanear bloques filtrando por nombre de material (ej. "DIAMOND", "ORE")
+local minerales = scanner.scanBlocks(8, "DIAMOND")
+for i, b in ipairs(minerales) do
+  print(b.material .. " en [" .. b.x .. ", " .. b.y .. ", " .. b.z .. "]")
+end
+
+-- Inspeccionar un bloque específico en coordenadas absolutas
+local bloque = scanner.inspect(100, 64, 200)
+if bloque then
+  print("Material: " .. bloque.material .. " Datos: " .. bloque.blockData)
+end
+```
+
+### 6. Cartographer & Map Renderer (`cartographer`)
+
+Inspecciona biomas, escanea elevaciones topográficas, renderiza mapas de radar ASCII directamente en monitores adyacentes y genera mapas de Minecraft con escala configurable.
+
+```lua
+-- Consultar bioma actual
+local bioma = cartographer.getBiome()
+print("Bioma: " .. (bioma or "Desconocido"))
+
+-- Renderizar radar topográfico ASCII directamente en un monitor adyacente
+local ok, err = cartographer.renderToMonitor("north", 6)
+if ok then
+  print("¡Topografía proyectada en el monitor!")
+end
+
+-- Generar un ítem de mapa de Minecraft con escala (0 a 4)
+-- El mapa generado se deposita en un cofre adyacente o cae al suelo
+local exito, mapId = cartographer.createMap(1)
+if exito then
+  print("¡Mapa #" .. mapId .. " creado exitosamente!")
+end
+```
+
+### 7. Potion & Alchemical Synthesizer (`alchemist`)
+
+Automatiza la fabricación de pociones, consulta recetas y sintetiza pociones extrayendo botellas de agua e ingredientes directamente desde cofres o barriles adyacentes.
+
+```lua
+-- Listar recetas de pociones disponibles
+local recetas = alchemist.getRecipes()
+for i, r in ipairs(recetas) do
+  print(i .. ": " .. r)
+end
+
+-- Inspeccionar el soporte de pociones adyacente
+local soporte = alchemist.inspectStand()
+print("Nivel de combustible: " .. soporte.fuelLevel)
+
+-- Sintetizar una poción: alchemist.brew(tipoPocion, [modificador], [esArrojadiza])
+-- Modificadores: "normal", "extended" / "long" (Redstone), "strong" / "ii" (Glowstone)
+local ok, msg = alchemist.brew("SPEED", "extended", false)
+if ok then
+  print("&a" .. msg)
+else
+  print("&cError en síntesis: " .. msg)
+end
+```
+
+### 8. Farming / Harvesting Module (`farmer`)
+
+Inspecciona la madurez de los cultivos, cosecha automáticamente cultivos maduros, replanta semillas y fertiliza con polvo de hueso desde contenedores adyacentes.
+
+```lua
+-- Inspeccionar madurez de un cultivo (por lado o coordenadas)
+local cultivo = farmer.inspectCrop("down")
+if cultivo.isCrop then
+  print("Cultivo: " .. cultivo.material .. " Maduro: " .. tostring(cultivo.mature))
+end
+
+-- Cosechar un único cultivo (con replantado automático = true)
+local cosechado = farmer.harvest("down", true)
+
+-- Cosechar un área completa (radio hasta 12) con replantado
+local total = farmer.harvestArea(4, true)
+print("¡Cosechados " .. total .. " cultivos maduros!")
+
+-- Fertilizar cultivo usando polvo de hueso de cofres adyacentes
+local fertilizado = farmer.fertilize("down")
+```
+
+### 9. Autonomous Quarry Excavator (`quarry`)
+
+Excava una columna volumétrica (ancho X * largo Z hasta la capa Y objetivo) capa por capa de forma autónoma. Drena agua y lava, deposita los bloques minados en cofres adyacentes y registra las extracciones en CoreProtect.
+
+```lua
+-- Iniciar excavación: quarry.start(ancho, largo, capaYObjetivo, [manejarLiquidos])
+local ok, msg = quarry.start(8, 8, -58, true)
+if ok then
+  print("&aCantera iniciada: " .. msg)
+end
+
+-- Monitorear estado de la excavación
+local estado = quarry.getStatus()
+print("Activa: " .. tostring(estado.active))
+print("Capa Y actual: " .. estado.currentY .. " / Objetivo: " .. estado.targetY)
+print("Bloques minados: " .. estado.blocksMined .. " (" .. string.format("%.1f", estado.percentage) .. "%)")
+
+-- Controles de ejecución
+quarry.pause()
+quarry.resume()
+quarry.stop()
+```
+
+### 10. NPC Chatbot & Quest Interposer (`npc`)
+
+Crea diálogos interactivos, opciones de chat con jugadores, preguntas de opción múltiple y hologramas flotantes `TextDisplay`.
+
+```lua
+-- Configurar nombre flotante sobre el bloque
+npc.setName("&6[Gran Archimago]")
+
+-- Enviar mensaje de diálogo a un jugador específico
+npc.say("Steve", "¡Bienvenido a la academia arcana!")
+
+-- Hacer una pregunta con opciones al jugador
+local opciones = {"Aceptar Misión", "Rechazar Misión", "Pedir Información"}
+npc.ask("Steve", "¿Deseas ayudarnos a defender el reino?", opciones)
+
+-- Esperar la respuesta en el chat del jugador
+while true do
+  local respuesta = npc.getLastResponse("Steve")
+  if respuesta then
+    print("Steve respondió: " .. respuesta)
+    npc.clearResponse("Steve")
+    if respuesta == "1" or string.find(respuesta:lower(), "aceptar") then
+      npc.say("Steve", "¡Excelente! Que los vientos arcanos te acompañen.")
+    end
+    break
+  end
+  sleep(1.0)
+end
+```
+
 ### API Genérica `peripheral`
 
 Para configuraciones con múltiples periféricos del mismo tipo:
@@ -129,7 +282,7 @@ end
 
 ---
 
-## 5. Programmable Turtle (`turtle`)
+## 11. Programmable Turtle (`turtle`)
 
 La **Tortuga Programable** es un autómata robótico móvil y constructor capaz de desplazarse por el mundo, minar, colocar bloques, almacenar ítems en 16 ranuras internas y construir estructuras completas a partir de esquemas `.litematic` y `.nbt`.
 
@@ -177,8 +330,13 @@ print("Diseño: " .. bp.name)
 print("Dimensiones: " .. bp.sizeX .. "x" .. bp.sizeY .. "x" .. bp.sizeZ)
 print("Bloques totales: " .. bp.totalBlocks)
 
--- Iniciar construcción en las coordenadas especificadas (o en su posición si se omiten)
-turtle.buildBlueprint("BP-A1B2", 100, 64, 200)
+-- Iniciar construcción en las coordenadas especificadas con rotación opcional y limpieza
+-- turtle.build(bpId, x, y, z, [limpiar], [orientacion])
+-- orientacion puede ser "NORTH", "EAST", "SOUTH", "WEST", o grados (0, 90, 180, 270)
+local ok, err = turtle.build("BP-A1B2", 100, 64, 200, false, "EAST")
+if not ok then
+  print("Error al iniciar construcción: " .. err)
+end
 
 -- Monitorear progreso
 local prog = turtle.getBuildProgress()
@@ -190,18 +348,74 @@ turtle.resumeBuild()
 turtle.cancelBuild()
 ```
 
+> **Cofres de Suministro y Combustible con Hologramas**:
+> Si las opciones `turtle-require-materials` o `turtle-fuel-required` están habilitadas en el servidor, la tortuga coloca automáticamente cofres dedicados con hologramas flotantes (`"Coloca los bloques de construcción aquí"` y `"Coloca el combustible aquí"`), absorbiendo los materiales a medida que avanza.
+
 ---
 
-## 6. Portal Web y Visor de Diseños
+### Mejora de Motor de Cantera Lateral (Quarry Engine Upgrade)
 
-Los jugadores pueden acceder al **Portal Web** del servidor ejecutando en el juego:
+El **Motor de Cantera** (`BLAST_FURNACE` por defecto) puede acoplarse a la tortuga como una mejora de excavación móvil a cielo abierto o subterránea:
+
+- **Requisito de Posicionamiento Lateral:** El bloque de la cantera debe colocarse de forma **lateral y adyacente** (directamente a la **izquierda** o a la **derecha** de la tortuga) antes de iniciar la operación.
+- **Detección y Validación:** La tortuga valida la presencia del motor mediante `turtle.hasQuarryEngine()`.
+- **Desplazamiento Físico en Bloque:** Una vez iniciada la excavación, el motor de la cantera se vincula a la tortuga y se desplaza físicamente junto a ella bloque a bloque y al rotar.
+- **Colocación Automática de 2 Cofres con Hologramas:** Al arrancar la cantera, la tortuga genera:
+  1. `📦 Almacenamiento de Bloques Minados`: Donde se almacenan todos los bloques y minerales extraídos.
+  2. `⚡ Coloca combustible aquí`: Para recargar el combustible de la tortuga durante trabajos prolongados.
+- **Pausa Automática por Almacenamiento Lleno:** Si el cofre de almacenamiento se llena por completo, la tortuga detiene inmediatamente la excavación (`"Paused: Mined blocks storage chest is full"`) para evitar pérdida de minerales. Al vaciar el cofre, se reanuda fácilmente mediante `turtle.resumeQuarry()` o desde la interfaz gráfica.
+- **+20% de Consumo de Combustible:** Al tratarse de una maquinaria pesada acoplada, la tortuga consume un 20% más de combustible (multiplicador 1.20x) durante las labores de excavación.
+
+```lua
+-- 1. Validar que la mejora de motor esté colocada al lateral
+if not turtle.hasQuarryEngine() then
+  print("¡Debes colocar un Motor de Cantera a la izquierda o derecha de la tortuga!")
+  return
+end
+
+-- 2. Iniciar excavación: turtle.quarry(ancho, largo, capaYObjetivo, [manejarLiquidos])
+-- Excava un área de 16x16 hasta la capa Y=11, drenando agua y lava por defecto
+local ok, err = turtle.quarry(16, 16, 11, true)
+if not ok then
+  print("No se pudo iniciar la cantera: " .. err)
+  return
+end
+print("¡Excavación iniciada!")
+
+-- 3. Consultar progreso y estado
+local q = turtle.getQuarryStatus()
+print("Estado: " .. q.status .. " (" .. q.message .. ")")
+print("Progreso: " .. q.percentage .. "% (" .. q.blocksMined .. "/" .. q.totalBlocks .. ")")
+print("Capa Y actual: " .. q.currentY .. " Objetivo: " .. q.targetY .. " Lado: " .. (q.side or "ninguno"))
+
+-- 4. Controles de pausa, reanudación y cancelación
+turtle.pauseQuarry()
+turtle.resumeQuarry()
+turtle.stopQuarry()
+```
+
+---
+
+## 12. Portal Web, Nube Pastebin y Cuotas
+
+Los jugadores pueden interactuar con el sistema web integrado ejecutando en el servidor:
 ```text
-/pc web
+/mvprog web
 ```
 
 ### Características del Portal Web:
-1. **Subida de Archivos:** Arrastra y suelta directamente archivos `.litematic` (Litematica) o `.nbt` (Vanilla Structure Blocks).
-2. **Visor 3D y Desglose de Capas:** Visualiza en el navegador capa por capa (eje Y) con slider interactivo y colores por tipo de bloque.
-3. **Lista de Materiales Requeridos:** Muestra la lista exacta de bloques y cantidades necesarias para completar la construcción.
-4. **Despacho Remoto a Tortugas:** Selecciona cualquier tortuga activa en el servidor, asigna las coordenadas deseadas y presiona **"⚡ INITIATE CONSTRUCTION"**.
-5. **Progreso en Vivo:** Monitorea en tiempo real el porcentaje completado, bloques colocados y pausa o cancela el trabajo remotamente.
+1. **Subida de Archivos Drag & Drop:** Arrastra y suelta directamente esquemas `.litematic` (Litematica) o `.nbt` (Vanilla Structure Blocks).
+2. **Visor 3D y Desglose de Capas:** Visualiza en Three.js capa por capa con slider interactivo y corte 2D.
+3. **Lista de Materiales Requeridos:** Muestra la lista exacta de bloques necesarios.
+4. **Despacho Remoto a Tortugas:** Selecciona cualquier tortuga activa, ingresa las coordenadas y presiona **"⚡ INITIATE CONSTRUCTION"**.
+
+### Pastebin Universal y Cuotas de Almacenamiento:
+- **Descargar esquemática desde la nube:**  
+  `/mvprog get <código|url>`  
+  Descarga automáticamente esquemas subidos a Bytebin, GitHub o URLs públicas y los importa al servidor.
+- **Consultar espacio y cuota de almacenamiento:**  
+  `/mvprog quota`  
+  Muestra el uso en MB y el límite restante asignado a tu cuenta.
+- **Administrar esquemas cargados:**  
+  `/mvprog bp list` — Lista todos los esquemas en memoria.  
+  `/mvprog bp delete <id>` — Elimina un esquema de tu propiedad.

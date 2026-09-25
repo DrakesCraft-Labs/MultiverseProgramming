@@ -126,94 +126,101 @@ All custom items can be obtained via vanilla crafting in survival mode.
 
 ```text
 +---+---+---+
-| Q | E | Q |
+| C | C | C |
 +---+---+---+
-| Q | O | Q |
+|   | Q |   |
 +---+---+---+
-| R | R | R |
+|   | R |   |
 +---+---+---+
 ```
 
-**Legend:** `Q` = Quartz · `E` = Eye of Ender · `O` = Observer · `R` = Redstone Dust  
-**Result:** 1 **Block & Entity Scanner**
+**Legend:** `C` = Cobblestone · `Q` = Quartz · `R` = Redstone Dust  
+**Result:** 1 **Block & Entity Scanner** (Observer)
 
 ## Cartographer & Map Renderer (Cartography Table)
 
 ```text
 +---+---+---+
-| P | C | P |
+| P | P |   |
 +---+---+---+
-| P | T | P |
+| W | W |   |
 +---+---+---+
-|   | R |   |
+| W | W |   |
 +---+---+---+
 ```
 
-**Legend:** `P` = Paper · `C` = Compass · `T` = Cartography Table · `R` = Redstone Dust  
-**Result:** 1 **Cartographer & Map Renderer**
+**Legend:** `P` = Paper · `W` = Oak Planks  
+**Result:** 1 **Cartographer & Map Renderer** (Cartography Table)
 
 ## Potion & Alchemical Synthesizer (Brewing Stand)
 
 ```text
 +---+---+---+
-| G | N | G |
+|   | B |   |
 +---+---+---+
-| B | S | B |
-+---+---+---+
-| R | R | R |
-+---+---+---+
-```
-
-**Legend:** `G` = Glass Bottle · `N` = Nether Wart · `B` = Blaze Powder · `S` = Brewing Stand · `R` = Redstone Dust  
-**Result:** 1 **Potion & Alchemical Synthesizer**
-
-## Farming / Harvesting Module (Composter)
-
-```text
-+---+---+---+
-| I | H | I |
-+---+---+---+
-| I | C | I |
+| C | C | C |
 +---+---+---+
 |   | R |   |
 +---+---+---+
 ```
 
-**Legend:** `I` = Iron Ingot · `H` = Diamond Hoe · `C` = Composter · `R` = Redstone Dust  
-**Result:** 1 **Farming / Harvesting Module**
+**Legend:** `B` = Blaze Rod · `C` = Cobblestone · `R` = Redstone Dust  
+**Result:** 1 **Potion & Alchemical Synthesizer** (Brewing Stand)
 
-## Autonomous Quarry Excavator (Blast Furnace)
+## Farming / Harvesting Module (Composter)
 
 ```text
 +---+---+---+
-| I | P | I |
+| W |   | W |
 +---+---+---+
-| D | B | D |
+| W |   | W |
 +---+---+---+
-| R | R | R |
+| W | W | W |
 +---+---+---+
 ```
 
-**Legend:** `I` = Iron Ingot · `P` = Diamond Pickaxe · `D` = Diamond · `B` = Blast Furnace · `R` = Redstone Dust  
-**Result:** 1 **Autonomous Quarry Excavator**
+**Legend:** `W` = Oak Slab  
+**Result:** 1 **Farming / Harvesting Module** (Composter)
+
+## Autonomous Quarry Excavator & Turtle Quarry Engine (Blast Furnace)
+
+> [!NOTE]
+> This item serves **dual purposes**:
+> 1. Placed next to a Computer, it operates as an **Autonomous Stationary Quarry Excavator** controlled via the `quarry` Lua API.
+> 2. Placed **laterally** (directly to the left or right) next to a Programmable Turtle, it functions as the **Quarry Engine Upgrade Attachment** for mobile volumetric strip-mining controlled via `turtle.quarry(...)`.
+
+```text
++---+---+---+
+| I | I | I |
++---+---+---+
+| I | F | I |
++---+---+---+
+| S | S | S |
++---+---+---+
+```
+
+**Legend:** `I` = Iron Ingot · `F` = Furnace · `S` = Smooth Stone  
+**Result:** 1 **Quarry Excavator / Turtle Quarry Engine** (Blast Furnace)
 
 ## NPC Chatbot & Quest Interposer (Sculk Catalyst)
 
 ```text
 +---+---+---+
-| A | E | A |
+|   | G |   |
 +---+---+---+
-| G | S | G |
+| A | C | A |
 +---+---+---+
-| R | R | R |
+|   | R |   |
 +---+---+---+
 ```
 
-**Legend:** `A` = Amethyst Shard · `E` = Echo Shard · `G` = Gold Ingot · `S` = Sculk Catalyst · `R` = Redstone Dust  
-**Result:** 1 **NPC Chatbot & Quest Interposer**
+**Legend:** `G` = Gold Ingot · `A` = Amethyst Shard · `C` = Book · `R` = Redstone Dust  
+**Result:** 1 **NPC Chatbot & Quest Interposer** (Sculk Catalyst)
 
 ## Note for Administrators
 
 Operators can dispense items directly using:
-`/mvprog give <floppydisk|computer|advancedcomputer|monitor|crafter|transposer|speaker|turtle|scanner|cartographer|alchemist|farmer|quarry|npc>`
-Requires permission `multiverseprogramming.admin`.
+```text
+/mvprog give <floppydisk|computer|advancedcomputer|monitor|crafter|transposer|speaker|turtle|scanner|cartographer|alchemist|farmer|quarry|npc>
+```
+Requires permission `multiverseprogramming.admin` (default: `op`).

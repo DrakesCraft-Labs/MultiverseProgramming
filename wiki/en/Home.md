@@ -7,7 +7,7 @@ MultiverseProgramming brings **ComputerCraft‑style programmable computers** to
 - [Getting Started](Getting-Started.md) — install, first computer, first program.
 - [Computer and Disks](Computer-and-Disks.md) — how the computer block, the GUI and the floppy disks work.
 - [Recipes](Recipes.md) — visual crafting table recipes for every custom item (including Turtles and peripherals).
-- [Lua Scripting](Lua-Scripting.md) — the sandboxed Lua environment, available libraries (Turtle, Monitor, Crafter, Transposer, Synth, Redstone) and examples.
+- [Lua Scripting](Lua-Scripting.md) — the sandboxed Lua environment, available libraries (Turtle & Quarry Engine, Monitor, Crafter, Transposer, Speaker, Scanner, Cartographer, Alchemist, Farmer, NPC) and examples.
 - [Configuration](Configuration.md) — `config.yml`, commands and permissions.
 - [Blueprint Nexus Portal](https://drakescraft-labs.github.io/MultiverseProgramming/) — online design visualizer and remote turtle dispatcher.
 - [Developer Documentation (Architecture & Code Guide)](dev/README.md) — deep technical overview, web server, REST API and internal subsystems.
