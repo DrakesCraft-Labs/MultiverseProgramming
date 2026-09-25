@@ -111,17 +111,18 @@ Todos los endpoints implementan cabeceras estándar para permitir peticiones des
 {
   "blueprintId": "BP-7A9B",
   "turtleId": "T-001",
-  "x": 120,
-  "y": 64,
-  "z": -250,
+  "x": 0,
+  "y": 0,
+  "z": 0,
   "clear": true,
   "orientation": "EAST"
 }
 ```
 1. **Localización de la Tortuga**: Se obtiene la referencia de la tortuga desde `TurtleManager` mediante su identificador único.
-2. **Cálculo de Rotación**: Se normaliza la orientación recibida ("NORTH", "EAST", "SOUTH", "WEST" o grados) con `BlueprintRotator.normalizeRotation()`.
-3. **Ejecución en el Hilo Principal**: Se programa la llamada a `turtle.startBuild()` en el programador de tareas de Bukkit.
-4. **Confirmación**: Se retorna HTTP `200 OK` informando al cliente web que la construcción ha iniciado.
+2. **Cálculo de Coordenadas Relativas**: Por defecto (`relative: true`), las coordenadas `(x, y, z)` se calculan como desplazamiento relativo desde la posición actual de la tortuga (`targetX = turtleX + x`). Usar `(0, 0, 0)` ancla el plano directamente en la posición de la tortuga.
+3. **Cálculo de Rotación**: Se normaliza la orientación recibida ("NORTH", "EAST", "SOUTH", "WEST" o grados) con `BlueprintRotator.normalizeRotation()`.
+4. **Ejecución en el Hilo Principal**: Se programa la llamada a `turtle.startBuild()` en el programador de tareas de Bukkit.
+5. **Confirmación**: Se retorna HTTP `200 OK` informando al cliente web que la construcción ha iniciado.
 
 ---
 

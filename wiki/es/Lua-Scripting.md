@@ -411,7 +411,7 @@ Los jugadores pueden interactuar con el sistema web integrado ejecutando en el s
 1. **Subida de Archivos Drag & Drop:** Arrastra y suelta directamente esquemas `.litematic` (Litematica) o `.nbt` (Vanilla Structure Blocks).
 2. **Visor 3D y Desglose de Capas:** Visualiza en Three.js capa por capa con slider interactivo y corte 2D.
 3. **Lista de Materiales Requeridos:** Muestra la lista exacta de bloques necesarios.
-4. **Despacho Remoto a Tortugas:** Selecciona cualquier tortuga activa, ingresa las coordenadas y presiona **"⚡ INITIATE CONSTRUCTION"**.
+4. **Despacho Remoto a Tortugas:** Selecciona cualquier tortuga activa, ingresa las coordenadas relativas (`~ ~ ~` o `0, 0, 0` para su posición actual) y presiona **"⚡ INITIATE CONSTRUCTION"**.
 
 ### Pastebin Universal y Cuotas de Almacenamiento:
 - **Descargar esquemática desde la nube:**  

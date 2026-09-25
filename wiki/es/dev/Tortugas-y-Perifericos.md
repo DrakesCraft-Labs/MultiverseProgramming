@@ -29,6 +29,11 @@ Una Tortuga es un bloque móvil autónomo en el mundo capaz de desplazarse, colo
 - **Orientación Direccional**: Normalizada a ejes horizontales (`NORTH`, `EAST`, `SOUTH`, `WEST`).
 - **Sistema de Inventario**: 16 ranuras accesibles tanto desde la GUI in-game como desde el entorno Lua (`turtle.select(slot)`, `turtle.getItemDetail()`).
 - **Hologramas de Texto**: Utiliza entidades nativas `TextDisplay` de Paper 1.21 con respaldo automático a `ArmorStand` invisibles si el mundo no soporta displays.
+- **Sistema de Coordenadas Relativas**: Todas las órdenes de construcción (`turtle.build(bpId, relX, relY, relZ)` en Lua, `/mvprog build` en chat y `/api/build` en la web) calculan el origen de anclaje de forma estrictamente **relativa a la ubicación actual de la tortuga**:
+  $$\text{originX} = \text{turtleX} + relX$$
+  $$\text{originY} = \text{turtleY} + relY$$
+  $$\text{originZ} = \text{turtleZ} + relZ$$
+  Esto permite que `(0, 0, 0)` o `~ ~ ~` comience a construir exactamente donde está situada la tortuga en lugar de intentar viajar a coordenadas mundiales lejanas.
 
 ---
 

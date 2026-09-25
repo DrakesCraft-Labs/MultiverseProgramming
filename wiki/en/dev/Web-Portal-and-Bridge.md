@@ -111,17 +111,18 @@ Every endpoint implements standard Cross-Origin Resource Sharing (CORS) headers:
 {
   "blueprintId": "BP-7A9B",
   "turtleId": "T-001",
-  "x": 120,
-  "y": 64,
-  "z": -250,
+  "x": 0,
+  "y": 0,
+  "z": 0,
   "clear": true,
   "orientation": "EAST"
 }
 ```
 1. **Entity Lookup**: Retrieves `Turtle` by ID from `TurtleManager`.
-2. **Rotation Calculation**: Resolves `orientation` ("NORTH", "EAST", "SOUTH", "WEST", or degrees) via `BlueprintRotator.normalizeRotation()`.
-3. **Primary Thread Dispatch**: Dispatches `turtle.startBuild(bp, origin, delay, requireMaterials, clear, rotation, onDone, onError)` onto the Bukkit scheduler.
-4. **Live Response**: Returns HTTP `200 OK` confirming the dispatch.
+2. **Relative Coordinate Calculation**: By default (`relative: true`), `(x, y, z)` are calculated as relative offsets from the turtle's location (`targetX = turtleX + x`). Passing `(0, 0, 0)` anchors the blueprint directly at the turtle's location.
+3. **Rotation Calculation**: Resolves `orientation` ("NORTH", "EAST", "SOUTH", "WEST", or degrees) via `BlueprintRotator.normalizeRotation()`.
+4. **Primary Thread Dispatch**: Dispatches `turtle.startBuild(bp, origin, delay, requireMaterials, clear, rotation, onDone, onError)` onto the Bukkit scheduler.
+5. **Live Response**: Returns HTTP `200 OK` confirming the dispatch.
 
 ---
 

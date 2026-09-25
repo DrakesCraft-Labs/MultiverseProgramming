@@ -387,7 +387,7 @@ Players can access the built-in **Web Portal** by executing in-game:
 1. **File Upload Dropzone:** Drag and drop `.litematic` (Litematica) or `.nbt` (Vanilla Structure) files directly from your browser.
 2. **Layer-by-Layer Visualizer:** Interactive 3D WebGL (Three.js) slice visualizer with a Y-layer slider, block colors, and 2D sliced layer preview.
 3. **Materials Required:** Instant breakdown of needed blocks and item counts.
-4. **Remote Dispatch to Turtles:** Select any online Turtle, enter coordinates, and click **"⚡ INITIATE CONSTRUCTION"**.
+4. **Remote Dispatch to Turtles:** Select any online Turtle, enter relative coordinates (`~ ~ ~` or `0, 0, 0` for current position), and click **"⚡ INITIATE CONSTRUCTION"**.
 5. **Live Job Monitoring:** Real-time progress bar with pause/cancel controls.
 
 ### Universal Cloud Pastebin & Storage Quotas:

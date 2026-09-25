@@ -29,6 +29,11 @@ A Turtle is an autonomous in-game mobile block capable of navigation, block mani
 - **Directional Facing**: Sanitized to horizontal axes (`NORTH`, `EAST`, `SOUTH`, `WEST`).
 - **Inventory System**: 16 dedicated slots exposed to both the GUI and the Lua sandbox (`turtle.select(slot)`, `turtle.getItemDetail()`).
 - **Hologram Displays**: Uses Paper 1.21 `TextDisplay` entities with automatic fallback to invisible `ArmorStand` markers for legacy worlds.
+- **Relative Coordinate System**: All build execution endpoints (`turtle.build(bpId, relX, relY, relZ)` in Lua, `/mvprog build` in chat, and `/api/build` via REST) compute the blueprint anchor strictly **relative to the turtle's current world position**:
+  $$\text{originX} = \text{turtleX} + relX$$
+  $$\text{originY} = \text{turtleY} + relY$$
+  $$\text{originZ} = \text{turtleZ} + relZ$$
+  Passing `(0, 0, 0)` or `~ ~ ~` anchors the structure directly at the turtle's location rather than attempting to travel to distant global coordinates.
 
 ---
 
