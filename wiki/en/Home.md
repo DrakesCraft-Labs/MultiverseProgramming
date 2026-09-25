@@ -10,6 +10,7 @@ MultiverseProgramming brings **ComputerCraft‑style programmable computers** to
 - [Lua Scripting](Lua-Scripting.md) — the sandboxed Lua environment, available libraries (Turtle, Monitor, Crafter, Transposer, Synth, Redstone) and examples.
 - [Configuration](Configuration.md) — `config.yml`, commands and permissions.
 - [Blueprint Nexus Portal](https://drakescraft-labs.github.io/MultiverseProgramming/) — online design visualizer and remote turtle dispatcher.
+- [Developer Documentation (Architecture & Code Guide)](../dev/README.md) — deep technical overview, web server, REST API and internal subsystems.
 
 > 🌐 Spanish version: [wiki/es/Home.md](../es/Home.md)
 

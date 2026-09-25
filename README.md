@@ -114,6 +114,16 @@ All commands use the `/mvprog` prefix (aliases: `/pc`, `/computador`, `/computad
 
 ---
 
+## 🛠️ Developer Documentation & Architecture Guide
+
+For contributors, plugin developers, and technical administrators, comprehensive technical documentation is available in the Wiki:
+- 📖 **[Developer Documentation Hub (English & Spanish)](wiki/dev/README.md)**
+  - **[Core Architecture & Subsystems](wiki/dev/Architecture-EN.md)** ([Español](wiki/dev/Architecture-ES.md))
+  - **[Web Portal & Communication Bridge](wiki/dev/Web-Portal-and-Bridge-EN.md)** ([Español](wiki/dev/Web-Portal-and-Bridge-ES.md))
+  - **[Turtles, Quarry Engine & Peripherals](wiki/dev/Turtles-and-Peripherals-EN.md)** ([Español](wiki/dev/Turtles-and-Peripherals-ES.md))
+
+---
+
 ## Building from Source
 
 ```bash

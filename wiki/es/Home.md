@@ -10,6 +10,7 @@ MultiverseProgramming lleva **computadoras programables estilo ComputerCraft** a
 - [Programación en Lua](Lua-Scripting.md) — el entorno Lua, las librerías disponibles (Tortuga, Monitor, Crafter, Transposer, Synth, Redstone) y ejemplos.
 - [Configuración](Configuration.md) — `config.yml`, comandos y permisos.
 - [Portal Blueprint Nexus](https://drakescraft-labs.github.io/MultiverseProgramming/) — visualizador web de planos y despachador de construcción para tortugas.
+- [Documentación para Desarrolladores (Arquitectura y Código)](../dev/README.md) — guía técnica profunda, servidor web, API REST y subsistemas internos.
 
 > 🌐 Versión en inglés: [wiki/en/Home.md](../en/Home.md)
 
