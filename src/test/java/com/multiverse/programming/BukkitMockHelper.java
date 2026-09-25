@@ -46,6 +46,26 @@ public final class BukkitMockHelper {
 
         when(server.getItemFactory()).thenReturn(itemFactory);
 
+        when(server.createBlockData(anyString())).thenAnswer(inv -> {
+            String str = inv.getArgument(0);
+            org.bukkit.block.data.BlockData bd = mock(org.bukkit.block.data.BlockData.class);
+            String clean = str;
+            if (clean.contains("[")) clean = clean.substring(0, clean.indexOf('['));
+            if (clean.startsWith("minecraft:")) clean = clean.substring("minecraft:".length());
+            Material m = Material.matchMaterial(clean.toUpperCase());
+            when(bd.getMaterial()).thenReturn(m != null ? m : Material.STONE);
+            when(bd.getAsString()).thenReturn(str);
+            return bd;
+        });
+
+        when(server.createBlockData(any(Material.class))).thenAnswer(inv -> {
+            Material m = inv.getArgument(0);
+            org.bukkit.block.data.BlockData bd = mock(org.bukkit.block.data.BlockData.class);
+            when(bd.getMaterial()).thenReturn(m != null ? m : Material.STONE);
+            when(bd.getAsString()).thenReturn("minecraft:" + (m != null ? m.name().toLowerCase() : "stone"));
+            return bd;
+        });
+
         try {
             Field serverField = Bukkit.class.getDeclaredField("server");
             serverField.setAccessible(true);

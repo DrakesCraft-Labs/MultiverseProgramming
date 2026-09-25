@@ -241,4 +241,30 @@ class TurtleTest {
         assertFalse(res.arg(1).toboolean());
         assertTrue(res.arg(2).tojstring().contains("mandatory"));
     }
+
+    @Test
+    @DisplayName("parseBlockData parses Minecraft block states properly")
+    void testParseBlockData() {
+        assertNull(Turtle.parseBlockData(null));
+        assertNull(Turtle.parseBlockData(""));
+
+        var data = Turtle.parseBlockData("minecraft:stone");
+        assertNotNull(data);
+        assertEquals(Material.STONE, data.getMaterial());
+
+        var stairs = Turtle.parseBlockData("minecraft:oak_stairs[facing=south,half=bottom,shape=straight]");
+        assertNotNull(stairs);
+        assertEquals(Material.OAK_STAIRS, stairs.getMaterial());
+    }
+
+    @Test
+    @DisplayName("getItemMaterialForBlock maps block-only materials to valid items")
+    void testGetItemMaterialForBlock() {
+        assertEquals(Material.TORCH, Turtle.getItemMaterialForBlock(Material.WALL_TORCH));
+        assertEquals(Material.SOUL_TORCH, Turtle.getItemMaterialForBlock(Material.SOUL_WALL_TORCH));
+        assertEquals(Material.REDSTONE_TORCH, Turtle.getItemMaterialForBlock(Material.REDSTONE_WALL_TORCH));
+        assertEquals(Material.OAK_SIGN, Turtle.getItemMaterialForBlock(Material.OAK_WALL_SIGN));
+        assertEquals(Material.OAK_HANGING_SIGN, Turtle.getItemMaterialForBlock(Material.OAK_WALL_HANGING_SIGN));
+        assertEquals(Material.STONE, Turtle.getItemMaterialForBlock(Material.STONE));
+    }
 }

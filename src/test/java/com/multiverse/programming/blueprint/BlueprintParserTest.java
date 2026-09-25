@@ -227,4 +227,31 @@ class BlueprintParserTest {
         assertEquals("Monumental Nether Portal", BlueprintParser.resolveCleanName("Monumental Nether Portal", "nether_portal.litematic"));
         assertEquals("castle_gate", BlueprintParser.resolveCleanName(null, "castle_gate.nbt"));
     }
+
+    @Test
+    @DisplayName("Verify block placement priority ordering")
+    void testPlacementPriority() {
+        assertEquals(0, BlueprintParser.getPlacementPriority("minecraft:stone"));
+        assertEquals(0, BlueprintParser.getPlacementPriority("minecraft:oak_planks"));
+        assertEquals(1, BlueprintParser.getPlacementPriority("minecraft:oak_stairs[facing=south,half=bottom]"));
+        assertEquals(1, BlueprintParser.getPlacementPriority("minecraft:stone_slab[type=bottom]"));
+        assertEquals(2, BlueprintParser.getPlacementPriority("minecraft:oak_door[half=lower,facing=north]"));
+        assertEquals(3, BlueprintParser.getPlacementPriority("minecraft:oak_door[half=upper,facing=north]"));
+        assertEquals(4, BlueprintParser.getPlacementPriority("minecraft:wall_torch[facing=south]"));
+        assertEquals(4, BlueprintParser.getPlacementPriority("minecraft:sea_pickle[pickles=3]"));
+        assertEquals(4, BlueprintParser.getPlacementPriority("minecraft:ladder[facing=north]"));
+        assertEquals(5, BlueprintParser.getPlacementPriority("minecraft:water[level=0]"));
+    }
+
+    @Test
+    @DisplayName("Verify item name resolution for wall variants and delicate blocks")
+    void testResolveItemName() {
+        assertEquals("TORCH", BlueprintParser.resolveItemName("WALL_TORCH"));
+        assertEquals("SOUL_TORCH", BlueprintParser.resolveItemName("SOUL_WALL_TORCH"));
+        assertEquals("REDSTONE_TORCH", BlueprintParser.resolveItemName("REDSTONE_WALL_TORCH"));
+        assertEquals("OAK_SIGN", BlueprintParser.resolveItemName("OAK_WALL_SIGN"));
+        assertEquals("OAK_HANGING_SIGN", BlueprintParser.resolveItemName("OAK_WALL_HANGING_SIGN"));
+        assertEquals("FLOWER_POT", BlueprintParser.resolveItemName("POTTED_POPPY"));
+        assertEquals("STONE", BlueprintParser.resolveItemName("STONE"));
+    }
 }

@@ -13,6 +13,7 @@ import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import com.multiverse.programming.MultiverseProgrammingPlugin;
+import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.Directional;
 import org.bukkit.entity.Item;
 import org.bukkit.inventory.ItemStack;
@@ -476,7 +477,8 @@ public final class Turtle {
             }
 
             PlacementBlock pb = activeBlueprint.blocks().get(index);
-            Material blockMat = parseMaterialFromBlockState(pb.material());
+            BlockData blockData = parseBlockData(pb.material());
+            Material blockMat = (blockData != null) ? blockData.getMaterial() : parseMaterialFromBlockState(pb.material());
 
             if (blockMat == null || blockMat.isAir()) {
                 currentBlockIndex.incrementAndGet();
@@ -490,14 +492,20 @@ public final class Turtle {
             }
 
             // Material Check if required
+            // Upper halves of doors/tall plants or head parts of beds are formed with the lower/foot part,
+            // or should only consume 1 item for the pair.
             if (requireMaterials) {
-                if (!consumeMaterial(blockMat)) {
-                    this.status = Status.PAUSED;
-                    this.statusMessage = "Paused: Missing material " + blockMat.name();
-                    if (onError != null) {
-                        onError.accept("Turtle is missing required material: " + blockMat.name());
+                Material itemMat = getItemMaterialForBlock(blockMat);
+                boolean isUpper = pb.material().contains("half=upper") || pb.material().contains("part=head");
+                if (!isUpper && itemMat.isItem()) {
+                    if (!consumeMaterial(itemMat)) {
+                        this.status = Status.PAUSED;
+                        this.statusMessage = "Paused: Missing material " + itemMat.name();
+                        if (onError != null) {
+                            onError.accept("Turtle is missing required material: " + itemMat.name());
+                        }
+                        return;
                     }
-                    return;
                 }
             }
 
@@ -510,8 +518,18 @@ public final class Turtle {
                 moveTurtleAdjacentTo(world, targetX, targetY, targetZ);
 
                 Block targetBlock = world.getBlockAt(targetX, targetY, targetZ);
-                if (targetBlock.getType() != blockMat) {
+                boolean updated = false;
+                if (blockData != null) {
+                    if (targetBlock.getBlockData() == null || !targetBlock.getBlockData().matches(blockData)) {
+                        targetBlock.setBlockData(blockData, false);
+                        updated = true;
+                    }
+                } else if (targetBlock.getType() != blockMat) {
                     targetBlock.setType(blockMat, false);
+                    updated = true;
+                }
+
+                if (updated) {
                     try {
                         world.spawnParticle(Particle.HAPPY_VILLAGER, targetX + 0.5, targetY + 0.5, targetZ + 0.5, 2, 0.1, 0.1, 0.1, 0.02);
                         world.playSound(targetBlock.getLocation(), Sound.BLOCK_STONE_PLACE, 0.5f, 1.0f);
@@ -742,12 +760,16 @@ public final class Turtle {
     private synchronized boolean consumeMaterial(Material mat) {
         for (int i = 0; i < 16; i++) {
             ItemStack stack = inventory[i];
-            if (stack != null && stack.getType() == mat && stack.getAmount() > 0) {
-                stack.setAmount(stack.getAmount() - 1);
-                if (stack.getAmount() <= 0) {
-                    inventory[i] = null;
+            if (stack != null && stack.getAmount() > 0) {
+                if (stack.getType() == mat ||
+                        (mat == Material.WATER && stack.getType() == Material.WATER_BUCKET) ||
+                        (mat == Material.LAVA && stack.getType() == Material.LAVA_BUCKET)) {
+                    stack.setAmount(stack.getAmount() - 1);
+                    if (stack.getAmount() <= 0) {
+                        inventory[i] = null;
+                    }
+                    return true;
                 }
-                return true;
             }
         }
         return false;
@@ -803,6 +825,68 @@ public final class Turtle {
             buildTask.cancel();
             buildTask = null;
         }
+    }
+
+    public static BlockData parseBlockData(String blockState) {
+        if (blockState == null || blockState.isBlank()) {
+            return null;
+        }
+        try {
+            return Bukkit.createBlockData(blockState);
+        } catch (Throwable t) {
+            try {
+                Material mat = parseMaterialFromBlockState(blockState);
+                if (mat != null && !mat.isAir()) {
+                    return Bukkit.createBlockData(mat);
+                }
+            } catch (Throwable ignored) {}
+            return null;
+        }
+    }
+
+    public static Material getItemMaterialForBlock(Material blockMat) {
+        if (blockMat == null) return Material.AIR;
+
+        String name = blockMat.name();
+        if (name.equals("WALL_TORCH")) return Material.TORCH;
+        if (name.equals("SOUL_WALL_TORCH")) return Material.SOUL_TORCH;
+        if (name.equals("REDSTONE_WALL_TORCH")) return Material.REDSTONE_TORCH;
+        if (name.endsWith("_WALL_FAN")) {
+            Material match = Material.matchMaterial(name.replace("_WALL_FAN", "_FAN"));
+            if (match != null && match.isItem()) return match;
+        }
+        if (name.endsWith("_WALL_SIGN")) {
+            Material match = Material.matchMaterial(name.replace("_WALL_SIGN", "_SIGN"));
+            if (match != null && match.isItem()) return match;
+        }
+        if (name.endsWith("_WALL_HANGING_SIGN")) {
+            Material match = Material.matchMaterial(name.replace("_WALL_HANGING_SIGN", "_HANGING_SIGN"));
+            if (match != null && match.isItem()) return match;
+        }
+        if (name.startsWith("POTTED_")) {
+            return Material.FLOWER_POT;
+        }
+        if (name.endsWith("_WALL_HEAD") || name.endsWith("_WALL_SKULL")) {
+            String headName = name.replace("_WALL_HEAD", "_HEAD").replace("_WALL_SKULL", "_SKULL");
+            Material match = Material.matchMaterial(headName);
+            if (match != null && match.isItem()) return match;
+        }
+        if (name.equals("WATER_CAULDRON") || name.equals("LAVA_CAULDRON") || name.equals("POWDER_SNOW_CAULDRON")) {
+            return Material.CAULDRON;
+        }
+        if (name.equals("REDSTONE_WIRE")) return Material.REDSTONE;
+        if (name.equals("TRIPWIRE")) return Material.STRING;
+        if (name.equals("SWEET_BERRY_BUSH")) return Material.SWEET_BERRIES;
+        if (name.equals("CARROTS")) return Material.CARROT;
+        if (name.equals("POTATOES")) return Material.POTATO;
+        if (name.equals("BEETROOTS")) return Material.BEETROOT_SEEDS;
+        if (name.equals("WHEAT")) return Material.WHEAT_SEEDS;
+        if (name.equals("BAMBOO_SAPLING")) return Material.BAMBOO;
+        if (name.equals("MELON_STEM") || name.equals("ATTACHED_MELON_STEM")) return Material.MELON_SEEDS;
+        if (name.equals("PUMPKIN_STEM") || name.equals("ATTACHED_PUMPKIN_STEM")) return Material.PUMPKIN_SEEDS;
+        if (name.equals("COCOA")) return Material.COCOA_BEANS;
+
+        return blockMat;
     }
 
     public static Material parseMaterialFromBlockState(String blockState) {
