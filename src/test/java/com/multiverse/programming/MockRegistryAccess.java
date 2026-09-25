@@ -209,6 +209,9 @@ public class MockRegistryAccess implements RegistryAccess {
         if (BlockType.class.isAssignableFrom(type)) {
             return (Registry<T>) BLOCK_REGISTRY;
         }
+        if (org.bukkit.block.Biome.class.isAssignableFrom(type)) {
+            return (Registry<T>) createMockRegistry(org.bukkit.block.Biome.class, k -> null);
+        }
         return createMockRegistry(type, k -> null);
     }
 
@@ -226,6 +229,9 @@ public class MockRegistryAccess implements RegistryAccess {
         }
         if (registryKey == RegistryKey.MENU || "menu".equals(registryKey.key().value())) {
             return (Registry<T>) createMockRegistry(org.bukkit.inventory.MenuType.Typed.class, k -> null);
+        }
+        if (registryKey == RegistryKey.BIOME || "biome".equals(registryKey.key().value())) {
+            return (Registry<T>) createMockRegistry(org.bukkit.block.Biome.class, k -> null);
         }
         return (Registry<T>) createMockRegistry(Keyed.class, k -> null);
     }

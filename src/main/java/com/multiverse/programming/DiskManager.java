@@ -19,6 +19,12 @@ public final class DiskManager {
     public static final String TRANSPOSER_NAME = "Inventory Transposer";
     public static final String SPEAKER_NAME = "Sound Synthesizer";
     public static final String TURTLE_NAME = "Programmable Turtle";
+    public static final String SCANNER_NAME = "§bBlock & Entity Scanner";
+    public static final String CARTOGRAPHER_NAME = "§6Cartographer Table";
+    public static final String ALCHEMIST_NAME = "§dAlchemical Synthesizer";
+    public static final String FARMER_NAME = "§aFarming Attachment";
+    public static final String QUARRY_NAME = "§cQuarry Excavator";
+    public static final String NPC_NAME = "§3NPC Dialogue Core";
 
     private DiskManager() {
     }
@@ -166,6 +172,96 @@ public final class DiskManager {
                     "§7Mobile robotic computer & constructor.",
                     "§7Place it and right-click to open its GUI.",
                     "§7Connects with Web Portal & builds Blueprints."
+            ));
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    public static ItemStack createScanner(Material material) {
+        Material type = (material != null && material.isItem()) ? material : Material.OBSERVER;
+        ItemStack item = new ItemStack(type);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            meta.setDisplayName(SCANNER_NAME);
+            meta.setLore(List.of(
+                    "§7Place adjacent to a Computer or Turtle.",
+                    "§7Scans entities, players, and blocks within a radius via Lua."
+            ));
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    public static ItemStack createCartographer(Material material) {
+        Material type = (material != null && material.isItem()) ? material : Material.CARTOGRAPHY_TABLE;
+        ItemStack item = new ItemStack(type);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            meta.setDisplayName(CARTOGRAPHER_NAME);
+            meta.setLore(List.of(
+                    "§7Place adjacent to a Computer.",
+                    "§7Scans terrain topography and generates custom in-game maps."
+            ));
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    public static ItemStack createAlchemist(Material material) {
+        Material type = (material != null && material.isItem()) ? material : Material.BREWING_STAND;
+        ItemStack item = new ItemStack(type);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            meta.setDisplayName(ALCHEMIST_NAME);
+            meta.setLore(List.of(
+                    "§7Place adjacent to a Computer.",
+                    "§7Automates potion synthesis and alchemy from connected containers."
+            ));
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    public static ItemStack createFarmer(Material material) {
+        Material type = (material != null && material.isItem()) ? material : Material.COMPOSTER;
+        ItemStack item = new ItemStack(type);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            meta.setDisplayName(FARMER_NAME);
+            meta.setLore(List.of(
+                    "§7Place adjacent to a Computer.",
+                    "§7Inspects crop maturity, auto-harvests, and replants crops."
+            ));
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    public static ItemStack createQuarry(Material material) {
+        Material type = (material != null && material.isItem()) ? material : Material.BLAST_FURNACE;
+        ItemStack item = new ItemStack(type);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            meta.setDisplayName(QUARRY_NAME);
+            meta.setLore(List.of(
+                    "§7Autonomous volumetric excavator.",
+                    "§7Mines areas layer-by-layer down to target Y and deposits drops."
+            ));
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    public static ItemStack createNpc(Material material) {
+        Material type = (material != null && material.isItem()) ? material : Material.SCULK_CATALYST;
+        ItemStack item = new ItemStack(type);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            meta.setDisplayName(NPC_NAME);
+            meta.setLore(List.of(
+                    "§7Interactive NPC & quest dialogue core.",
+                    "§7Projects floating holograms and prompts players with choices."
             ));
             item.setItemMeta(meta);
         }

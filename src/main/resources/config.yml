@@ -41,6 +41,12 @@ enable-monitor-recipe: true
 enable-speaker-recipe: true
 enable-transposer-recipe: true
 enable-disk-recipe: true
+enable-recipe-scanner: true
+enable-recipe-cartographer: true
+enable-recipe-alchemist: true
+enable-recipe-farmer: true
+enable-recipe-quarry: true
+enable-recipe-npc: true
 
 # ===================================================================== #
 #                   Machine Functionality Toggles                       #
@@ -53,6 +59,12 @@ enable-crafter: true
 enable-monitor: true
 enable-speaker: true
 enable-transposer: true
+enable-scanner: true
+enable-cartographer: true
+enable-alchemist: true
+enable-farmer: true
+enable-quarry: true
+enable-npc: true
 
 # ===================================================================== #
 #                   Region Protection & Security                        #
@@ -85,6 +97,24 @@ transposer-block: HOPPER
 # Block that acts as a Sound Synthesizer / Speaker (adjacent to computer).
 # Plays notes, frequencies, and Minecraft sound effects.
 speaker-block: NOTE_BLOCK
+
+# Block that acts as an Entity and Block Scanner.
+scanner-block: OBSERVER
+
+# Block that acts as a Cartographer and Map Renderer.
+cartographer-block: CARTOGRAPHY_TABLE
+
+# Block that acts as an Alchemical Synthesizer (Potion Brewing).
+alchemist-block: BREWING_STAND
+
+# Block that acts as a Farming and Harvesting Attachment.
+farmer-block: COMPOSTER
+
+# Block that acts as an Autonomous Quarry Excavator.
+quarry-block: BLAST_FURNACE
+
+# Block that acts as an Interactive NPC Dialogue Core.
+npc-block: SCULK_CATALYST
 
 # Maximum worker threads for running Lua scripts concurrently.
 # Protects the server from thread exhaustion when many computers run simultaneously.

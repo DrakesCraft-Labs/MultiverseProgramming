@@ -49,8 +49,8 @@ class RecipeManagerTest {
 
         // Verify removeRecipe was called to ensure no duplicate keys
         verify(server, atLeastOnce()).removeRecipe(any(NamespacedKey.class));
-        // Verify addRecipe was called for floppy, computer, advanced computer, 4 peripherals, and turtle (total 8)
-        verify(server, times(8)).addRecipe(any(Recipe.class));
+        // Verify addRecipe was called for floppy, computer, advanced computer, 10 peripherals, and turtle (total 14)
+        verify(server, times(14)).addRecipe(any(Recipe.class));
     }
 
     @Test
@@ -67,6 +67,6 @@ class RecipeManagerTest {
     @DisplayName("unregisterAll safely removes all registered recipe keys")
     void testUnregisterAll() {
         recipeManager.unregisterAll();
-        verify(server, times(8)).removeRecipe(any(NamespacedKey.class));
+        verify(server, times(14)).removeRecipe(any(NamespacedKey.class));
     }
 }

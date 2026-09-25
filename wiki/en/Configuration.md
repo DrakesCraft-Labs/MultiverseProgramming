@@ -17,6 +17,12 @@ crafter-block: CRAFTER
 transposer-block: HOPPER
 speaker-block: NOTE_BLOCK
 turtle-block: DISPENSER
+scanner-block: OBSERVER
+cartographer-block: CARTOGRAPHY_TABLE
+alchemist-block: BREWING_STAND
+farmer-block: COMPOSTER
+quarry-block: BLAST_FURNACE
+npc-block: SCULK_CATALYST
 
 # Crafting Recipes Toggles (enable/disable crafting per machine)
 enable-recipe-computer: true
@@ -27,6 +33,12 @@ enable-recipe-monitor: true
 enable-recipe-speaker: true
 enable-recipe-transposer: true
 enable-recipe-floppy-disk: true
+enable-recipe-scanner: true
+enable-recipe-cartographer: true
+enable-recipe-alchemist: true
+enable-recipe-farmer: true
+enable-recipe-quarry: true
+enable-recipe-npc: true
 
 # Functionality Toggles (enable/disable machine mechanics)
 enable-computer: true
@@ -36,6 +48,12 @@ enable-crafter: true
 enable-monitor: true
 enable-speaker: true
 enable-transposer: true
+enable-scanner: true
+enable-cartographer: true
+enable-alchemist: true
+enable-farmer: true
+enable-quarry: true
+enable-npc: true
 
 # Region Protection Integration
 worldguard-protection-check: true

@@ -19,6 +19,12 @@ public final class ConfigManager {
     public static final Material DEFAULT_TRANSPOSER_BLOCK = Material.HOPPER;
     public static final Material DEFAULT_SPEAKER_BLOCK = Material.NOTE_BLOCK;
     public static final Material DEFAULT_TURTLE_BLOCK = Material.DISPENSER;
+    public static final Material DEFAULT_SCANNER_BLOCK = Material.OBSERVER;
+    public static final Material DEFAULT_CARTOGRAPHER_BLOCK = Material.CARTOGRAPHY_TABLE;
+    public static final Material DEFAULT_ALCHEMIST_BLOCK = Material.BREWING_STAND;
+    public static final Material DEFAULT_FARMER_BLOCK = Material.COMPOSTER;
+    public static final Material DEFAULT_QUARRY_BLOCK = Material.BLAST_FURNACE;
+    public static final Material DEFAULT_NPC_BLOCK = Material.SCULK_CATALYST;
 
     public static final long DEFAULT_TIMEOUT_MS = 3000L;
     public static final long DEFAULT_ADVANCED_TIMEOUT_MS = 0L;
@@ -33,6 +39,12 @@ public final class ConfigManager {
     public static final boolean DEFAULT_ENABLE_SPEAKER_RECIPE = true;
     public static final boolean DEFAULT_ENABLE_TRANSPOSER_RECIPE = true;
     public static final boolean DEFAULT_ENABLE_DISK_RECIPE = true;
+    public static final boolean DEFAULT_ENABLE_SCANNER_RECIPE = true;
+    public static final boolean DEFAULT_ENABLE_CARTOGRAPHER_RECIPE = true;
+    public static final boolean DEFAULT_ENABLE_ALCHEMIST_RECIPE = true;
+    public static final boolean DEFAULT_ENABLE_FARMER_RECIPE = true;
+    public static final boolean DEFAULT_ENABLE_QUARRY_RECIPE = true;
+    public static final boolean DEFAULT_ENABLE_NPC_RECIPE = true;
 
     public static final boolean DEFAULT_ENABLE_COMPUTER = true;
     public static final boolean DEFAULT_ENABLE_ADVANCED_COMPUTER = true;
@@ -41,6 +53,12 @@ public final class ConfigManager {
     public static final boolean DEFAULT_ENABLE_MONITOR = true;
     public static final boolean DEFAULT_ENABLE_SPEAKER = true;
     public static final boolean DEFAULT_ENABLE_TRANSPOSER = true;
+    public static final boolean DEFAULT_ENABLE_SCANNER = true;
+    public static final boolean DEFAULT_ENABLE_CARTOGRAPHER = true;
+    public static final boolean DEFAULT_ENABLE_ALCHEMIST = true;
+    public static final boolean DEFAULT_ENABLE_FARMER = true;
+    public static final boolean DEFAULT_ENABLE_QUARRY = true;
+    public static final boolean DEFAULT_ENABLE_NPC = true;
 
     public static final boolean DEFAULT_PROTECTION_STONES_REQUIRE_OWNER = false;
     public static final boolean DEFAULT_WORLDGUARD_PROTECTION_CHECK = true;
@@ -72,6 +90,12 @@ public final class ConfigManager {
     private Material transposerBlock = DEFAULT_TRANSPOSER_BLOCK;
     private Material speakerBlock = DEFAULT_SPEAKER_BLOCK;
     private Material turtleBlock = DEFAULT_TURTLE_BLOCK;
+    private Material scannerBlock = DEFAULT_SCANNER_BLOCK;
+    private Material cartographerBlock = DEFAULT_CARTOGRAPHER_BLOCK;
+    private Material alchemistBlock = DEFAULT_ALCHEMIST_BLOCK;
+    private Material farmerBlock = DEFAULT_FARMER_BLOCK;
+    private Material quarryBlock = DEFAULT_QUARRY_BLOCK;
+    private Material npcBlock = DEFAULT_NPC_BLOCK;
 
     private long timeoutMs = DEFAULT_TIMEOUT_MS;
     private long advancedTimeoutMs = DEFAULT_ADVANCED_TIMEOUT_MS;
@@ -86,6 +110,12 @@ public final class ConfigManager {
     private boolean enableSpeakerRecipe = DEFAULT_ENABLE_SPEAKER_RECIPE;
     private boolean enableTransposerRecipe = DEFAULT_ENABLE_TRANSPOSER_RECIPE;
     private boolean enableDiskRecipe = DEFAULT_ENABLE_DISK_RECIPE;
+    private boolean enableScannerRecipe = DEFAULT_ENABLE_SCANNER_RECIPE;
+    private boolean enableCartographerRecipe = DEFAULT_ENABLE_CARTOGRAPHER_RECIPE;
+    private boolean enableAlchemistRecipe = DEFAULT_ENABLE_ALCHEMIST_RECIPE;
+    private boolean enableFarmerRecipe = DEFAULT_ENABLE_FARMER_RECIPE;
+    private boolean enableQuarryRecipe = DEFAULT_ENABLE_QUARRY_RECIPE;
+    private boolean enableNpcRecipe = DEFAULT_ENABLE_NPC_RECIPE;
 
     private boolean enableComputer = DEFAULT_ENABLE_COMPUTER;
     private boolean enableAdvancedComputer = DEFAULT_ENABLE_ADVANCED_COMPUTER;
@@ -94,6 +124,12 @@ public final class ConfigManager {
     private boolean enableMonitor = DEFAULT_ENABLE_MONITOR;
     private boolean enableSpeaker = DEFAULT_ENABLE_SPEAKER;
     private boolean enableTransposer = DEFAULT_ENABLE_TRANSPOSER;
+    private boolean enableScanner = DEFAULT_ENABLE_SCANNER;
+    private boolean enableCartographer = DEFAULT_ENABLE_CARTOGRAPHER;
+    private boolean enableAlchemist = DEFAULT_ENABLE_ALCHEMIST;
+    private boolean enableFarmer = DEFAULT_ENABLE_FARMER;
+    private boolean enableQuarry = DEFAULT_ENABLE_QUARRY;
+    private boolean enableNpc = DEFAULT_ENABLE_NPC;
 
     private boolean protectionStonesRequireOwner = DEFAULT_PROTECTION_STONES_REQUIRE_OWNER;
     private boolean worldGuardProtectionCheck = DEFAULT_WORLDGUARD_PROTECTION_CHECK;
@@ -188,6 +224,42 @@ public final class ConfigManager {
                 "turtle-block",
                 logger
         );
+        this.scannerBlock = parseBlockMaterial(
+                config.getString("scanner-block"),
+                DEFAULT_SCANNER_BLOCK,
+                "scanner-block",
+                logger
+        );
+        this.cartographerBlock = parseBlockMaterial(
+                config.getString("cartographer-block"),
+                DEFAULT_CARTOGRAPHER_BLOCK,
+                "cartographer-block",
+                logger
+        );
+        this.alchemistBlock = parseBlockMaterial(
+                config.getString("alchemist-block"),
+                DEFAULT_ALCHEMIST_BLOCK,
+                "alchemist-block",
+                logger
+        );
+        this.farmerBlock = parseBlockMaterial(
+                config.getString("farmer-block"),
+                DEFAULT_FARMER_BLOCK,
+                "farmer-block",
+                logger
+        );
+        this.quarryBlock = parseBlockMaterial(
+                config.getString("quarry-block"),
+                DEFAULT_QUARRY_BLOCK,
+                "quarry-block",
+                logger
+        );
+        this.npcBlock = parseBlockMaterial(
+                config.getString("npc-block"),
+                DEFAULT_NPC_BLOCK,
+                "npc-block",
+                logger
+        );
 
         // 4. Validate timeouts
         long rawTimeout = config.getLong("execution-timeout-ms", DEFAULT_TIMEOUT_MS);
@@ -229,6 +301,12 @@ public final class ConfigManager {
         this.enableSpeakerRecipe = config.getBoolean("enable-speaker-recipe", DEFAULT_ENABLE_SPEAKER_RECIPE);
         this.enableTransposerRecipe = config.getBoolean("enable-transposer-recipe", DEFAULT_ENABLE_TRANSPOSER_RECIPE);
         this.enableDiskRecipe = config.getBoolean("enable-disk-recipe", DEFAULT_ENABLE_DISK_RECIPE);
+        this.enableScannerRecipe = config.getBoolean("enable-recipe-scanner", DEFAULT_ENABLE_SCANNER_RECIPE);
+        this.enableCartographerRecipe = config.getBoolean("enable-recipe-cartographer", DEFAULT_ENABLE_CARTOGRAPHER_RECIPE);
+        this.enableAlchemistRecipe = config.getBoolean("enable-recipe-alchemist", DEFAULT_ENABLE_ALCHEMIST_RECIPE);
+        this.enableFarmerRecipe = config.getBoolean("enable-recipe-farmer", DEFAULT_ENABLE_FARMER_RECIPE);
+        this.enableQuarryRecipe = config.getBoolean("enable-recipe-quarry", DEFAULT_ENABLE_QUARRY_RECIPE);
+        this.enableNpcRecipe = config.getBoolean("enable-recipe-npc", DEFAULT_ENABLE_NPC_RECIPE);
 
         this.enableComputer = config.getBoolean("enable-computer", DEFAULT_ENABLE_COMPUTER);
         this.enableAdvancedComputer = config.getBoolean("enable-advanced-computer", DEFAULT_ENABLE_ADVANCED_COMPUTER);
@@ -237,6 +315,12 @@ public final class ConfigManager {
         this.enableMonitor = config.getBoolean("enable-monitor", DEFAULT_ENABLE_MONITOR);
         this.enableSpeaker = config.getBoolean("enable-speaker", DEFAULT_ENABLE_SPEAKER);
         this.enableTransposer = config.getBoolean("enable-transposer", DEFAULT_ENABLE_TRANSPOSER);
+        this.enableScanner = config.getBoolean("enable-scanner", DEFAULT_ENABLE_SCANNER);
+        this.enableCartographer = config.getBoolean("enable-cartographer", DEFAULT_ENABLE_CARTOGRAPHER);
+        this.enableAlchemist = config.getBoolean("enable-alchemist", DEFAULT_ENABLE_ALCHEMIST);
+        this.enableFarmer = config.getBoolean("enable-farmer", DEFAULT_ENABLE_FARMER);
+        this.enableQuarry = config.getBoolean("enable-quarry", DEFAULT_ENABLE_QUARRY);
+        this.enableNpc = config.getBoolean("enable-npc", DEFAULT_ENABLE_NPC);
 
         this.protectionStonesRequireOwner = config.getBoolean("protection-stones-require-owner", DEFAULT_PROTECTION_STONES_REQUIRE_OWNER);
         this.worldGuardProtectionCheck = config.getBoolean("worldguard-protection-check", DEFAULT_WORLDGUARD_PROTECTION_CHECK);
@@ -488,5 +572,77 @@ public final class ConfigManager {
 
     public boolean isWorldGuardProtectionCheck() {
         return worldGuardProtectionCheck;
+    }
+
+    public Material getScannerBlock() {
+        return scannerBlock;
+    }
+
+    public Material getCartographerBlock() {
+        return cartographerBlock;
+    }
+
+    public Material getAlchemistBlock() {
+        return alchemistBlock;
+    }
+
+    public Material getFarmerBlock() {
+        return farmerBlock;
+    }
+
+    public Material getQuarryBlock() {
+        return quarryBlock;
+    }
+
+    public Material getNpcBlock() {
+        return npcBlock;
+    }
+
+    public boolean isEnableScannerRecipe() {
+        return enableScannerRecipe;
+    }
+
+    public boolean isEnableCartographerRecipe() {
+        return enableCartographerRecipe;
+    }
+
+    public boolean isEnableAlchemistRecipe() {
+        return enableAlchemistRecipe;
+    }
+
+    public boolean isEnableFarmerRecipe() {
+        return enableFarmerRecipe;
+    }
+
+    public boolean isEnableQuarryRecipe() {
+        return enableQuarryRecipe;
+    }
+
+    public boolean isEnableNpcRecipe() {
+        return enableNpcRecipe;
+    }
+
+    public boolean isEnableScanner() {
+        return enableScanner;
+    }
+
+    public boolean isEnableCartographer() {
+        return enableCartographer;
+    }
+
+    public boolean isEnableAlchemist() {
+        return enableAlchemist;
+    }
+
+    public boolean isEnableFarmer() {
+        return enableFarmer;
+    }
+
+    public boolean isEnableQuarry() {
+        return enableQuarry;
+    }
+
+    public boolean isEnableNpc() {
+        return enableNpc;
     }
 }

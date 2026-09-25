@@ -99,6 +99,21 @@ public final class MonitorPeripheral implements Peripheral {
         }
     }
 
+    public void setText(String text) {
+        lines.clear();
+        if (text != null && !text.isEmpty()) {
+            for (String l : text.split("\n")) {
+                lines.add(l);
+            }
+        }
+        updateWorldDisplay();
+    }
+
+    public void clear() {
+        lines.clear();
+        updateWorldDisplay();
+    }
+
     @Override
     public LuaValue toLuaTable() {
         LuaTable table = new LuaTable();
@@ -118,14 +133,7 @@ public final class MonitorPeripheral implements Peripheral {
         table.set("setText", new OneArgFunction() {
             @Override
             public LuaValue call(LuaValue arg) {
-                lines.clear();
-                String str = arg.tojstring();
-                if (!str.isEmpty()) {
-                    for (String l : str.split("\n")) {
-                        lines.add(l);
-                    }
-                }
-                updateWorldDisplay();
+                setText(arg.tojstring());
                 return LuaValue.NONE;
             }
         });

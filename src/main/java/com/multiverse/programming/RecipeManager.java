@@ -18,6 +18,12 @@ public final class RecipeManager {
     public static final String KEY_TRANSPOSER = "inventory_transposer";
     public static final String KEY_SPEAKER = "sound_synthesizer";
     public static final String KEY_TURTLE = "programmable_turtle";
+    public static final String KEY_SCANNER = "block_entity_scanner";
+    public static final String KEY_CARTOGRAPHER = "cartographer_table";
+    public static final String KEY_ALCHEMIST = "alchemical_synthesizer";
+    public static final String KEY_FARMER = "farming_attachment";
+    public static final String KEY_QUARRY = "quarry_excavator";
+    public static final String KEY_NPC = "npc_dialogue_core";
 
     private final JavaPlugin plugin;
 
@@ -58,6 +64,24 @@ public final class RecipeManager {
             if (cfg.isEnableTurtleRecipe()) {
                 registerTurtle(computerBlock, cfg.getTurtleBlock());
             }
+            if (cfg.isEnableScannerRecipe()) {
+                registerScanner(cfg.getScannerBlock());
+            }
+            if (cfg.isEnableCartographerRecipe()) {
+                registerCartographer(cfg.getCartographerBlock());
+            }
+            if (cfg.isEnableAlchemistRecipe()) {
+                registerAlchemist(cfg.getAlchemistBlock());
+            }
+            if (cfg.isEnableFarmerRecipe()) {
+                registerFarmer(cfg.getFarmerBlock());
+            }
+            if (cfg.isEnableQuarryRecipe()) {
+                registerQuarry(cfg.getQuarryBlock());
+            }
+            if (cfg.isEnableNpcRecipe()) {
+                registerNpc(cfg.getNpcBlock());
+            }
         } else {
             registerFloppyDisk();
             if (enableComputerRecipe) {
@@ -69,6 +93,12 @@ public final class RecipeManager {
             registerTransposer(Material.HOPPER);
             registerSpeaker(Material.NOTE_BLOCK);
             registerTurtle(computerBlock, Material.DISPENSER);
+            registerScanner(Material.OBSERVER);
+            registerCartographer(Material.CARTOGRAPHY_TABLE);
+            registerAlchemist(Material.BREWING_STAND);
+            registerFarmer(Material.COMPOSTER);
+            registerQuarry(Material.BLAST_FURNACE);
+            registerNpc(Material.SCULK_CATALYST);
         }
     }
 
@@ -81,6 +111,12 @@ public final class RecipeManager {
         safelyRemoveRecipe(new NamespacedKey(plugin, KEY_TRANSPOSER));
         safelyRemoveRecipe(new NamespacedKey(plugin, KEY_SPEAKER));
         safelyRemoveRecipe(new NamespacedKey(plugin, KEY_TURTLE));
+        safelyRemoveRecipe(new NamespacedKey(plugin, KEY_SCANNER));
+        safelyRemoveRecipe(new NamespacedKey(plugin, KEY_CARTOGRAPHER));
+        safelyRemoveRecipe(new NamespacedKey(plugin, KEY_ALCHEMIST));
+        safelyRemoveRecipe(new NamespacedKey(plugin, KEY_FARMER));
+        safelyRemoveRecipe(new NamespacedKey(plugin, KEY_QUARRY));
+        safelyRemoveRecipe(new NamespacedKey(plugin, KEY_NPC));
     }
 
     private void safelyRemoveRecipe(NamespacedKey key) {
@@ -222,6 +258,82 @@ public final class RecipeManager {
         recipe.setIngredient('I', Material.IRON_INGOT);
         recipe.setIngredient('C', Material.CHEST);
         recipe.setIngredient('P', computerBlock);
+        recipe.setIngredient('R', Material.REDSTONE);
+        plugin.getServer().addRecipe(recipe);
+    }
+
+    private void registerScanner(Material scannerBlock) {
+        if (scannerBlock == null || !scannerBlock.isItem()) return;
+        NamespacedKey key = new NamespacedKey(plugin, KEY_SCANNER);
+        safelyRemoveRecipe(key);
+
+        ShapedRecipe recipe = new ShapedRecipe(key, DiskManager.createScanner(scannerBlock));
+        recipe.shape("CCC", " Q ", " R ");
+        recipe.setIngredient('C', Material.COBBLESTONE);
+        recipe.setIngredient('Q', Material.QUARTZ);
+        recipe.setIngredient('R', Material.REDSTONE);
+        plugin.getServer().addRecipe(recipe);
+    }
+
+    private void registerCartographer(Material cartographerBlock) {
+        if (cartographerBlock == null || !cartographerBlock.isItem()) return;
+        NamespacedKey key = new NamespacedKey(plugin, KEY_CARTOGRAPHER);
+        safelyRemoveRecipe(key);
+
+        ShapedRecipe recipe = new ShapedRecipe(key, DiskManager.createCartographer(cartographerBlock));
+        recipe.shape("PP ", "WW ", "WW ");
+        recipe.setIngredient('P', Material.PAPER);
+        recipe.setIngredient('W', Material.OAK_PLANKS);
+        plugin.getServer().addRecipe(recipe);
+    }
+
+    private void registerAlchemist(Material alchemistBlock) {
+        if (alchemistBlock == null || !alchemistBlock.isItem()) return;
+        NamespacedKey key = new NamespacedKey(plugin, KEY_ALCHEMIST);
+        safelyRemoveRecipe(key);
+
+        ShapedRecipe recipe = new ShapedRecipe(key, DiskManager.createAlchemist(alchemistBlock));
+        recipe.shape(" B ", "CCC", " R ");
+        recipe.setIngredient('B', Material.BLAZE_ROD);
+        recipe.setIngredient('C', Material.COBBLESTONE);
+        recipe.setIngredient('R', Material.REDSTONE);
+        plugin.getServer().addRecipe(recipe);
+    }
+
+    private void registerFarmer(Material farmerBlock) {
+        if (farmerBlock == null || !farmerBlock.isItem()) return;
+        NamespacedKey key = new NamespacedKey(plugin, KEY_FARMER);
+        safelyRemoveRecipe(key);
+
+        ShapedRecipe recipe = new ShapedRecipe(key, DiskManager.createFarmer(farmerBlock));
+        recipe.shape("W W", "W W", "WWW");
+        recipe.setIngredient('W', Material.OAK_SLAB);
+        plugin.getServer().addRecipe(recipe);
+    }
+
+    private void registerQuarry(Material quarryBlock) {
+        if (quarryBlock == null || !quarryBlock.isItem()) return;
+        NamespacedKey key = new NamespacedKey(plugin, KEY_QUARRY);
+        safelyRemoveRecipe(key);
+
+        ShapedRecipe recipe = new ShapedRecipe(key, DiskManager.createQuarry(quarryBlock));
+        recipe.shape("III", "IFI", "SSS");
+        recipe.setIngredient('I', Material.IRON_INGOT);
+        recipe.setIngredient('F', Material.FURNACE);
+        recipe.setIngredient('S', Material.SMOOTH_STONE);
+        plugin.getServer().addRecipe(recipe);
+    }
+
+    private void registerNpc(Material npcBlock) {
+        if (npcBlock == null || !npcBlock.isItem()) return;
+        NamespacedKey key = new NamespacedKey(plugin, KEY_NPC);
+        safelyRemoveRecipe(key);
+
+        ShapedRecipe recipe = new ShapedRecipe(key, DiskManager.createNpc(npcBlock));
+        recipe.shape(" G ", "ACA", " R ");
+        recipe.setIngredient('G', Material.GOLD_INGOT);
+        recipe.setIngredient('A', Material.AMETHYST_SHARD);
+        recipe.setIngredient('C', Material.BOOK);
         recipe.setIngredient('R', Material.REDSTONE);
         plugin.getServer().addRecipe(recipe);
     }

@@ -96,6 +96,152 @@ speaker.playTone(440.0)
 speaker.playSound("entity.player.levelup", 1.0, 1.2)
 ```
 
+### 5. Block & Entity Scanner (`scanner`)
+
+Scans surrounding entities, players, and blocks within a specified radius.
+
+```lua
+-- Scan nearby entities (max radius 32)
+local entities = scanner.scanEntities(16)
+for i, ent in ipairs(entities) do
+  print(ent.name .. " (" .. ent.type .. ") at distance " .. math.floor(ent.distance))
+end
+
+-- Scan nearby players with health and hunger levels
+local players = scanner.scanPlayers(32)
+for i, p in ipairs(players) do
+  print(p.name .. " HP: " .. p.health .. " Food: " .. p.foodLevel)
+end
+
+-- Scan blocks with material name filter (e.g. "DIAMOND", "ORE")
+local ores = scanner.scanBlocks(8, "DIAMOND")
+for i, b in ipairs(ores) do
+  print(b.material .. " at [" .. b.x .. ", " .. b.y .. ", " .. b.z .. "]")
+end
+```
+
+### 6. Cartographer & Map Renderer (`cartographer`)
+
+Inspects biomes, scans topographic elevations, renders ASCII radar views directly to adjacent monitors, and generates filled map items.
+
+```lua
+-- Query current biome
+local biome = cartographer.getBiome()
+print("Biome: " .. (biome or "Unknown"))
+
+-- Render topographic radar view directly onto an adjacent monitor
+local ok, err = cartographer.renderToMonitor("north", 6)
+if ok then
+  print("Topography rendered to monitor!")
+end
+
+-- Generate a vanilla filled map item (scale 0 to 4)
+local success, mapId = cartographer.createMap(1)
+if success then
+  print("Map #" .. mapId .. " created in adjacent container!")
+end
+```
+
+### 7. Potion & Alchemical Synthesizer (`alchemist`)
+
+Automates brewing recipes, queries potion stands, and synthesizes potions pulling water bottles and ingredients directly from connected containers.
+
+```lua
+-- List all known synthesizable potion recipes
+local recipes = alchemist.getRecipes()
+for i, r in ipairs(recipes) do
+  print(i .. ": " .. r)
+end
+
+-- Inspect attached brewing stand fuel and progress
+local stand = alchemist.inspectStand()
+print("Fuel level: " .. stand.fuelLevel)
+
+-- Synthesize a potion: alchemist.brew(potionType, [modifier], [isSplash])
+-- Modifiers: "normal", "extended" (Redstone), "strong" (Glowstone)
+local ok, msg = alchemist.brew("SPEED", "extended", false)
+if ok then
+  print("&a" .. msg)
+else
+  print("&cSynthesis failed: " .. msg)
+end
+```
+
+### 8. Farming / Harvesting Attachment (`farmer`)
+
+Inspects crop maturity, automatically harvests mature crops, replants seeds, and fertilizes crops using bone meal from adjacent chests.
+
+```lua
+-- Inspect crop maturity (by coordinates or relative side)
+local crop = farmer.inspectCrop("down")
+if crop.isCrop then
+  print("Crop: " .. crop.material .. " Mature: " .. tostring(crop.mature))
+end
+
+-- Harvest a single crop (replant = true)
+local harvested = farmer.harvest("down", true)
+
+-- Harvest entire area (radius up to 12) with auto-replant
+local count = farmer.harvestArea(4, true)
+print("Harvested " .. count .. " mature crops!")
+
+-- Fertilize crop using bone meal from adjacent container
+local fertilized = farmer.fertilize("down")
+```
+
+### 9. Autonomous Quarry Excavator (`quarry`)
+
+Excavates a volumetric column (width X * length Z down to target Y layer) layer-by-layer, clearing fluids, safely depositing mined drops into adjacent chests, and logging all block removals via CoreProtect.
+
+```lua
+-- quarry.start(width, length, targetY, [handleLiquids])
+local ok, msg = quarry.start(8, 8, -58, true)
+if ok then
+  print("&aQuarry started: " .. msg)
+end
+
+-- Monitor excavation status
+local status = quarry.getStatus()
+print("Active: " .. tostring(status.active))
+print("Current Y: " .. status.currentY .. " / Target: " .. status.targetY)
+print("Blocks mined: " .. status.blocksMined .. " (" .. string.format("%.1f", status.percentage) .. "%)")
+
+-- Control commands
+quarry.pause()
+quarry.resume()
+quarry.stop()
+```
+
+### 10. NPC Chatbot & Quest Interposer (`npc`)
+
+Enables interactive dialogues, floating TextDisplay holograms, chat choice prompts, and capturing player responses.
+
+```lua
+-- Set floating hologram nameplate
+npc.setName("&6[Grand Wizard]")
+
+-- Send dialogue message to specific player
+npc.say("Steve", "Welcome to the enchanted academy!")
+
+-- Ask player a multiple-choice question
+local options = {"Accept Quest", "Decline Quest", "Ask for information"}
+npc.ask("Steve", "Will you assist in defending our realm?", options)
+
+-- Wait for player's chat response
+while true do
+  local response = npc.getLastResponse("Steve")
+  if response then
+    print("Steve responded: " .. response)
+    npc.clearResponse("Steve")
+    if response == "1" or string.find(response:lower(), "accept") then
+      npc.say("Steve", "Splendid! May the arcane winds guide you.")
+    end
+    break
+  end
+  sleep(1.0)
+end
+```
+
 ### Generic `peripheral` API
 
 For multi-peripheral configurations:
@@ -115,7 +261,7 @@ end
 
 ---
 
-## 5. Programmable Turtle (`turtle`)
+## 11. Programmable Turtle (`turtle`)
 
 The **Programmable Turtle** is a robotic mobile computer & constructor capable of navigating the world, mining blocks, placing blocks, managing a 16-slot inventory, and building entire structures from `.litematic` and `.nbt` blueprint files.
 

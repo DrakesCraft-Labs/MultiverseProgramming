@@ -424,4 +424,18 @@ public final class ComputerListener implements Listener {
         }, 1L, 20L);
         runningPrograms.put(blockLoc, new RunningEntry(uuid, program, cleanup[0]));
     }
+
+    @EventHandler(priority = org.bukkit.event.EventPriority.MONITOR, ignoreCancelled = true)
+    public void onPlayerChat(org.bukkit.event.player.AsyncPlayerChatEvent event) {
+        Player player = event.getPlayer();
+        String message = event.getMessage();
+        for (com.multiverse.programming.peripheral.NpcPeripheral npc : com.multiverse.programming.peripheral.NpcPeripheral.getActiveNpcs()) {
+            Location loc = npc.getLocation();
+            if (loc != null && loc.getWorld() != null && loc.getWorld().equals(player.getWorld())) {
+                if (loc.distanceSquared(player.getLocation()) <= 256.0) {
+                    npc.recordPlayerResponse(player.getName(), message);
+                }
+            }
+        }
+    }
 }

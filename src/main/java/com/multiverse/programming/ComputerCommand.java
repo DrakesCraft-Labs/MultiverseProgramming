@@ -400,8 +400,14 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
             case "transposer", "transpositor" -> item = DiskManager.createTransposer(plugin.getConfigManager().getTransposerBlock());
             case "speaker", "sound", "synthesizer", "parlante" -> item = DiskManager.createSpeaker(plugin.getConfigManager().getSpeakerBlock());
             case "turtle", "tortuga", "robot" -> item = DiskManager.createTurtle(plugin.getConfigManager().getTurtleBlock());
+            case "scanner", "escaner" -> item = DiskManager.createScanner(plugin.getConfigManager().getScannerBlock());
+            case "cartographer", "cartografo", "map" -> item = DiskManager.createCartographer(plugin.getConfigManager().getCartographerBlock());
+            case "alchemist", "alquimista", "potion" -> item = DiskManager.createAlchemist(plugin.getConfigManager().getAlchemistBlock());
+            case "farmer", "granjero", "agriculture" -> item = DiskManager.createFarmer(plugin.getConfigManager().getFarmerBlock());
+            case "quarry", "cantera", "excavator" -> item = DiskManager.createQuarry(plugin.getConfigManager().getQuarryBlock());
+            case "npc", "chatbot", "dialogue" -> item = DiskManager.createNpc(plugin.getConfigManager().getNpcBlock());
             default -> {
-                player.sendMessage(plugin.getPrefix() + " §cUnknown item. Available: floppydisk, computer, advancedcomputer, monitor, crafter, transposer, speaker, turtle");
+                player.sendMessage(plugin.getPrefix() + " §cUnknown item. Available: floppydisk, computer, advancedcomputer, monitor, crafter, transposer, speaker, turtle, scanner, cartographer, alchemist, farmer, quarry, npc");
                 return;
             }
         }
@@ -475,7 +481,8 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
         if (args.length == 2 && args[0].equalsIgnoreCase("give") && sender.hasPermission("multiverseprogramming.admin")) {
             List<String> items = List.of(
                     "floppydisk", "disk", "disco", "computer", "computadora", "advancedcomputer",
-                    "monitor", "crafter", "transposer", "speaker", "turtle"
+                    "monitor", "crafter", "transposer", "speaker", "turtle",
+                    "scanner", "cartographer", "alchemist", "farmer", "quarry", "npc"
             );
             return StringUtil.copyPartialMatches(args[1], items, completions);
         }

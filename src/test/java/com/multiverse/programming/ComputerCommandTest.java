@@ -37,6 +37,13 @@ class ComputerCommandTest {
         when(configManager.getCrafterBlock()).thenReturn(Material.CRAFTER);
         when(configManager.getTransposerBlock()).thenReturn(Material.HOPPER);
         when(configManager.getSpeakerBlock()).thenReturn(Material.NOTE_BLOCK);
+        when(configManager.getTurtleBlock()).thenReturn(Material.DISPENSER);
+        when(configManager.getScannerBlock()).thenReturn(Material.OBSERVER);
+        when(configManager.getCartographerBlock()).thenReturn(Material.CARTOGRAPHY_TABLE);
+        when(configManager.getAlchemistBlock()).thenReturn(Material.BREWING_STAND);
+        when(configManager.getFarmerBlock()).thenReturn(Material.COMPOSTER);
+        when(configManager.getQuarryBlock()).thenReturn(Material.BLAST_FURNACE);
+        when(configManager.getNpcBlock()).thenReturn(Material.SCULK_CATALYST);
 
         command = new ComputerCommand(plugin);
         mockCmd = mock(Command.class);
@@ -76,6 +83,27 @@ class ComputerCommandTest {
 
         assertTrue(command.onCommand(player, mockCmd, "pc", new String[]{"give", "speaker"}));
         verify(inv, times(7)).addItem(any());
+
+        assertTrue(command.onCommand(player, mockCmd, "pc", new String[]{"give", "turtle"}));
+        verify(inv, times(8)).addItem(any());
+
+        assertTrue(command.onCommand(player, mockCmd, "pc", new String[]{"give", "scanner"}));
+        verify(inv, times(9)).addItem(any());
+
+        assertTrue(command.onCommand(player, mockCmd, "pc", new String[]{"give", "cartographer"}));
+        verify(inv, times(10)).addItem(any());
+
+        assertTrue(command.onCommand(player, mockCmd, "pc", new String[]{"give", "alchemist"}));
+        verify(inv, times(11)).addItem(any());
+
+        assertTrue(command.onCommand(player, mockCmd, "pc", new String[]{"give", "farmer"}));
+        verify(inv, times(12)).addItem(any());
+
+        assertTrue(command.onCommand(player, mockCmd, "pc", new String[]{"give", "quarry"}));
+        verify(inv, times(13)).addItem(any());
+
+        assertTrue(command.onCommand(player, mockCmd, "pc", new String[]{"give", "npc"}));
+        verify(inv, times(14)).addItem(any());
     }
 
     @Test

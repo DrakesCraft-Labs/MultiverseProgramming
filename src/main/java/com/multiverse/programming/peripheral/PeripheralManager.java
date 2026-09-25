@@ -39,10 +39,16 @@ public final class PeripheralManager {
         }
 
         ConfigManager config = plugin.getConfigManager();
-        Material monitorMat = config.getMonitorBlock();
-        Material crafterMat = config.getCrafterBlock();
-        Material transposerMat = config.getTransposerBlock();
-        Material speakerMat = config.getSpeakerBlock();
+        Material monitorMat = config != null ? config.getMonitorBlock() : Material.OCHRE_FROGLIGHT;
+        Material crafterMat = config != null ? config.getCrafterBlock() : Material.CRAFTER;
+        Material transposerMat = config != null ? config.getTransposerBlock() : Material.HOPPER;
+        Material speakerMat = config != null ? config.getSpeakerBlock() : Material.NOTE_BLOCK;
+        Material scannerMat = config != null ? config.getScannerBlock() : Material.OBSERVER;
+        Material cartographerMat = config != null ? config.getCartographerBlock() : Material.CARTOGRAPHY_TABLE;
+        Material alchemistMat = config != null ? config.getAlchemistBlock() : Material.BREWING_STAND;
+        Material farmerMat = config != null ? config.getFarmerBlock() : Material.COMPOSTER;
+        Material quarryMat = config != null ? config.getQuarryBlock() : Material.BLAST_FURNACE;
+        Material npcMat = config != null ? config.getNpcBlock() : Material.SCULK_CATALYST;
 
         Block computerBlock = computerLoc.getBlock();
         for (BlockFace face : ADJACENT_FACES) {
@@ -61,6 +67,18 @@ public final class PeripheralManager {
                 result.put(dirName, new TransposerPeripheral(plugin, adj.getLocation()));
             } else if (adjType == speakerMat && (config == null || config.isEnableSpeaker())) {
                 result.put(dirName, new SpeakerPeripheral(plugin, adj.getLocation()));
+            } else if (adjType == scannerMat && (config == null || config.isEnableScanner())) {
+                result.put(dirName, new ScannerPeripheral(plugin, adj.getLocation()));
+            } else if (adjType == cartographerMat && (config == null || config.isEnableCartographer())) {
+                result.put(dirName, new CartographerPeripheral(plugin, adj.getLocation()));
+            } else if (adjType == alchemistMat && (config == null || config.isEnableAlchemist())) {
+                result.put(dirName, new AlchemistPeripheral(plugin, adj.getLocation()));
+            } else if (adjType == farmerMat && (config == null || config.isEnableFarmer())) {
+                result.put(dirName, new FarmerPeripheral(plugin, adj.getLocation()));
+            } else if (adjType == quarryMat && (config == null || config.isEnableQuarry())) {
+                result.put(dirName, new QuarryPeripheral(plugin, adj.getLocation()));
+            } else if (adjType == npcMat && (config == null || config.isEnableNpc())) {
+                result.put(dirName, new NpcPeripheral(plugin, adj.getLocation()));
             }
         }
         return result;

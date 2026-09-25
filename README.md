@@ -59,11 +59,17 @@ Built and verified for **Purpur / Paper 1.21.11** with **Java 21**.
   - Allows interrupting execution at any time, even after ejecting the disk.
 - **Machine Crafting & Functionality Toggles**: Granular toggles in `config.yml` to enable/disable crafting recipes and runtime functionality for each machine block.
 
-### 🔌 Advanced Peripherals
+### 🔌 Advanced Automation Peripherals & Machines
 - **Display Monitor** (`monitor`): Render multiline text, ASCII banners, and RGB colors on adjacent sign monitors.
 - **Auto-Crafter** (`crafter`): Programmatic 3x3 recipe crafting, ingredient validation, and recipe querying.
 - **Inventory Transposer** (`transposer`): Automated item routing, precise stack transfer, and container sorting between adjacent chests.
 - **Sound Synthesizer** (`speaker`): Play custom note block melodies, instruments, tones, and octaves directly via Lua.
+- **Block & Entity Scanner** (`scanner`): Scans nearby living entities and players (health, distance, coordinates) and searches surrounding blocks by material filter.
+- **Cartographer & Map Renderer** (`cartographer`): Geographic radar, biome query, vanilla map creation (`FILLED_MAP`), and ASCII topography monitor projection.
+- **Potion & Alchemical Synthesizer** (`alchemist`): Automated brewing stand queries, recipe synthesis directly from adjacent containers, modifier and splash support.
+- **Farming / Harvesting Module** (`farmer`): Inspects crop maturity, auto-harvests mature crops, replants seeds, and fertilizes with bone meal from adjacent chests.
+- **Quarry Engine / Autonomous Excavator** (`quarry`): Layer-by-layer volumetric column excavation ($W \times L$ down to target $Y$), liquid clearing, container drop deposits, and full CoreProtect audit logging.
+- **NPC Chatbot & Quest Interposer** (`npc`): Interactive NPC dialogues, chat choice menus, floating TextDisplay holograms, and player interaction responses.
 
 ---
 
