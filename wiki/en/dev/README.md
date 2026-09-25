@@ -1,30 +1,28 @@
-# MultiverseProgramming // Developer Documentation Hub 🛠️
-# Centro de Documentación para Desarrolladores 🛠️
+# Developer Documentation Hub 🛠️
 
 Welcome to the internal technical documentation of **MultiverseProgramming**. This section details the complete software architecture, codebase structure, subsystem lifecycles, and the communication bridge connecting the Paper Minecraft plugin with the standalone Web Portal.
 
-Bienvenido a la documentación técnica interna de **MultiverseProgramming**. Este apartado detalla a fondo la arquitectura de software, la estructura del código fuente, el ciclo de vida de los subsistemas y el puente de comunicación que conecta el plugin de Paper Minecraft con el Portal Web interactivo.
+> 🌐 Versión en español: [wiki/es/dev/README.md](../../es/dev/README.md)
 
 ---
 
-## 📚 Table of Contents / Índice de Contenidos
+## 📚 Technical Documentation Guides
 
-### 🇬🇧 English Documentation
-1. **[Core Architecture & Subsystems (English)](Architecture-EN.md)**
+1. **[Core Architecture & Subsystems](Architecture.md)**
    - Plugin lifecycle (`MultiverseProgrammingPlugin`)
    - Sandboxed Lua runtime (`LuaRunner`) & instruction limiting
    - Threading model & synchronous dispatching (`SyncDispatcher`)
    - Floppy disk storage & duplication exploit security
    - NBT parsing (`NbtReader`) and 3D Blueprint rotation math (`BlueprintRotator`)
 
-2. **[Web Portal & Communication Bridge (English)](Web-Portal-and-Bridge-EN.md)**
+2. **[Web Portal & Communication Bridge](Web-Portal-and-Bridge.md)**
    - Embedded HTTP Server (`WebServerManager`) & port failover
    - Single-Page Application (SPA) architecture (`dashboard.html`, Three.js 3D WebGL engine)
    - REST API specification (`/api/blueprints`, `/api/upload`, `/api/turtles`, `/api/build`, etc.)
    - Bidirectional communication flow between browser and Minecraft server tick loop
    - Base64 payload decoding, validation, and storage quotas
 
-3. **[Turtles, Quarry Engine & Peripherals (English)](Turtles-and-Peripherals-EN.md)**
+3. **[Turtles, Quarry Engine & Peripherals](Turtles-and-Peripherals.md)**
    - Turtle state machine, inventory mechanics & fuel accumulator
    - Lateral Quarry Engine upgrade: physical lockstep attachment, dual holographic chests & auto-pause
    - Peripheral discovery (`PeripheralManager`) and deep dive into the 9 custom peripherals
@@ -33,31 +31,7 @@ Bienvenido a la documentación técnica interna de **MultiverseProgramming**. Es
 
 ---
 
-### 🇪🇸 Documentación en Español
-1. **[Arquitectura del Núcleo y Subsistemas (Español)](Architecture-ES.md)**
-   - Ciclo de vida del plugin (`MultiverseProgrammingPlugin`)
-   - Entorno aislado de Lua (`LuaRunner`) y cuota de instrucciones de CPU
-   - Modelo de hilos y despacho síncrono seguro (`SyncDispatcher`)
-   - Almacenamiento en disquetes y prevención de exploits de duplicación
-   - Parser binario NBT (`NbtReader`) y matemáticas de rotación 3D (`BlueprintRotator`)
-
-2. **[Portal Web y Puente de Comunicación (Español)](Web-Portal-and-Bridge-ES.md)**
-   - Servidor HTTP embebido (`WebServerManager`) y conmutación por error de puertos
-   - Arquitectura SPA del portal (`dashboard.html`, motor Three.js WebGL 3D)
-   - Especificación completa de la API REST (`/api/blueprints`, `/api/upload`, `/api/turtles`, etc.)
-   - Flujo de comunicación bidireccional entre navegador y el bucle principal de Minecraft
-   - Decodificación Base64, validación de esquemas y cuotas por jugador
-
-3. **[Tortugas, Motor de Cantera y Periféricos (Español)](Turtles-and-Peripherals-ES.md)**
-   - Máquina de estados de la Tortuga, inventario y acumulador de combustible
-   - Mejora de Cantera Lateral (Quarry Engine): acoplamiento físico en lockstep, cofres duales y pausa automática
-   - Detección dinámica de periféricos (`PeripheralManager`) y análisis de los 9 periféricos
-   - Protección de reclamos (WorldGuard, GriefPrevention, Towny, Lands, Residence)
-   - Auditoría y registro con CoreProtect (`CoreProtectBridge`)
-
----
-
-## 🧭 Repository Map / Mapa del Repositorio
+## 🧭 Repository Map
 
 ```text
 MultiverseProgramming/
@@ -107,7 +81,8 @@ MultiverseProgramming/
 │   ├── plugin.yml                        # Paper/Spigot plugin descriptor
 │   └── dashboard.html                    # Single-Page Web Portal (Three.js WebGL)
 └── wiki/
-    ├── dev/                              # Developer documentation (EN / ES)
-    ├── en/                               # Player wiki (English)
-    └── es/                               # Player wiki (Spanish)
+    ├── en/                               # English documentation
+    │   └── dev/                          # English developer guides
+    └── es/                               # Spanish documentation
+        └── dev/                          # Spanish developer guides
 ```

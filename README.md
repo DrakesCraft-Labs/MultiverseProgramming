@@ -116,11 +116,15 @@ All commands use the `/mvprog` prefix (aliases: `/pc`, `/computador`, `/computad
 
 ## 🛠️ Developer Documentation & Architecture Guide
 
-For contributors, plugin developers, and technical administrators, comprehensive technical documentation is available in the Wiki:
-- 📖 **[Developer Documentation Hub (English & Spanish)](wiki/dev/README.md)**
-  - **[Core Architecture & Subsystems](wiki/dev/Architecture-EN.md)** ([Español](wiki/dev/Architecture-ES.md))
-  - **[Web Portal & Communication Bridge](wiki/dev/Web-Portal-and-Bridge-EN.md)** ([Español](wiki/dev/Web-Portal-and-Bridge-ES.md))
-  - **[Turtles, Quarry Engine & Peripherals](wiki/dev/Turtles-and-Peripherals-EN.md)** ([Español](wiki/dev/Turtles-and-Peripherals-ES.md))
+Comprehensive technical documentation is available for contributors, developers, and server administrators:
+- 🇬🇧 **[English Developer Hub](wiki/en/dev/README.md)**
+  - [Core Architecture & Subsystems](wiki/en/dev/Architecture.md)
+  - [Web Portal & Communication Bridge](wiki/en/dev/Web-Portal-and-Bridge.md)
+  - [Turtles, Quarry Engine & Peripherals](wiki/en/dev/Turtles-and-Peripherals.md)
+- 🇪🇸 **[Centro de Desarrolladores en Español](wiki/es/dev/README.md)**
+  - [Arquitectura del Núcleo y Subsistemas](wiki/es/dev/Arquitectura.md)
+  - [Portal Web y Puente de Comunicación](wiki/es/dev/Portal-Web-y-Puente.md)
+  - [Tortugas, Motor de Cantera y Periféricos](wiki/es/dev/Tortugas-y-Perifericos.md)
 
 ---
 
