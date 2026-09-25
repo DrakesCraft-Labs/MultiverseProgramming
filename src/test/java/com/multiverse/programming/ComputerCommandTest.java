@@ -131,5 +131,26 @@ class ComputerCommandTest {
         assertFalse(userSuggestions.contains("give"));
         assertFalse(userSuggestions.contains("reload"));
         assertTrue(userSuggestions.contains("help"));
+        assertTrue(userSuggestions.contains("get"));
+        assertTrue(userSuggestions.contains("build"));
+    }
+
+    @Test
+    @DisplayName("/pc get triggers cloud download and notifies sender")
+    void testGetCommand() {
+        Player player = mock(Player.class);
+        when(player.getName()).thenReturn("Dany");
+        when(player.hasPermission("multiverseprogramming.use")).thenReturn(true);
+
+        com.multiverse.programming.blueprint.BlueprintManager bpManager = mock(com.multiverse.programming.blueprint.BlueprintManager.class);
+        when(plugin.getBlueprintManager()).thenReturn(bpManager);
+
+        com.multiverse.programming.blueprint.Blueprint mockBp = new com.multiverse.programming.blueprint.Blueprint(
+                "TEST-CODE", "Cloud Castle", "Author", "litematic", 10, 10, 10, 100, java.util.Map.of(), java.util.List.of(), System.currentTimeMillis());
+        when(bpManager.getOrDownloadBlueprint("TEST-CODE", "Dany")).thenReturn(java.util.concurrent.CompletableFuture.completedFuture(mockBp));
+
+        assertTrue(command.onCommand(player, mockCmd, "pc", new String[]{"get", "TEST-CODE"}));
+        verify(bpManager).getOrDownloadBlueprint("TEST-CODE", "Dany");
+        verify(player).sendMessage(contains("Downloading"));
     }
 }

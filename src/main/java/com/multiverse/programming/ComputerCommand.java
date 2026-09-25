@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package com.multiverse.programming;
 
+import com.multiverse.programming.blueprint.Blueprint;
+import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -31,6 +33,7 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
             case "reload" -> reload(sender);
             case "web", "portal", "dashboard" -> showWebPortal(sender);
             case "blueprint", "blueprints", "bp" -> handleBlueprintCommand(sender, args);
+            case "get", "download", "pastebin" -> handleGetCommand(sender, args);
             case "build" -> triggerBuild(sender, args);
             case "give" -> {
                 if (sender instanceof Player player) {
@@ -129,22 +132,16 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
     }
 
     private void triggerBuild(CommandSender sender, String[] args) {
-        if (!sender.hasPermission("multiverseprogramming.admin")) {
+        if (!sender.hasPermission("multiverseprogramming.use") && !sender.hasPermission("multiverseprogramming.admin")) {
             sender.sendMessage(plugin.getPrefix() + " §cYou don't have permission to use this command.");
             return;
         }
         if (args.length < 2) {
-            sender.sendMessage(plugin.getPrefix() + " §cUsage: /pc build <blueprintId> [turtleId] [x y z]");
+            sender.sendMessage(plugin.getPrefix() + " §cUsage: /pc build <blueprintId|pasteCode|url> [turtleId] [x y z]");
             return;
         }
         String bpId = args[1];
         String turtleId = args.length >= 3 ? args[2] : null;
-
-        var bp = plugin.getBlueprintManager().getBlueprint(bpId);
-        if (bp == null) {
-            sender.sendMessage(plugin.getPrefix() + " §cBlueprint not found: " + bpId);
-            return;
-        }
 
         var turtleManager = plugin.getTurtleManager();
         if (turtleManager == null) {
@@ -195,6 +192,30 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
             origin = targetTurtle.getLocation().clone();
         }
 
+        var bp = plugin.getBlueprintManager().getBlueprint(bpId);
+        if (bp != null) {
+            dispatchTurtleBuild(sender, bp, targetTurtle, origin);
+        } else {
+            sender.sendMessage(plugin.getPrefix() + " §7Downloading blueprint §e" + bpId + " §7from cloud nexus...");
+            String owner = (sender instanceof Player p) ? p.getName() : "Server";
+            plugin.getBlueprintManager().getOrDownloadBlueprint(bpId, owner)
+                    .thenAccept(downloadedBp -> {
+                        Bukkit.getScheduler().runTask(plugin, () -> {
+                            sender.sendMessage(plugin.getPrefix() + " §aBlueprint §e" + downloadedBp.name() + " §areceived and verified!");
+                            dispatchTurtleBuild(sender, downloadedBp, targetTurtle, origin);
+                        });
+                    })
+                    .exceptionally(ex -> {
+                        Bukkit.getScheduler().runTask(plugin, () -> {
+                            String msg = (ex.getCause() != null) ? ex.getCause().getMessage() : ex.getMessage();
+                            sender.sendMessage(plugin.getPrefix() + " §cFailed to fetch blueprint: " + msg);
+                        });
+                        return null;
+                    });
+        }
+    }
+
+    private void dispatchTurtleBuild(CommandSender sender, Blueprint bp, com.multiverse.programming.turtle.Turtle targetTurtle, org.bukkit.Location origin) {
         int delay = plugin.getConfigManager().getTurtleBuildDelayTicks();
         boolean requireMaterials = plugin.getConfigManager().isTurtleRequireMaterials();
         targetTurtle.startBuild(bp, origin, delay, requireMaterials,
@@ -203,6 +224,38 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
         );
         sender.sendMessage(plugin.getPrefix() + " §aDispatched build §e" + bp.name() + " §ato Turtle §e" + targetTurtle.getId()
                 + " §aat [" + origin.getBlockX() + ", " + origin.getBlockY() + ", " + origin.getBlockZ() + "].");
+    }
+
+    private void handleGetCommand(CommandSender sender, String[] args) {
+        if (!sender.hasPermission("multiverseprogramming.use")) {
+            sender.sendMessage(plugin.getPrefix() + " §cYou don't have permission to use this command.");
+            return;
+        }
+        if (args.length < 2) {
+            sender.sendMessage(plugin.getPrefix() + " §cUsage: /pc get <pasteCode|url>");
+            sender.sendMessage(" §7Example: §e/pc get eIoNTIWqo1 §7or §e/pc get BP-NETHER-PORTAL");
+            return;
+        }
+        String code = args[1];
+        sender.sendMessage(plugin.getPrefix() + " §7Downloading blueprint §e" + code + " §7from cloud nexus...");
+        String owner = (sender instanceof Player p) ? p.getName() : "Server";
+        plugin.getBlueprintManager().getOrDownloadBlueprint(code, owner)
+                .thenAccept(bp -> {
+                    Bukkit.getScheduler().runTask(plugin, () -> {
+                        sender.sendMessage(plugin.getPrefix() + " §a✓ Blueprint downloaded successfully!");
+                        sender.sendMessage(" §7Name: §f" + bp.name());
+                        sender.sendMessage(" §7ID/Code: §e" + bp.id());
+                        sender.sendMessage(String.format(" §7Size: §b%d×%d×%d §8(§e%,d blocks§8)", bp.sizeX(), bp.sizeY(), bp.sizeZ(), bp.totalBlocks()));
+                        sender.sendMessage(" §7To build with Turtle: §a/pc build " + bp.id());
+                    });
+                })
+                .exceptionally(ex -> {
+                    Bukkit.getScheduler().runTask(plugin, () -> {
+                        String msg = (ex.getCause() != null) ? ex.getCause().getMessage() : ex.getMessage();
+                        sender.sendMessage(plugin.getPrefix() + " §cDownload failed: " + msg);
+                    });
+                    return null;
+                });
     }
 
     private void reload(CommandSender sender) {
@@ -248,9 +301,10 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
     private void help(CommandSender sender) {
         sender.sendMessage(plugin.getPrefix() + " §7Commands:");
         sender.sendMessage(" §e/pc web §8- §7view Web Dashboard link for uploading .litematic & .nbt");
+        sender.sendMessage(" §e/pc get <code|url> §8- §7download blueprint from cloud pastebin/github");
+        sender.sendMessage(" §e/pc build <code|id> [turtle] [x y z] §8- §7order turtle to build");
         sender.sendMessage(" §e/pc bp [list|quota|delete] §8- §7manage blueprints and check 15MB storage quota");
         if (sender.hasPermission("multiverseprogramming.admin")) {
-            sender.sendMessage(" §e/pc build <bpId> <turtleId> [x y z] §8- §7order turtle to build");
             sender.sendMessage(" §e/pc bp clean [days] §8- §7admin: clean old unused blueprints");
             sender.sendMessage(" §e/pc give <item> §8- §7admin: give yourself a custom item");
             sender.sendMessage(" §e/pc reload §8- §7admin: reload configuration and recipes");
@@ -266,11 +320,12 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
             List<String> subcommands = new ArrayList<>();
             subcommands.add("help");
             subcommands.add("web");
+            subcommands.add("get");
+            subcommands.add("build");
             subcommands.add("blueprint");
             subcommands.add("blueprints");
             subcommands.add("bp");
             if (sender.hasPermission("multiverseprogramming.admin")) {
-                subcommands.add("build");
                 subcommands.add("give");
                 subcommands.add("reload");
             }

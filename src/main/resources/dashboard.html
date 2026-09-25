@@ -285,6 +285,17 @@
         </button>
       </div>
 
+      <!-- In-Game Download Command -->
+      <div class="code-box">
+        <div class="code-header">
+          <span data-i18n="getCmdLabel">📥 Descargar al Servidor</span>
+        </div>
+        <div class="code-display" id="inGameGetCommandDisplay" style="font-size:0.88rem; color:#fff;">/pc get BP-NETHER-PORTAL</div>
+        <button class="copy-btn" onclick="copyInGameGetCommand()">
+          <span data-i18n="copyGetBtn">📥 Copiar /pc get</span>
+        </button>
+      </div>
+
       <!-- Lua Script Code -->
       <div class="code-box">
         <div class="code-header">
@@ -503,6 +514,8 @@
         copyBpBtn: '📋 Copiar Código',
         chatCmdLabel: '🎮 Comando de Chat',
         copyChatBtn: '⚡ Copiar Comando',
+        getCmdLabel: '📥 Descargar al Servidor',
+        copyGetBtn: '📥 Copiar /pc get',
         luaCodeLabel: '💻 Código Lua para Tortuga',
         copyLuaBtn: '💾 Copiar Código Lua',
         howToBuildTitle: 'Cómo Construir en Minecraft',
@@ -514,6 +527,8 @@
         step3Desc: 'Escribe /pc build <CÓDIGO> en el chat o turtle.build("<CÓDIGO>") en un disquete.',
         downloadBtn: '⬇ Descargar Archivo del Plano',
         toastProcessing: '⚡ Procesando ',
+        toastCloudUploading: '☁️ Subiendo a Cloud Pastebin...',
+        toastCloudSuccess: '☁️ ¡Código universal generado!: ',
         toastFormatErr: 'Formato no válido. Arrastra archivos .litematic o .nbt',
         toastAlreadyLoaded: 'ℹ Estructura ya cargada: ',
         toastRegistered: '✔ Registrado ',
@@ -578,6 +593,8 @@
         copyBpBtn: '📋 Copy Code',
         chatCmdLabel: '🎮 Chat Command',
         copyChatBtn: '⚡ Copy Chat Command',
+        getCmdLabel: '📥 Download to Server',
+        copyGetBtn: '📥 Copy /pc get',
         luaCodeLabel: '💻 Turtle Lua Code',
         copyLuaBtn: '💾 Copy Lua Code',
         howToBuildTitle: 'How to Build in Minecraft',
@@ -589,6 +606,8 @@
         step3Desc: 'Type /pc build <CODE> in chat or run turtle.build("<CODE>") in a floppy disk.',
         downloadBtn: '⬇ Download Blueprint File',
         toastProcessing: '⚡ Processing ',
+        toastCloudUploading: '☁️ Uploading to Cloud Pastebin...',
+        toastCloudSuccess: '☁️ Universal code generated: ',
         toastFormatErr: 'Invalid format. Please drop .litematic or .nbt',
         toastAlreadyLoaded: 'ℹ Structure already loaded: ',
         toastRegistered: '✔ Registered ',
@@ -810,6 +829,7 @@
     async function loadCommunityCatalog() {
       const sample = {
         id: 'BP-NETHER-PORTAL',
+        cloudCode: 'eIoNTIWqo1',
         name: 'Monumental Nether Portal',
         author: 'elmagra',
         format: 'litematic',
@@ -1227,10 +1247,49 @@
         showToast(`${t.toastRegistered}"${parsedBp.name}" (${parsedBp.totalBlocks.toLocaleString()} ${t.toastBlocks})`);
         renderBlueprintList();
         selectBlueprint(parsedBp.id);
+
+        // Upload to Cloud Pastebin (Bytebin) in background for instant universal cross-server code
+        uploadToCloudPastebin(rawBuffer, parsedBp);
       } catch (err) {
         console.error(err);
         showToast(t.toastParseErr + err.message, true);
       }
+    }
+
+    async function uploadToCloudPastebin(rawBuffer, bp) {
+      const t = I18N[currentLang] || I18N.es;
+      showToast(t.toastCloudUploading || '☁️ Subiendo a Cloud Pastebin...');
+      try {
+        const res = await fetch('https://bytebin.lucko.me/post', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/octet-stream'
+          },
+          body: rawBuffer
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.key) {
+            const oldId = bp.id;
+            bp.cloudCode = data.key;
+            bp.id = data.key;
+            const idx = blueprints.findIndex(b => b.sha256 === bp.sha256 || b.id === oldId);
+            if (idx !== -1) {
+              blueprints[idx] = bp;
+            }
+            saveLocalLibraryToStorage();
+            renderBlueprintList();
+            if (selectedBlueprint && (selectedBlueprint.sha256 === bp.sha256 || selectedBlueprint.id === oldId || selectedBlueprint.id === bp.id)) {
+              selectBlueprint(bp.id);
+            }
+            showToast((t.toastCloudSuccess || '☁️ ¡Código universal generado!: ') + data.key);
+            return data.key;
+          }
+        }
+      } catch (e) {
+        console.warn('Bytebin upload failed or offline:', e);
+      }
+      return null;
     }
 
     // =========================================================================
@@ -1313,9 +1372,12 @@
       if (deleteBtn) deleteBtn.style.display = isCustom ? 'inline-block' : 'none';
 
       // Update In-Game Code Display & Copy Boxes
-      document.getElementById('bpCodeDisplay').textContent = bp.id;
-      document.getElementById('inGameCommandDisplay').textContent = `/pc build ${bp.id}`;
-      document.getElementById('luaCodeDisplay').textContent = `turtle.build("${bp.id}")`;
+      const activeCode = bp.cloudCode || bp.id;
+      document.getElementById('bpCodeDisplay').textContent = activeCode;
+      document.getElementById('inGameCommandDisplay').textContent = `/pc build ${activeCode}`;
+      const getDisplay = document.getElementById('inGameGetCommandDisplay');
+      if (getDisplay) getDisplay.textContent = `/pc get ${activeCode}`;
+      document.getElementById('luaCodeDisplay').textContent = `turtle.build("${activeCode}")`;
 
       // Slider setup
       const slider = document.getElementById('layerSlider');
@@ -1519,15 +1581,27 @@
     function copyBlueprintCode() {
       if (!selectedBlueprint) return;
       const t = I18N[currentLang] || I18N.es;
-      navigator.clipboard.writeText(selectedBlueprint.id).then(() => {
-        showToast(t.toastCopied + ' ' + selectedBlueprint.id);
+      const code = selectedBlueprint.cloudCode || selectedBlueprint.id;
+      navigator.clipboard.writeText(code).then(() => {
+        showToast(t.toastCopied + ' ' + code);
       });
     }
 
     function copyInGameCommand() {
       if (!selectedBlueprint) return;
       const t = I18N[currentLang] || I18N.es;
-      const cmd = `/pc build ${selectedBlueprint.id}`;
+      const code = selectedBlueprint.cloudCode || selectedBlueprint.id;
+      const cmd = `/pc build ${code}`;
+      navigator.clipboard.writeText(cmd).then(() => {
+        showToast(t.toastCopied + ' ' + cmd);
+      });
+    }
+
+    function copyInGameGetCommand() {
+      if (!selectedBlueprint) return;
+      const t = I18N[currentLang] || I18N.es;
+      const code = selectedBlueprint.cloudCode || selectedBlueprint.id;
+      const cmd = `/pc get ${code}`;
       navigator.clipboard.writeText(cmd).then(() => {
         showToast(t.toastCopied + ' ' + cmd);
       });
@@ -1536,7 +1610,8 @@
     function copyLuaCode() {
       if (!selectedBlueprint) return;
       const t = I18N[currentLang] || I18N.es;
-      const lua = `turtle.build("${selectedBlueprint.id}")`;
+      const code = selectedBlueprint.cloudCode || selectedBlueprint.id;
+      const lua = `turtle.build("${code}")`;
       navigator.clipboard.writeText(lua).then(() => {
         showToast(t.toastCopied + ' ' + lua);
       });

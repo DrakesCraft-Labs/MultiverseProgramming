@@ -10,17 +10,25 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Manages saving, loading, caching, querying, and quota enforcement for 3D construction blueprints.
@@ -187,6 +195,106 @@ public final class BlueprintManager {
 
     public synchronized Collection<Blueprint> getAllBlueprints() {
         return Collections.unmodifiableCollection(blueprints.values());
+    }
+
+    /**
+     * Resolves a blueprint locally or asynchronously downloads and registers it from:
+     * 1. Direct URL (http:// or https://)
+     * 2. Bytebin pastebin cloud (short key)
+     * 3. Official GitHub repository catalog (BP-* or filename)
+     *
+     * @param codeOrUrl The blueprint ID, pastebin key, or HTTP URL.
+     * @param owner Player requesting or "Server".
+     * @return CompletableFuture completing with the parsed, validated, and registered Blueprint.
+     */
+    public CompletableFuture<Blueprint> getOrDownloadBlueprint(String codeOrUrl, String owner) {
+        if (codeOrUrl == null || codeOrUrl.isBlank()) {
+            return CompletableFuture.failedFuture(new IllegalArgumentException("Blueprint code or URL cannot be empty"));
+        }
+
+        String target = codeOrUrl.trim();
+        Blueprint existing = getBlueprint(target);
+        if (existing != null) {
+            return CompletableFuture.completedFuture(existing);
+        }
+
+        return CompletableFuture.supplyAsync(() -> {
+            HttpClient client = HttpClient.newBuilder()
+                    .connectTimeout(Duration.ofSeconds(8))
+                    .followRedirects(HttpClient.Redirect.NORMAL)
+                    .build();
+
+            List<String> candidateUrls = new ArrayList<>();
+            if (target.startsWith("http://") || target.startsWith("https://")) {
+                candidateUrls.add(target);
+            } else if (target.startsWith("BP-") || target.startsWith("bp-")) {
+                String rawName = target.substring(3).toLowerCase(Locale.ROOT).replace('-', '_');
+                candidateUrls.add("https://raw.githubusercontent.com/DrakesCraft-Labs/MultiverseProgramming/main/docs/blueprints/" + rawName + ".litematic");
+                candidateUrls.add("https://raw.githubusercontent.com/DrakesCraft-Labs/MultiverseProgramming/main/docs/blueprints/" + rawName + ".nbt");
+                candidateUrls.add("https://raw.githubusercontent.com/DrakesCraft-Labs/MultiverseProgramming/main/blueprints/" + rawName + ".litematic");
+                candidateUrls.add("https://bytebin.lucko.me/" + target);
+            } else {
+                // Typical bytebin key e.g. eIoNTIWqo1
+                candidateUrls.add("https://bytebin.lucko.me/" + target);
+                candidateUrls.add("https://raw.githubusercontent.com/DrakesCraft-Labs/MultiverseProgramming/main/docs/blueprints/" + target + ".litematic");
+            }
+
+            byte[] downloadedBytes = null;
+            String resolvedUrl = null;
+            Exception lastException = null;
+
+            for (String urlStr : candidateUrls) {
+                try {
+                    HttpRequest request = HttpRequest.newBuilder()
+                            .uri(URI.create(urlStr))
+                            .timeout(Duration.ofSeconds(10))
+                            .header("User-Agent", "MultiverseProgramming-Plugin/1.0.5")
+                            .GET()
+                            .build();
+
+                    HttpResponse<byte[]> response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
+                    if (response.statusCode() == 200 && response.body() != null && response.body().length > 0) {
+                        downloadedBytes = response.body();
+                        resolvedUrl = urlStr;
+                        break;
+                    }
+                } catch (Exception e) {
+                    lastException = e;
+                }
+            }
+
+            if (downloadedBytes == null) {
+                String msg = "Could not find blueprint '" + target + "' on Bytebin or GitHub repository.";
+                if (lastException != null) {
+                    msg += " (" + lastException.getMessage() + ")";
+                }
+                throw new IllegalStateException(msg);
+            }
+
+            // Determine filename & extension from payload magic bytes
+            String ext = ".litematic";
+            if (downloadedBytes.length >= 2 && downloadedBytes[0] == 0x1f && (downloadedBytes[1] & 0xFF) == 0x8b) {
+                ext = ".litematic";
+            } else if (downloadedBytes.length > 0 && downloadedBytes[0] == 0x0a) {
+                ext = ".nbt";
+            }
+
+            String filename = target.replaceAll("[^a-zA-Z0-9._-]", "_");
+            if (!filename.toLowerCase(Locale.ROOT).endsWith(ext)) {
+                filename += ext;
+            }
+
+            try {
+                Blueprint bp = register(filename, downloadedBytes, owner);
+                synchronized (this) {
+                    blueprints.put(target.toUpperCase(Locale.ROOT), bp);
+                }
+                plugin.getLogger().info("[BlueprintNexus] Successfully downloaded '" + bp.name() + "' (" + target + ") from " + resolvedUrl);
+                return bp;
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to register downloaded blueprint: " + e.getMessage(), e);
+            }
+        });
     }
 
     public synchronized long getPlayerUsageBytes(String owner) {
