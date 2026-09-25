@@ -224,6 +224,9 @@ public class MockRegistryAccess implements RegistryAccess {
         if (registryKey == RegistryKey.SOUND_EVENT) {
             return (Registry<T>) createMockRegistry(Sound.class, k -> null);
         }
+        if (registryKey == RegistryKey.MENU || "menu".equals(registryKey.key().value())) {
+            return (Registry<T>) createMockRegistry(org.bukkit.inventory.MenuType.Typed.class, k -> null);
+        }
         return (Registry<T>) createMockRegistry(Keyed.class, k -> null);
     }
 }
