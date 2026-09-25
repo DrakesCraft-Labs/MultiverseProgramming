@@ -4,6 +4,7 @@ package com.multiverse.programming.turtle;
 import com.multiverse.programming.MultiverseProgrammingPlugin;
 import com.multiverse.programming.blueprint.Blueprint;
 import com.multiverse.programming.peripheral.Peripheral;
+import com.multiverse.programming.peripheral.SyncDispatcher;
 import org.bukkit.Location;
 import org.bukkit.inventory.ItemStack;
 import org.luaj.vm2.LuaBoolean;
@@ -277,20 +278,30 @@ public final class TurtlePeripheral implements Peripheral {
                     return varargsOf(LuaBoolean.FALSE, LuaString.valueOf("Blueprint not found: " + bpId));
                 }
 
-                Location origin;
-                if (args.narg() >= 4) {
-                    int x = args.checkint(2);
-                    int y = args.checkint(3);
-                    int z = args.checkint(4);
-                    origin = new Location(turtle.getLocation().getWorld(), x, y, z);
-                } else {
-                    origin = turtle.getLocation().clone();
+                if (args.narg() < 4) {
+                    return varargsOf(LuaBoolean.FALSE, LuaString.valueOf("Coordinates (x, y, z) are mandatory for turtle.build(bpId, x, y, z, [clear])"));
                 }
+
+                int x = args.checkint(2);
+                int y = args.checkint(3);
+                int z = args.checkint(4);
+                boolean clearBlocks = args.narg() >= 5 && args.checkboolean(5);
+
+                if (turtle.getLocation().getWorld() == null) {
+                    return varargsOf(LuaBoolean.FALSE, LuaString.valueOf("Turtle world is unloaded"));
+                }
+                Location origin = new Location(turtle.getLocation().getWorld(), x, y, z);
 
                 int delay = plugin.getConfigManager().getTurtleBuildDelayTicks();
                 boolean requireMaterials = plugin.getConfigManager().isTurtleRequireMaterials();
 
-                turtle.startBuild(bp, origin, delay, requireMaterials, null, null);
+                boolean started = SyncDispatcher.sync(plugin, () ->
+                        turtle.startBuild(bp, origin, delay, requireMaterials, clearBlocks, null, null)
+                );
+
+                if (!started) {
+                    return varargsOf(LuaBoolean.FALSE, LuaString.valueOf(turtle.getStatusMessage()));
+                }
                 return varargsOf(LuaBoolean.TRUE, LuaString.valueOf("Build started for " + bp.name()));
             }
         });

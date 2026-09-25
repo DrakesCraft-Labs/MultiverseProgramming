@@ -126,13 +126,34 @@ class ComputerCommandTest {
         assertTrue(adminSuggestions.contains("give"));
         assertTrue(adminSuggestions.contains("reload"));
         assertTrue(adminSuggestions.contains("help"));
+        assertTrue(adminSuggestions.contains("build"));
 
         List<String> userSuggestions = command.onTabComplete(user, mockCmd, "pc", new String[]{""});
         assertFalse(userSuggestions.contains("give"));
         assertFalse(userSuggestions.contains("reload"));
+        assertFalse(userSuggestions.contains("build"));
         assertTrue(userSuggestions.contains("help"));
         assertTrue(userSuggestions.contains("get"));
-        assertTrue(userSuggestions.contains("build"));
+    }
+
+    @Test
+    @DisplayName("/pc build is denied for non-admin players")
+    void testBuildDeniedForNonAdmin() {
+        Player player = mock(Player.class);
+        when(player.hasPermission("multiverseprogramming.admin")).thenReturn(false);
+
+        assertTrue(command.onCommand(player, mockCmd, "pc", new String[]{"build", "TEST-BP", "10", "64", "20"}));
+        verify(player).sendMessage(contains("Only administrators can use /pc build"));
+    }
+
+    @Test
+    @DisplayName("/pc build rejects command if coordinates are missing")
+    void testBuildRejectsMissingCoordinates() {
+        Player admin = mock(Player.class);
+        when(admin.hasPermission("multiverseprogramming.admin")).thenReturn(true);
+
+        assertTrue(command.onCommand(admin, mockCmd, "pc", new String[]{"build", "TEST-BP"}));
+        verify(admin).sendMessage(contains("coordinates (X Y Z) are mandatory"));
     }
 
     @Test

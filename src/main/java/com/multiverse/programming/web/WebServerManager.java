@@ -344,8 +344,10 @@ public final class WebServerManager {
                 int delay = plugin.getConfigManager().getTurtleBuildDelayTicks();
                 boolean requireMaterials = plugin.getConfigManager().isTurtleRequireMaterials();
 
+                boolean clear = json.has("clear") && json.get("clear").getAsBoolean();
+
                 Bukkit.getScheduler().runTask(plugin, () -> {
-                    turtle.startBuild(bp, targetOrigin, delay, requireMaterials,
+                    turtle.startBuild(bp, targetOrigin, delay, requireMaterials, clear,
                             () -> plugin.getLogger().info("[Turtle " + turtle.getId() + "] Build finished for " + bp.name()),
                             err -> plugin.getLogger().warning("[Turtle " + turtle.getId() + "] Build error: " + err)
                     );

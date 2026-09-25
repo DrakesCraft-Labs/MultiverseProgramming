@@ -12,13 +12,16 @@ import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import com.multiverse.programming.MultiverseProgrammingPlugin;
 import org.bukkit.block.data.Directional;
 import org.bukkit.entity.Item;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitTask;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.UUID;
@@ -275,7 +278,12 @@ public final class Turtle {
                 }
             }
 
+            Location oldLoc = this.location.clone();
             this.location = targetBlock.getLocation();
+            TurtleManager tm = getTurtleManager();
+            if (tm != null) {
+                tm.updateTurtleLocation(this, oldLoc, this.location);
+            }
             world.playSound(this.location, Sound.BLOCK_IRON_TRAPDOOR_CLOSE, 0.4f, 1.8f);
             return true;
         });
@@ -420,19 +428,34 @@ public final class Turtle {
     // Blueprint Construction
     // =========================================================================
 
-    public synchronized void startBuild(
+    public synchronized boolean startBuild(
             Blueprint blueprint,
             Location origin,
             int delayTicks,
             boolean requireMaterials,
+            boolean clearBlocks,
             Runnable onDone,
             Consumer<String> onError
     ) {
         cancelBuild();
 
-        this.activeBlueprint = Objects.requireNonNull(blueprint, "blueprint cannot be null");
+        if (blueprint == null) {
+            failBuild("Blueprint cannot be null", onError);
+            return false;
+        }
+        if (origin == null || origin.getWorld() == null) {
+            failBuild("Target coordinates (origin) are mandatory. The turtle will not build without explicit coordinates.", onError);
+            return false;
+        }
+
+        // Validate area obstruction and clear if permitted
+        if (!checkAndPrepareArea(blueprint, origin, clearBlocks, onError)) {
+            return false;
+        }
+
+        this.activeBlueprint = blueprint;
         this.activeBlueprintId = blueprint.id();
-        this.buildOrigin = (origin != null) ? origin.clone() : this.location.clone();
+        this.buildOrigin = origin.clone();
         this.totalBlocks = blueprint.totalBlocks();
         this.currentBlockIndex.set(0);
         this.status = Status.BUILDING;
@@ -440,7 +463,8 @@ public final class Turtle {
 
         int safeDelay = Math.max(1, delayTicks);
 
-        this.buildTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+        if (Bukkit.getScheduler() != null && plugin != null) {
+            this.buildTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             if (status == Status.PAUSED) {
                 return;
             }
@@ -482,10 +506,16 @@ public final class Turtle {
             int targetZ = buildOrigin.getBlockZ() + pb.z();
 
             if (targetY >= world.getMinHeight() && targetY < world.getMaxHeight()) {
+                // Physically relocate the turtle to an adjacent free spot facing the block
+                moveTurtleAdjacentTo(world, targetX, targetY, targetZ);
+
                 Block targetBlock = world.getBlockAt(targetX, targetY, targetZ);
                 if (targetBlock.getType() != blockMat) {
                     targetBlock.setType(blockMat, false);
-                    world.spawnParticle(Particle.HAPPY_VILLAGER, targetX + 0.5, targetY + 0.5, targetZ + 0.5, 1);
+                    try {
+                        world.spawnParticle(Particle.HAPPY_VILLAGER, targetX + 0.5, targetY + 0.5, targetZ + 0.5, 2, 0.1, 0.1, 0.1, 0.02);
+                        world.playSound(targetBlock.getLocation(), Sound.BLOCK_STONE_PLACE, 0.5f, 1.0f);
+                    } catch (Throwable ignored) {}
                 }
             }
 
@@ -497,6 +527,216 @@ public final class Turtle {
                 finishBuild(onDone);
             }
         }, 1L, safeDelay);
+        }
+
+        return true;
+    }
+
+    public synchronized boolean startBuild(
+            Blueprint blueprint,
+            Location origin,
+            int delayTicks,
+            boolean requireMaterials,
+            Runnable onDone,
+            Consumer<String> onError
+    ) {
+        return startBuild(blueprint, origin, delayTicks, requireMaterials, false, onDone, onError);
+    }
+
+    private boolean checkAndPrepareArea(Blueprint bp, Location origin, boolean clearBlocks, Consumer<String> onError) {
+        World world = origin.getWorld();
+        if (world == null) {
+            failBuild("World is not loaded.", onError);
+            return false;
+        }
+
+        List<Block> obstructed = new ArrayList<>();
+        for (PlacementBlock pb : bp.blocks()) {
+            Material targetMat = parseMaterialFromBlockState(pb.material());
+            if (targetMat == null || targetMat.isAir()) continue;
+
+            int bx = origin.getBlockX() + pb.x();
+            int by = origin.getBlockY() + pb.y();
+            int bz = origin.getBlockZ() + pb.z();
+
+            if (by < world.getMinHeight() || by >= world.getMaxHeight()) continue;
+
+            if (this.location != null
+                    && this.location.getBlockX() == bx
+                    && this.location.getBlockY() == by
+                    && this.location.getBlockZ() == bz) {
+                continue;
+            }
+
+            Block existing = world.getBlockAt(bx, by, bz);
+            if (existing != null && !existing.isEmpty() && existing.getType() != targetMat) {
+                obstructed.add(existing);
+            }
+        }
+
+        if (!obstructed.isEmpty()) {
+            if (!clearBlocks) {
+                failBuild("Target area is obstructed by " + obstructed.size() + " existing block(s). Clear the area first or specify 'clear' to destroy them without drops.", onError);
+                return false;
+            }
+            // Clear obstructed blocks without drops
+            for (Block b : obstructed) {
+                if (b.getType() != Material.BEDROCK && b.getType() != Material.BARRIER) {
+                    b.setType(Material.AIR, false);
+                }
+            }
+        }
+
+        return true;
+    }
+
+    private void moveTurtleAdjacentTo(World world, int targetX, int targetY, int targetZ) {
+        if (world == null || this.location == null) return;
+
+        int curX = this.location.getBlockX();
+        int curY = this.location.getBlockY();
+        int curZ = this.location.getBlockZ();
+
+        int dx = curX - targetX;
+        int dy = curY - targetY;
+        int dz = curZ - targetZ;
+
+        // If turtle is already adjacent (Manhattan distance == 1)
+        if (Math.abs(dx) + Math.abs(dy) + Math.abs(dz) == 1) {
+            BlockFace faceTowards = determineFacing(dx, dy, dz);
+            if (faceTowards != null) {
+                setTurtleFacing(faceTowards);
+            }
+            try {
+                world.playSound(this.location, Sound.BLOCK_DISPENSER_DISPENSE, 0.3f, 1.8f);
+            } catch (Throwable ignored) {}
+            return;
+        }
+
+        // Potential adjacent offsets and the facing needed to look at the target block
+        int[][] candidateOffsets = new int[][] {
+                {0, 0, -1},  // NORTH of target -> turtle faces SOUTH
+                {1, 0, 0},   // EAST of target -> turtle faces WEST
+                {0, 0, 1},   // SOUTH of target -> turtle faces NORTH
+                {-1, 0, 0},  // WEST of target -> turtle faces EAST
+                {0, 1, 0},   // UP of target -> turtle faces DOWN
+                {0, -1, 0}   // DOWN of target -> turtle faces UP
+        };
+
+        BlockFace[] candidateFacings = new BlockFace[] {
+                BlockFace.SOUTH,
+                BlockFace.WEST,
+                BlockFace.NORTH,
+                BlockFace.EAST,
+                BlockFace.DOWN,
+                BlockFace.UP
+        };
+
+        int bestIndex = -1;
+        double minDistanceSq = Double.MAX_VALUE;
+
+        for (int i = 0; i < candidateOffsets.length; i++) {
+            int cx = targetX + candidateOffsets[i][0];
+            int cy = targetY + candidateOffsets[i][1];
+            int cz = targetZ + candidateOffsets[i][2];
+
+            if (cy < world.getMinHeight() || cy >= world.getMaxHeight()) {
+                continue;
+            }
+
+            Block candidateBlock = world.getBlockAt(cx, cy, cz);
+            boolean isSelf = (cx == curX && cy == curY && cz == curZ);
+            if (isSelf || (candidateBlock != null && (candidateBlock.isEmpty() || candidateBlock.isPassable()))) {
+                double distSq = (cx - curX) * (cx - curX) + (cy - curY) * (cy - curY) + (cz - curZ) * (cz - curZ);
+                if (i >= 4) {
+                    distSq += 0.5; // slight preference for ground/horizontal
+                }
+                if (distSq < minDistanceSq) {
+                    minDistanceSq = distSq;
+                    bestIndex = i;
+                }
+            }
+        }
+
+        if (bestIndex != -1) {
+            int bx = targetX + candidateOffsets[bestIndex][0];
+            int by = targetY + candidateOffsets[bestIndex][1];
+            int bz = targetZ + candidateOffsets[bestIndex][2];
+            BlockFace bestFacing = candidateFacings[bestIndex];
+
+            Location newLoc = new Location(world, bx, by, bz);
+            if (!newLoc.equals(this.location)) {
+                relocateTurtleTo(world, newLoc, bestFacing);
+            } else {
+                setTurtleFacing(bestFacing);
+            }
+        }
+    }
+
+    private BlockFace determineFacing(int dx, int dy, int dz) {
+        if (dx == 1 && dy == 0 && dz == 0) return BlockFace.WEST;
+        if (dx == -1 && dy == 0 && dz == 0) return BlockFace.EAST;
+        if (dz == 1 && dx == 0 && dy == 0) return BlockFace.NORTH;
+        if (dz == -1 && dx == 0 && dy == 0) return BlockFace.SOUTH;
+        if (dy == 1 && dx == 0 && dz == 0) return BlockFace.DOWN;
+        if (dy == -1 && dx == 0 && dz == 0) return BlockFace.UP;
+        return BlockFace.NORTH;
+    }
+
+    private void setTurtleFacing(BlockFace newFacing) {
+        this.facing = newFacing;
+        if (location == null || location.getWorld() == null) return;
+        try {
+            Block block = location.getBlock();
+            if (block != null && block.getBlockData() instanceof Directional dir) {
+                dir.setFacing(newFacing);
+                block.setBlockData(dir, false);
+            }
+        } catch (Throwable ignored) {}
+    }
+
+    private void relocateTurtleTo(World world, Location newLoc, BlockFace newFacing) {
+        Block oldBlock = this.location.getBlock();
+        Material turtleMat = (oldBlock != null) ? oldBlock.getType() : Material.DISPENSER;
+        if (!turtleMat.isBlock() || turtleMat.isAir()) {
+            turtleMat = Material.DISPENSER;
+        }
+
+        if (oldBlock != null) {
+            oldBlock.setType(Material.AIR, false);
+        }
+
+        Block newBlock = newLoc.getBlock();
+        if (newBlock != null) {
+            newBlock.setType(turtleMat, false);
+            if (newBlock.getBlockData() instanceof Directional dir) {
+                try {
+                    dir.setFacing(newFacing);
+                    newBlock.setBlockData(dir, false);
+                } catch (Throwable ignored) {}
+            }
+        }
+
+        Location oldLoc = this.location.clone();
+        this.location = newLoc.clone();
+        this.facing = newFacing;
+
+        TurtleManager tm = getTurtleManager();
+        if (tm != null) {
+            tm.updateTurtleLocation(this, oldLoc, this.location);
+        }
+
+        try {
+            world.playSound(newLoc, Sound.BLOCK_IRON_TRAPDOOR_CLOSE, 0.45f, 1.6f);
+            world.spawnParticle(Particle.SMOKE, oldLoc.getX() + 0.5, oldLoc.getY() + 0.5, oldLoc.getZ() + 0.5, 3, 0.08, 0.08, 0.08, 0.01);
+        } catch (Throwable ignored) {}
+    }
+
+    private TurtleManager getTurtleManager() {
+        if (plugin instanceof MultiverseProgrammingPlugin mvp) {
+            return mvp.getTurtleManager();
+        }
+        return null;
     }
 
     private synchronized boolean consumeMaterial(Material mat) {

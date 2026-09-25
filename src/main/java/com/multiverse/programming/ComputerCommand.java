@@ -132,16 +132,67 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
     }
 
     private void triggerBuild(CommandSender sender, String[] args) {
-        if (!sender.hasPermission("multiverseprogramming.use") && !sender.hasPermission("multiverseprogramming.admin")) {
-            sender.sendMessage(plugin.getPrefix() + " §cYou don't have permission to use this command.");
+        if (!sender.hasPermission("multiverseprogramming.admin")) {
+            sender.sendMessage(plugin.getPrefix() + " §cYou don't have permission to use this command. Only administrators can use /pc build.");
             return;
         }
-        if (args.length < 2) {
-            sender.sendMessage(plugin.getPrefix() + " §cUsage: /pc build <blueprintId|pasteCode|url> [turtleId] [x y z]");
+        if (args.length < 5) {
+            sender.sendMessage(plugin.getPrefix() + " §cTarget coordinates (X Y Z) are mandatory. The turtle will not build without coordinates.");
+            sender.sendMessage(" §7Usage: §e/pc build <blueprintId|code|url> <x> <y> <z> [turtleId] [clear]");
+            sender.sendMessage(" §7Or: §e/pc build <blueprintId|code|url> <turtleId> <x> <y> <z> [clear]");
             return;
         }
+
         String bpId = args[1];
-        String turtleId = args.length >= 3 ? args[2] : null;
+        String turtleId = null;
+        int x, y, z;
+        boolean clearBlocks = false;
+
+        for (int i = 2; i < args.length; i++) {
+            if (args[i].equalsIgnoreCase("clear") || args[i].equalsIgnoreCase("force") || args[i].equalsIgnoreCase("true")) {
+                clearBlocks = true;
+                break;
+            }
+        }
+
+        boolean isCoordArg2;
+        try {
+            Integer.parseInt(args[2]);
+            isCoordArg2 = true;
+        } catch (NumberFormatException e) {
+            isCoordArg2 = false;
+        }
+
+        if (isCoordArg2) {
+            // Format: /pc build <bp> <x> <y> <z> [turtleId] [clear]
+            try {
+                x = Integer.parseInt(args[2]);
+                y = Integer.parseInt(args[3]);
+                z = Integer.parseInt(args[4]);
+            } catch (NumberFormatException e) {
+                sender.sendMessage(plugin.getPrefix() + " §cInvalid coordinates. X, Y, and Z must be integers.");
+                return;
+            }
+            if (args.length >= 6 && !args[5].equalsIgnoreCase("clear") && !args[5].equalsIgnoreCase("force") && !args[5].equalsIgnoreCase("true")) {
+                turtleId = args[5];
+            }
+        } else {
+            // Format: /pc build <bp> <turtleId> <x> <y> <z> [clear]
+            turtleId = args[2];
+            if (args.length < 6) {
+                sender.sendMessage(plugin.getPrefix() + " §cTarget coordinates (X Y Z) are mandatory. The turtle will not build without coordinates.");
+                sender.sendMessage(" §7Usage: §e/pc build " + bpId + " " + turtleId + " <x> <y> <z> [clear]");
+                return;
+            }
+            try {
+                x = Integer.parseInt(args[3]);
+                y = Integer.parseInt(args[4]);
+                z = Integer.parseInt(args[5]);
+            } catch (NumberFormatException e) {
+                sender.sendMessage(plugin.getPrefix() + " §cInvalid coordinates. X, Y, and Z must be integers.");
+                return;
+            }
+        }
 
         var turtleManager = plugin.getTurtleManager();
         if (turtleManager == null) {
@@ -153,7 +204,7 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
         if (turtleId != null) {
             turtle = turtleManager.getTurtleById(turtleId);
         } else if (sender instanceof Player p) {
-            double bestDist = 100.0;
+            double bestDist = Double.MAX_VALUE;
             for (var t : turtleManager.getAllTurtles()) {
                 if (t.getLocation().getWorld() != null && t.getLocation().getWorld().equals(p.getWorld())) {
                     double d = t.getLocation().distanceSquared(p.getLocation());
@@ -171,30 +222,26 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
         }
 
         if (turtle == null) {
-            sender.sendMessage(plugin.getPrefix() + " §cNo turtle found nearby. Specify turtle ID: /pc build " + bpId + " <turtleId>");
+            sender.sendMessage(plugin.getPrefix() + " §cNo turtle found" + (turtleId != null ? " with ID: " + turtleId : " nearby.") + " Specify turtle ID or place one nearby.");
             return;
         }
 
         final com.multiverse.programming.turtle.Turtle targetTurtle = turtle;
-
-        org.bukkit.Location origin;
-        if (args.length >= 6) {
-            try {
-                int x = Integer.parseInt(args[3]);
-                int y = Integer.parseInt(args[4]);
-                int z = Integer.parseInt(args[5]);
-                origin = new org.bukkit.Location(targetTurtle.getLocation().getWorld(), x, y, z);
-            } catch (NumberFormatException e) {
-                sender.sendMessage(plugin.getPrefix() + " §cInvalid coordinates.");
-                return;
-            }
-        } else {
-            origin = targetTurtle.getLocation().clone();
+        org.bukkit.World world = targetTurtle.getLocation().getWorld();
+        if (world == null && sender instanceof Player p) {
+            world = p.getWorld();
         }
+        if (world == null) {
+            sender.sendMessage(plugin.getPrefix() + " §cTurtle world is unloaded.");
+            return;
+        }
+
+        final org.bukkit.Location origin = new org.bukkit.Location(world, x, y, z);
+        final boolean finalClear = clearBlocks;
 
         var bp = plugin.getBlueprintManager().getBlueprint(bpId);
         if (bp != null) {
-            dispatchTurtleBuild(sender, bp, targetTurtle, origin);
+            dispatchTurtleBuild(sender, bp, targetTurtle, origin, finalClear);
         } else {
             sender.sendMessage(plugin.getPrefix() + " §7Downloading blueprint §e" + bpId + " §7from cloud nexus...");
             String owner = (sender instanceof Player p) ? p.getName() : "Server";
@@ -202,7 +249,7 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
                     .thenAccept(downloadedBp -> {
                         Bukkit.getScheduler().runTask(plugin, () -> {
                             sender.sendMessage(plugin.getPrefix() + " §aBlueprint §e" + downloadedBp.name() + " §areceived and verified!");
-                            dispatchTurtleBuild(sender, downloadedBp, targetTurtle, origin);
+                            dispatchTurtleBuild(sender, downloadedBp, targetTurtle, origin, finalClear);
                         });
                     })
                     .exceptionally(ex -> {
@@ -215,15 +262,18 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
         }
     }
 
-    private void dispatchTurtleBuild(CommandSender sender, Blueprint bp, com.multiverse.programming.turtle.Turtle targetTurtle, org.bukkit.Location origin) {
+    private void dispatchTurtleBuild(CommandSender sender, Blueprint bp, com.multiverse.programming.turtle.Turtle targetTurtle, org.bukkit.Location origin, boolean clearBlocks) {
         int delay = plugin.getConfigManager().getTurtleBuildDelayTicks();
         boolean requireMaterials = plugin.getConfigManager().isTurtleRequireMaterials();
-        targetTurtle.startBuild(bp, origin, delay, requireMaterials,
+        boolean started = targetTurtle.startBuild(bp, origin, delay, requireMaterials, clearBlocks,
                 () -> sender.sendMessage(plugin.getPrefix() + " §aTurtle " + targetTurtle.getId() + " finished building " + bp.name() + "!"),
                 err -> sender.sendMessage(plugin.getPrefix() + " §cTurtle " + targetTurtle.getId() + " error: " + err)
         );
-        sender.sendMessage(plugin.getPrefix() + " §aDispatched build §e" + bp.name() + " §ato Turtle §e" + targetTurtle.getId()
-                + " §aat [" + origin.getBlockX() + ", " + origin.getBlockY() + ", " + origin.getBlockZ() + "].");
+        if (started) {
+            sender.sendMessage(plugin.getPrefix() + " §aDispatched build §e" + bp.name() + " §ato Turtle §e" + targetTurtle.getId()
+                    + " §aat [" + origin.getBlockX() + ", " + origin.getBlockY() + ", " + origin.getBlockZ() + "]"
+                    + (clearBlocks ? " §c(Area auto-cleared without drops)§a." : "."));
+        }
     }
 
     private void handleGetCommand(CommandSender sender, String[] args) {
@@ -302,9 +352,9 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(plugin.getPrefix() + " §7Commands:");
         sender.sendMessage(" §e/pc web §8- §7view Web Dashboard link for uploading .litematic & .nbt");
         sender.sendMessage(" §e/pc get <code|url> §8- §7download blueprint from cloud pastebin/github");
-        sender.sendMessage(" §e/pc build <code|id> [turtle] [x y z] §8- §7order turtle to build");
-        sender.sendMessage(" §e/pc bp [list|quota|delete] §8- §7manage blueprints and check 15MB storage quota");
+        sender.sendMessage(" §e/pc bp [list|quota|delete] §8- §7manage blueprints and check storage quota");
         if (sender.hasPermission("multiverseprogramming.admin")) {
+            sender.sendMessage(" §e/pc build <code|id> <x> <y> <z> [turtle] [clear] §8- §7admin: order turtle to build");
             sender.sendMessage(" §e/pc bp clean [days] §8- §7admin: clean old unused blueprints");
             sender.sendMessage(" §e/pc give <item> §8- §7admin: give yourself a custom item");
             sender.sendMessage(" §e/pc reload §8- §7admin: reload configuration and recipes");
@@ -321,11 +371,11 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
             subcommands.add("help");
             subcommands.add("web");
             subcommands.add("get");
-            subcommands.add("build");
             subcommands.add("blueprint");
             subcommands.add("blueprints");
             subcommands.add("bp");
             if (sender.hasPermission("multiverseprogramming.admin")) {
+                subcommands.add("build");
                 subcommands.add("give");
                 subcommands.add("reload");
             }

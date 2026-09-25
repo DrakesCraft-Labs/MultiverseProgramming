@@ -9,6 +9,9 @@ import org.bukkit.Material;
 import org.bukkit.Server;
 import org.bukkit.World;
 import org.bukkit.block.BlockFace;
+import com.multiverse.programming.blueprint.Blueprint;
+import com.multiverse.programming.blueprint.Blueprint.PlacementBlock;
+import org.bukkit.block.Block;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.junit.jupiter.api.BeforeEach;
@@ -142,5 +145,100 @@ class TurtleTest {
         assertEquals(4, res.arg(3).toint());
         assertEquals(BlockFace.EAST, turtle.getFacing());
         assertEquals(3, turtle.getSelectedSlot()); // 0-indexed in Java
+    }
+
+    @Test
+    @DisplayName("startBuild refuses to build when origin coordinates are null")
+    void testBuildRequiresCoordinates() {
+        Turtle turtle = new Turtle(mockPlugin, "T-001", startLoc, BlockFace.NORTH, null);
+        Blueprint bp = new Blueprint("TEST", "Test", "Author", "litematic", 1, 1, 1, 1,
+                java.util.Map.of(), java.util.List.of(new PlacementBlock(0, 0, 0, "minecraft:stone")), System.currentTimeMillis());
+
+        java.util.concurrent.atomic.AtomicBoolean errorCalled = new java.util.concurrent.atomic.AtomicBoolean(false);
+        boolean started = turtle.startBuild(bp, null, 1, false, false, null, err -> errorCalled.set(true));
+
+        assertFalse(started);
+        assertTrue(errorCalled.get());
+        assertEquals(Turtle.Status.ERROR, turtle.getStatus());
+        assertTrue(turtle.getStatusMessage().contains("mandatory"));
+    }
+
+    @Test
+    @DisplayName("startBuild refuses to build if target area is obstructed and clear is false")
+    void testBuildRefusesWhenObstructedWithoutClear() {
+        Turtle turtle = new Turtle(mockPlugin, "T-001", startLoc, BlockFace.NORTH, null);
+        Blueprint bp = new Blueprint("TEST", "Test", "Author", "litematic", 1, 1, 1, 1,
+                java.util.Map.of(), java.util.List.of(new PlacementBlock(1, 0, 0, "minecraft:stone")), System.currentTimeMillis());
+
+        Location origin = new Location(mockWorld, 10, 64, 20);
+        when(mockWorld.getMinHeight()).thenReturn(-64);
+        when(mockWorld.getMaxHeight()).thenReturn(320);
+
+        Block mockObstructedBlock = mock(Block.class);
+        when(mockObstructedBlock.isEmpty()).thenReturn(false);
+        when(mockObstructedBlock.getType()).thenReturn(Material.DIRT); // Obstructing dirt block!
+        when(mockWorld.getBlockAt(11, 64, 20)).thenReturn(mockObstructedBlock);
+
+        java.util.concurrent.atomic.AtomicBoolean errorCalled = new java.util.concurrent.atomic.AtomicBoolean(false);
+        boolean started = turtle.startBuild(bp, origin, 1, false, false, null, err -> errorCalled.set(true));
+
+        assertFalse(started);
+        assertTrue(errorCalled.get());
+        assertEquals(Turtle.Status.ERROR, turtle.getStatus());
+        assertTrue(turtle.getStatusMessage().contains("obstructed"));
+        verify(mockObstructedBlock, never()).setType(any(), anyBoolean());
+    }
+
+    @Test
+    @DisplayName("startBuild destroys obstructed blocks without drops when clear is true")
+    void testBuildClearsObstructedBlocksWhenClearTrue() {
+        Turtle turtle = new Turtle(mockPlugin, "T-001", startLoc, BlockFace.NORTH, null);
+        Blueprint bp = new Blueprint("TEST", "Test", "Author", "litematic", 1, 1, 1, 1,
+                java.util.Map.of(), java.util.List.of(new PlacementBlock(1, 0, 0, "minecraft:stone")), System.currentTimeMillis());
+
+        Location origin = new Location(mockWorld, 10, 64, 20);
+        when(mockWorld.getMinHeight()).thenReturn(-64);
+        when(mockWorld.getMaxHeight()).thenReturn(320);
+
+        Block mockObstructedBlock = mock(Block.class);
+        when(mockObstructedBlock.isEmpty()).thenReturn(false);
+        when(mockObstructedBlock.getType()).thenReturn(Material.DIRT);
+        when(mockWorld.getBlockAt(11, 64, 20)).thenReturn(mockObstructedBlock);
+
+        boolean started = turtle.startBuild(bp, origin, 1, false, true, null, null);
+
+        assertTrue(started);
+        assertEquals(Turtle.Status.BUILDING, turtle.getStatus());
+        // Verifies the block was destroyed without item drops (setType with false)
+        verify(mockObstructedBlock).setType(Material.AIR, false);
+    }
+
+    @Test
+    @DisplayName("Lua turtle.build requires coordinates and rejects when missing")
+    void testLuaBuildRequiresCoordinates() {
+        MultiverseProgrammingPlugin mvPlugin = mock(MultiverseProgrammingPlugin.class);
+        when(mvPlugin.isEnabled()).thenReturn(true);
+        Turtle turtle = new Turtle(mvPlugin, "T-001", startLoc, BlockFace.NORTH, null);
+
+        com.multiverse.programming.blueprint.BlueprintManager bpManager = mock(com.multiverse.programming.blueprint.BlueprintManager.class);
+        when(mvPlugin.getBlueprintManager()).thenReturn(bpManager);
+        Blueprint bp = new Blueprint("CASTLE", "Castle", "Author", "litematic", 1, 1, 1, 1,
+                java.util.Map.of(), java.util.List.of(), System.currentTimeMillis());
+        when(bpManager.getBlueprint("CASTLE")).thenReturn(bp);
+
+        TurtlePeripheral peripheral = new TurtlePeripheral(mvPlugin, turtle);
+        Globals globals = LuaRunner.sandbox();
+        globals.set("turtle", peripheral.toLuaTable());
+
+        String script = """
+            local ok, err = turtle.build("CASTLE")
+            return ok, err
+        """;
+
+        LuaValue chunk = globals.load(script);
+        var res = chunk.invoke();
+
+        assertFalse(res.arg(1).toboolean());
+        assertTrue(res.arg(2).tojstring().contains("mandatory"));
     }
 }
