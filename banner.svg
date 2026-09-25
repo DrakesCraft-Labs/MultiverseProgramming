@@ -1,0 +1,201 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 300" width="920" height="300" role="img" aria-label="MultiverseProgramming Banner">
+  <defs>
+    <!-- Background Gradients -->
+    <linearGradient id="mpBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#050B14" />
+      <stop offset="45%" stop-color="#0B132B" />
+      <stop offset="85%" stop-color="#091833" />
+      <stop offset="100%" stop-color="#020617" />
+    </linearGradient>
+
+    <!-- Accent Gradient -->
+    <linearGradient id="mpAccent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00F2FE" />
+      <stop offset="50%" stop-color="#8B5CF6" />
+      <stop offset="100%" stop-color="#10B981" />
+    </linearGradient>
+
+    <!-- Terminal Code Gradient -->
+    <linearGradient id="codeGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#22D3EE" stop-opacity="0.9" />
+      <stop offset="100%" stop-color="#34D399" stop-opacity="0.3" />
+    </linearGradient>
+
+    <!-- Radial Glows -->
+    <radialGradient id="centerGlow" cx="50%" cy="40%" r="55%">
+      <stop offset="0%" stop-color="#8B5CF6" stop-opacity="0.35" />
+      <stop offset="50%" stop-color="#06B6D4" stop-opacity="0.15" />
+      <stop offset="100%" stop-color="#020617" stop-opacity="0" />
+    </radialGradient>
+
+    <!-- Filter for neon bloom -->
+    <filter id="neonBloom" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="5" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+
+    <filter id="softGlow" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+
+    <!-- Pattern for Cyber Grid -->
+    <pattern id="cyberGrid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1E293B" stroke-width="0.7" stroke-opacity="0.5" />
+      <circle cx="40" cy="0" r="1" fill="#00F2FE" fill-opacity="0.3" />
+    </pattern>
+  </defs>
+
+  <style>
+    .titulo {
+      font-family: 'Outfit', 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-weight: 900;
+      font-size: 38px;
+      letter-spacing: 4px;
+      fill: url(#mpAccent);
+    }
+    .subtitulo {
+      font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: 3px;
+      fill: #94A3B8;
+    }
+    .lua-code {
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 11px;
+      fill: #38BDF8;
+      opacity: 0.35;
+    }
+    .badge-bg {
+      fill: #091325;
+      stroke-width: 1.2;
+      rx: 6px;
+    }
+    .badge-text {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 700;
+    }
+  </style>
+
+  <!-- Background Base -->
+  <rect width="920" height="300" rx="16" fill="url(#mpBg)" />
+  <rect width="920" height="300" rx="16" fill="url(#cyberGrid)" />
+  <rect width="920" height="300" rx="16" fill="url(#centerGlow)" />
+  <rect x="2" y="2" width="916" height="296" rx="14" fill="none" stroke="url(#mpAccent)" stroke-width="1.8" opacity="0.65" />
+
+  <!-- Ambient Lua Code Floating Left & Right -->
+  <g class="lua-code">
+    <text x="35" y="45">&gt; turtle.build("NEXUS_CORE")</text>
+    <text x="35" y="65">&gt; while turtle.hasFuel() do</text>
+    <text x="55" y="85">turtle.dig() turtle.forward()</text>
+    <text x="35" y="105">&gt; end</text>
+    <text x="35" y="130">&gt; peripheral.wrap("monitor")</text>
+    <text x="35" y="150">&gt; -- CoreProtect verified</text>
+
+    <text x="730" y="45">-- Quantum Dispatcher</text>
+    <text x="730" y="65">status = turtle.status()</text>
+    <text x="730" y="85">if status == "IDLE" then</text>
+    <text x="750" y="105">turtle.placeDown()</text>
+    <text x="730" y="125">end</text>
+    <text x="730" y="145">nexus.sync("8080/ws")</text>
+  </g>
+
+  <!-- Central Holographic Cyber Turtle & Quantum Ring (SMIL Animated) -->
+  <g transform="translate(460, 92)">
+    <!-- Outer Quantum Orbit Ring -->
+    <g>
+      <animateTransform attributeName="transform" type="rotate"
+                        from="0 0 0" to="360 0 0" dur="20s" repeatCount="indefinite" />
+      <circle cx="0" cy="0" r="54" fill="none" stroke="#8B5CF6" stroke-width="1.5" stroke-dasharray="8 6" opacity="0.7" />
+      <circle cx="54" cy="0" r="4" fill="#00F2FE">
+        <animate attributeName="r" values="3;5;3" dur="2s" repeatCount="indefinite" />
+      </circle>
+      <circle cx="-54" cy="0" r="4" fill="#10B981">
+        <animate attributeName="r" values="3;5;3" dur="2s" repeatCount="indefinite" />
+      </circle>
+    </g>
+
+    <!-- Inner Counter-Rotating Hex Orbit -->
+    <g>
+      <animateTransform attributeName="transform" type="rotate"
+                        from="360 0 0" to="0 0 0" dur="14s" repeatCount="indefinite" />
+      <polygon points="0,-40 35,-20 35,20 0,40 -35,20 -35,-20"
+               fill="none" stroke="#00F2FE" stroke-width="1.8" stroke-dasharray="14 8" opacity="0.8" />
+      <circle cx="0" cy="-40" r="3.5" fill="#A855F7" />
+      <circle cx="0" cy="40" r="3.5" fill="#34D399" />
+    </g>
+
+    <!-- Robotic Turtle Shell & Circuits -->
+    <g filter="url(#neonBloom)">
+      <!-- Turtle Shell Octagon Base -->
+      <polygon points="0,-26 22,-14 26,12 12,28 -12,28 -26,12 -22,-14"
+               fill="#0A1628" stroke="url(#mpAccent)" stroke-width="2.5" />
+
+      <!-- Turtle Head -->
+      <path d="M -7,-26 L -7,-36 C -7,-40 7,-40 7,-36 L 7,-26 Z"
+            fill="#0F213A" stroke="#00F2FE" stroke-width="2" />
+      <!-- Turtle Glowing Visor/Eye -->
+      <rect x="-5" y="-35" width="10" height="3" rx="1.5" fill="#00F2FE">
+        <animate attributeName="opacity" values="0.7;1;0.7" dur="1.8s" repeatCount="indefinite" />
+      </rect>
+
+      <!-- Turtle Flippers / Robotic Treads -->
+      <!-- Front Left -->
+      <path d="M -22,-10 L -36,-18 L -33,-7 L -24,-2 Z" fill="#0E1D33" stroke="#8B5CF6" stroke-width="1.5" />
+      <!-- Front Right -->
+      <path d="M 22,-10 L 36,-18 L 33,-7 L 24,-2 Z" fill="#0E1D33" stroke="#8B5CF6" stroke-width="1.5" />
+      <!-- Back Left -->
+      <path d="M -23,15 L -35,24 L -29,29 L -18,22 Z" fill="#0E1D33" stroke="#10B981" stroke-width="1.5" />
+      <!-- Back Right -->
+      <path d="M 23,15 L 35,24 L 29,29 L 18,22 Z" fill="#0E1D33" stroke="#10B981" stroke-width="1.5" />
+
+      <!-- Shell Inner Circuit Lines -->
+      <line x1="0" y1="-24" x2="0" y2="26" stroke="#22D3EE" stroke-width="1.5" />
+      <line x1="-20" y1="0" x2="20" y2="0" stroke="#8B5CF6" stroke-width="1.5" />
+      <line x1="-15" y1="-12" x2="15" y2="12" stroke="#34D399" stroke-width="1.2" opacity="0.8" />
+      <line x1="-15" y1="12" x2="15" y2="-12" stroke="#34D399" stroke-width="1.2" opacity="0.8" />
+
+      <!-- Center Quantum Microchip -->
+      <rect x="-8" y="-8" width="16" height="16" rx="3" fill="#020617" stroke="#00F2FE" stroke-width="2" />
+      <circle cx="0" cy="0" r="3.5" fill="#A855F7">
+        <animate attributeName="fill" values="#A855F7;#00F2FE;#10B981;#A855F7" dur="4s" repeatCount="indefinite" />
+        <animate attributeName="r" values="3;4.5;3" dur="2s" repeatCount="indefinite" />
+      </circle>
+    </g>
+  </g>
+
+  <!-- Typography -->
+  <text x="460" y="186" text-anchor="middle" class="titulo" filter="url(#softGlow)">MULTIVERSEPROGRAMMING</text>
+  <text x="460" y="214" text-anchor="middle" class="subtitulo">AUTONOMOUS TURTLES · IN-GAME LUA COMPUTERS · BLUEPRINT NEXUS</text>
+
+  <!-- Badges Grid -->
+  <g transform="translate(145, 246)">
+    <!-- Badge 1: Ecosystem -->
+    <rect x="0" y="0" width="145" height="30" class="badge-bg" stroke="#8B5CF6" />
+    <circle cx="16" cy="15" r="4" fill="#8B5CF6" />
+    <text x="28" y="20" class="badge-text" fill="#C4B5FD">CHAGUI ECOSYSTEM</text>
+
+    <!-- Badge 2: Platform -->
+    <rect x="160" y="0" width="145" height="30" class="badge-bg" stroke="#00F2FE" />
+    <circle cx="176" cy="15" r="4" fill="#00F2FE" />
+    <text x="188" y="20" class="badge-text" fill="#38BDF8">PURPUR 1.21.11</text>
+
+    <!-- Badge 3: Runtime -->
+    <rect x="320" y="0" width="140" height="30" class="badge-bg" stroke="#10B981" />
+    <circle cx="336" cy="15" r="4" fill="#10B981" />
+    <text x="348" y="20" class="badge-text" fill="#34D399">JAVA 21 &amp; LUA 5.2</text>
+
+    <!-- Badge 4: CoreProtect Verified -->
+    <rect x="475" y="0" width="155" height="30" class="badge-bg" stroke="#F59E0B" />
+    <circle cx="491" cy="15" r="4" fill="#F59E0B" />
+    <text x="503" y="20" class="badge-text" fill="#FCD34D">COREPROTECT AUDITED</text>
+  </g>
+</svg>

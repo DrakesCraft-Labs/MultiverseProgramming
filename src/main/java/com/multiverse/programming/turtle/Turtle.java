@@ -13,6 +13,7 @@ import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import com.multiverse.programming.MultiverseProgrammingPlugin;
+import com.multiverse.programming.protection.CoreProtectBridge;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.Directional;
 import org.bukkit.block.data.Waterlogged;
@@ -325,7 +326,12 @@ public final class Turtle {
             }
 
             Collection<ItemStack> drops = target.getDrops();
+            Material oldMat = target.getType();
+            BlockData oldData = target.getBlockData();
+            Location targetLoc = target.getLocation();
+
             target.setType(Material.AIR, true);
+            CoreProtectBridge.logRemoval(owner, id, targetLoc, oldMat, oldData);
 
             for (ItemStack drop : drops) {
                 if (drop == null || drop.getType().isAir()) continue;
@@ -366,6 +372,8 @@ public final class Turtle {
             }
 
             target.setType(stack.getType(), true);
+            CoreProtectBridge.logPlacement(owner, id, target.getLocation(), stack.getType(), target.getBlockData());
+
             synchronized (this) {
                 stack.setAmount(stack.getAmount() - 1);
                 if (stack.getAmount() <= 0) {
@@ -573,10 +581,12 @@ public final class Turtle {
                     if (targetBlock.getBlockData() == null || !targetBlock.getBlockData().matches(blockData)) {
                         targetBlock.setBlockData(blockData, false);
                         updated = true;
+                        CoreProtectBridge.logPlacement(owner, id, targetBlock.getLocation(), blockData.getMaterial(), blockData);
                     }
                 } else if (targetBlock.getType() != blockMat) {
                     targetBlock.setType(blockMat, false);
                     updated = true;
+                    CoreProtectBridge.logPlacement(owner, id, targetBlock.getLocation(), blockMat, targetBlock.getBlockData());
                 }
 
                 if (updated) {
@@ -671,7 +681,11 @@ public final class Turtle {
             // Clear obstructed blocks without drops
             for (Block b : obstructed) {
                 if (!isIllegalBlock(b.getType())) {
+                    Material oldMat = b.getType();
+                    BlockData oldData = b.getBlockData();
+                    Location bLoc = b.getLocation();
                     b.setType(Material.AIR, false);
+                    CoreProtectBridge.logRemoval(owner, id, bLoc, oldMat, oldData);
                 }
             }
         }
