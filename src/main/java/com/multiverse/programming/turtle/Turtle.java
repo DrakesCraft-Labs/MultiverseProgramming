@@ -17,6 +17,7 @@ import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.Directional;
 import org.bukkit.block.data.Waterlogged;
 import org.bukkit.entity.Item;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitTask;
@@ -63,6 +64,11 @@ public final class Turtle {
     private final AtomicInteger currentBlockIndex = new AtomicInteger(0);
     private int totalBlocks = 0;
     private BukkitTask buildTask;
+
+    private Location constructionChestLoc;
+    private org.bukkit.entity.Entity constructionHologram;
+    private Location fuelChestLoc;
+    private org.bukkit.entity.Entity fuelHologram;
 
     public Turtle(org.bukkit.plugin.java.JavaPlugin plugin, String id, Location location, BlockFace facing, UUID owner) {
         this.plugin = Objects.requireNonNull(plugin, "plugin cannot be null");
@@ -180,6 +186,10 @@ public final class Turtle {
 
     public synchronized String getActiveBlueprintId() {
         return activeBlueprintId;
+    }
+
+    public synchronized Blueprint getActiveBlueprint() {
+        return activeBlueprint;
     }
 
     public int getCurrentBlockIndex() {
@@ -400,30 +410,60 @@ public final class Turtle {
 
     public synchronized boolean refuel(int count) {
         ItemStack stack = inventory[selectedSlot];
-        if (stack == null || stack.getAmount() <= 0) return false;
+        int fuelPerItem = getFuelValue(stack != null ? stack.getType() : null);
 
-        int fuelPerItem = switch (stack.getType()) {
+        if (fuelPerItem > 0 && stack != null && stack.getAmount() > 0) {
+            int consume = (count <= 0) ? stack.getAmount() : Math.min(count, stack.getAmount());
+            this.fuel += consume * fuelPerItem;
+
+            if (stack.getType() == Material.LAVA_BUCKET) {
+                inventory[selectedSlot] = new ItemStack(Material.BUCKET, consume);
+            } else {
+                stack.setAmount(stack.getAmount() - consume);
+                if (stack.getAmount() <= 0) {
+                    inventory[selectedSlot] = null;
+                }
+            }
+            return true;
+        }
+
+        // Fallback: check adjacent fuel chest
+        if (fuelChestLoc != null && fuelChestLoc.getWorld() != null) {
+            Block block = fuelChestLoc.getBlock();
+            if (block.getState() instanceof org.bukkit.block.Container container) {
+                Inventory chestInv = container.getInventory();
+                for (int slot = 0; slot < chestInv.getSize(); slot++) {
+                    ItemStack cItem = chestInv.getItem(slot);
+                    int fVal = getFuelValue(cItem != null ? cItem.getType() : null);
+                    if (fVal > 0 && cItem != null && cItem.getAmount() > 0) {
+                        int consume = (count <= 0) ? cItem.getAmount() : Math.min(count, cItem.getAmount());
+                        this.fuel += consume * fVal;
+                        if (cItem.getType() == Material.LAVA_BUCKET) {
+                            chestInv.setItem(slot, new ItemStack(Material.BUCKET, consume));
+                        } else {
+                            cItem.setAmount(cItem.getAmount() - consume);
+                            if (cItem.getAmount() <= 0) {
+                                chestInv.setItem(slot, null);
+                            }
+                        }
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private static int getFuelValue(Material mat) {
+        if (mat == null) return 0;
+        return switch (mat) {
             case COAL, CHARCOAL -> 80;
             case BLAZE_ROD -> 120;
             case LAVA_BUCKET -> 1000;
             case COAL_BLOCK -> 800;
             default -> 0;
         };
-
-        if (fuelPerItem <= 0) return false;
-
-        int consume = (count <= 0) ? stack.getAmount() : Math.min(count, stack.getAmount());
-        this.fuel += consume * fuelPerItem;
-
-        if (stack.getType() == Material.LAVA_BUCKET) {
-            inventory[selectedSlot] = new ItemStack(Material.BUCKET, consume);
-        } else {
-            stack.setAmount(stack.getAmount() - consume);
-            if (stack.getAmount() <= 0) {
-                inventory[selectedSlot] = null;
-            }
-        }
-        return true;
     }
 
     // =========================================================================
@@ -436,6 +476,7 @@ public final class Turtle {
             int delayTicks,
             boolean requireMaterials,
             boolean clearBlocks,
+            int rotationDegrees,
             Runnable onDone,
             Consumer<String> onError
     ) {
@@ -450,9 +491,17 @@ public final class Turtle {
             return false;
         }
 
-        // Validate area obstruction and clear if permitted
+        if (rotationDegrees != 0) {
+            blueprint = blueprint.rotate(rotationDegrees);
+        }
+
+        // Validate area obstruction, region protection claims, and clear if permitted
         if (!checkAndPrepareArea(blueprint, origin, clearBlocks, onError)) {
             return false;
+        }
+
+        if (requireMaterials) {
+            setupConstructionChests(origin);
         }
 
         this.activeBlueprint = blueprint;
@@ -556,10 +605,22 @@ public final class Turtle {
             Location origin,
             int delayTicks,
             boolean requireMaterials,
+            boolean clearBlocks,
             Runnable onDone,
             Consumer<String> onError
     ) {
-        return startBuild(blueprint, origin, delayTicks, requireMaterials, false, onDone, onError);
+        return startBuild(blueprint, origin, delayTicks, requireMaterials, clearBlocks, 0, onDone, onError);
+    }
+
+    public synchronized boolean startBuild(
+            Blueprint blueprint,
+            Location origin,
+            int delayTicks,
+            boolean requireMaterials,
+            Runnable onDone,
+            Consumer<String> onError
+    ) {
+        return startBuild(blueprint, origin, delayTicks, requireMaterials, false, 0, onDone, onError);
     }
 
     private boolean checkAndPrepareArea(Blueprint bp, Location origin, boolean clearBlocks, Consumer<String> onError) {
@@ -567,6 +628,15 @@ public final class Turtle {
         if (world == null) {
             failBuild("World is not loaded.", onError);
             return false;
+        }
+
+        // Region claims protection check (WorldGuard / ProtectionStones)
+        if (plugin instanceof MultiverseProgrammingPlugin mvp) {
+            String protectionError = mvp.getProtectionManager().checkBuildArea(this.owner, origin, bp);
+            if (protectionError != null) {
+                failBuild(protectionError, onError);
+                return false;
+            }
         }
 
         List<Block> obstructed = new ArrayList<>();
@@ -759,6 +829,7 @@ public final class Turtle {
     }
 
     private synchronized boolean consumeMaterial(Material mat) {
+        // 1. Check internal turtle inventory
         for (int i = 0; i < 16; i++) {
             ItemStack stack = inventory[i];
             if (stack != null && stack.getAmount() > 0) {
@@ -773,10 +844,145 @@ public final class Turtle {
                 }
             }
         }
+
+        // 2. Check construction supply chest
+        if (constructionChestLoc != null && constructionChestLoc.getWorld() != null) {
+            Block chestBlock = constructionChestLoc.getBlock();
+            if (chestBlock.getState() instanceof org.bukkit.block.Container container) {
+                Inventory chestInv = container.getInventory();
+                for (int slot = 0; slot < chestInv.getSize(); slot++) {
+                    ItemStack item = chestInv.getItem(slot);
+                    if (item != null && item.getAmount() > 0) {
+                        if (item.getType() == mat ||
+                                (mat == Material.WATER && item.getType() == Material.WATER_BUCKET) ||
+                                (mat == Material.LAVA && item.getType() == Material.LAVA_BUCKET)) {
+                            item.setAmount(item.getAmount() - 1);
+                            if (item.getAmount() <= 0) {
+                                chestInv.setItem(slot, null);
+                            }
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+
         return false;
     }
 
+    private void setupConstructionChests(Location origin) {
+        World world = (this.location != null && this.location.getWorld() != null) ? this.location.getWorld() : origin.getWorld();
+        if (world == null) return;
+
+        Location startLoc = (this.location != null) ? this.location : origin;
+        BlockFace[] sides = {BlockFace.EAST, BlockFace.WEST, BlockFace.NORTH, BlockFace.SOUTH};
+        Location chosenChest = null;
+        Location chosenFuel = null;
+
+        for (BlockFace face : sides) {
+            Block adj = startLoc.getBlock().getRelative(face);
+            if (adj.getType() == Material.CHEST || adj.getType() == Material.TRAPPED_CHEST || adj.getType() == Material.BARREL) {
+                if (chosenChest == null) {
+                    chosenChest = adj.getLocation();
+                    continue;
+                } else if (chosenFuel == null) {
+                    chosenFuel = adj.getLocation();
+                    break;
+                }
+            }
+            if (adj.isEmpty() || adj.isPassable()) {
+                if (chosenChest == null) {
+                    chosenChest = adj.getLocation();
+                } else if (chosenFuel == null) {
+                    chosenFuel = adj.getLocation();
+                }
+            }
+        }
+
+        if (chosenChest == null) {
+            chosenChest = startLoc.clone().add(1, 0, 0);
+        }
+
+        Block chestBlock = chosenChest.getBlock();
+        if (chestBlock.getType() != Material.CHEST && chestBlock.getType() != Material.BARREL) {
+            chestBlock.setType(Material.CHEST, false);
+        }
+        this.constructionChestLoc = chosenChest;
+
+        Location holoLoc = chosenChest.clone().add(0.5, 1.25, 0.5);
+        try {
+            cleanupHolograms();
+            try {
+                org.bukkit.entity.TextDisplay td = world.spawn(holoLoc, org.bukkit.entity.TextDisplay.class, display -> {
+                    display.setText("§e📦 Place construction blocks here");
+                    display.setBillboard(org.bukkit.entity.Display.Billboard.CENTER);
+                    display.setDefaultBackground(false);
+                    display.setSeeThrough(true);
+                });
+                this.constructionHologram = td;
+            } catch (Throwable fallback) {
+                org.bukkit.entity.ArmorStand stand = world.spawn(holoLoc.clone().subtract(0, 1.0, 0), org.bukkit.entity.ArmorStand.class, as -> {
+                    as.setCustomName("§e📦 Place construction blocks here");
+                    as.setCustomNameVisible(true);
+                    as.setVisible(false);
+                    as.setGravity(false);
+                    as.setMarker(true);
+                });
+                this.constructionHologram = stand;
+            }
+        } catch (Throwable ignored) {}
+
+        boolean fuelRequired = false;
+        if (plugin instanceof MultiverseProgrammingPlugin mvp) {
+            fuelRequired = mvp.getConfigManager().isTurtleFuelRequired();
+        }
+        if (fuelRequired && chosenFuel != null) {
+            Block fuelBlock = chosenFuel.getBlock();
+            if (fuelBlock.getType() != Material.CHEST && fuelBlock.getType() != Material.BARREL) {
+                fuelBlock.setType(Material.BARREL, false);
+            }
+            this.fuelChestLoc = chosenFuel;
+            Location fuelHoloLoc = chosenFuel.clone().add(0.5, 1.25, 0.5);
+            try {
+                try {
+                    org.bukkit.entity.TextDisplay td = world.spawn(fuelHoloLoc, org.bukkit.entity.TextDisplay.class, display -> {
+                        display.setText("§6⚡ Place fuel here");
+                        display.setBillboard(org.bukkit.entity.Display.Billboard.CENTER);
+                        display.setDefaultBackground(false);
+                        display.setSeeThrough(true);
+                    });
+                    this.fuelHologram = td;
+                } catch (Throwable fallback) {
+                    org.bukkit.entity.ArmorStand stand = world.spawn(fuelHoloLoc.clone().subtract(0, 1.0, 0), org.bukkit.entity.ArmorStand.class, as -> {
+                        as.setCustomName("§6⚡ Place fuel here");
+                        as.setCustomNameVisible(true);
+                        as.setVisible(false);
+                        as.setGravity(false);
+                        as.setMarker(true);
+                    });
+                    this.fuelHologram = stand;
+                }
+            } catch (Throwable ignored) {}
+        }
+    }
+
+    private void cleanupHolograms() {
+        if (constructionHologram != null && constructionHologram.isValid()) {
+            try {
+                constructionHologram.remove();
+            } catch (Throwable ignored) {}
+            constructionHologram = null;
+        }
+        if (fuelHologram != null && fuelHologram.isValid()) {
+            try {
+                fuelHologram.remove();
+            } catch (Throwable ignored) {}
+            fuelHologram = null;
+        }
+    }
+
     private void finishBuild(Runnable onDone) {
+        cleanupHolograms();
         cancelTask();
         this.status = Status.IDLE;
         this.statusMessage = "Build completed (" + totalBlocks + " blocks)";
@@ -789,6 +995,7 @@ public final class Turtle {
     }
 
     private void failBuild(String message, Consumer<String> onError) {
+        cleanupHolograms();
         cancelTask();
         this.status = Status.ERROR;
         this.statusMessage = "Error: " + message;
@@ -812,6 +1019,7 @@ public final class Turtle {
     }
 
     public synchronized void cancelBuild() {
+        cleanupHolograms();
         cancelTask();
         this.status = Status.IDLE;
         this.statusMessage = "Idle";

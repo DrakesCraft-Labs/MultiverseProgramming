@@ -90,32 +90,44 @@ public final class ComputerListener implements Listener {
             return;
         }
 
+        Player player = event.getPlayer();
         boolean advanced;
         if (block.getType() == computerBlock) {
             advanced = false;
+            if (!plugin.getConfigManager().isEnableComputer()) {
+                event.setCancelled(true);
+                player.sendMessage(plugin.getPrefix() + " §cStandard computers are currently disabled by the server administration.");
+                return;
+            }
         } else if (block.getType() == advancedComputerBlock) {
             advanced = true;
+            if (!plugin.getConfigManager().isEnableAdvancedComputer()) {
+                event.setCancelled(true);
+                player.sendMessage(plugin.getPrefix() + " §cAdvanced computers are currently disabled by the server administration.");
+                return;
+            }
         } else {
             return;
         }
 
         event.setCancelled(true);
-        Player player = event.getPlayer();
 
         if (!player.hasPermission("multiverseprogramming.use")) {
             player.sendMessage(plugin.getPrefix() + " §cYou don't have permission to use computers.");
             return;
         }
 
-        openByPlayer.put(player.getUniqueId(), new BlockRef(advanced, block.getLocation()));
+        Location blockLoc = toBlockLocation(block.getLocation());
+        openByPlayer.put(player.getUniqueId(), new BlockRef(advanced, blockLoc));
 
         if (!advanced) {
             player.openInventory(ComputerGUI.open());
             return;
         }
 
-        ItemStack savedDisk = advancedDisks.get(block.getLocation());
-        Inventory inv = ComputerGUI.openAdvanced();
+        boolean isRunning = isProgramRunning(blockLoc);
+        ItemStack savedDisk = advancedDisks.get(blockLoc);
+        Inventory inv = ComputerGUI.openAdvanced(isRunning);
         if (savedDisk != null && !savedDisk.getType().isAir()) {
             inv.setItem(ComputerGUI.DISK_SLOT, savedDisk);
         }
@@ -320,11 +332,23 @@ public final class ComputerListener implements Listener {
         advancedDisks.keySet().removeIf(loc -> world.equals(loc.getWorld()));
     }
 
+    public static Location toBlockLocation(Location loc) {
+        if (loc == null || loc.getWorld() == null) return null;
+        return new Location(loc.getWorld(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ());
+    }
+
+    public static boolean isProgramRunning(Location loc) {
+        if (loc == null) return false;
+        Location blockLoc = toBlockLocation(loc);
+        RunningEntry entry = runningPrograms.get(blockLoc);
+        return entry != null && entry.program().isRunning();
+    }
+
     private void handleBlockRemoved(Block block) {
         if (block == null) {
             return;
         }
-        Location loc = block.getLocation();
+        Location loc = toBlockLocation(block.getLocation());
         RunningEntry running = runningPrograms.remove(loc);
         if (running != null) {
             running.program().cancel();
@@ -333,7 +357,7 @@ public final class ComputerListener implements Listener {
 
         ItemStack disk = advancedDisks.remove(loc);
         if (disk != null && !disk.getType().isAir() && plugin.getConfigManager().isDropDisksOnBreak()) {
-            block.getWorld().dropItemNaturally(loc, disk);
+            block.getWorld().dropItemNaturally(block.getLocation(), disk);
         }
 
         if (block.getType() == plugin.getConfigManager().getMonitorBlock()) {
@@ -344,13 +368,14 @@ public final class ComputerListener implements Listener {
     private void stopEntry(Location loc, RunningEntry entry) {
         entry.program().cancel();
         entry.cleanup().cancel();
-        runningPrograms.remove(loc);
+        runningPrograms.remove(toBlockLocation(loc));
     }
 
     private void pressAdvanced(Player player, Inventory inv, Location loc) {
-        RunningEntry running = runningPrograms.get(loc);
+        Location blockLoc = toBlockLocation(loc);
+        RunningEntry running = runningPrograms.get(blockLoc);
         if (running != null && running.program().isRunning()) {
-            stopEntry(loc, running);
+            stopEntry(blockLoc, running);
             player.closeInventory();
             player.sendMessage(plugin.getPrefix() + " §7Program stopped.");
             return;
@@ -385,18 +410,18 @@ public final class ComputerListener implements Listener {
         });
 
         int maxLines = plugin.getConfigManager().getMaxStreamLines();
-        LuaRunner.LuaProgram program = LuaRunner.runStreaming(plugin, loc, true, code, plugin.getAdvancedTimeoutMs(), maxLines, onLine);
+        LuaRunner.LuaProgram program = LuaRunner.runStreaming(plugin, blockLoc, true, code, plugin.getAdvancedTimeoutMs(), maxLines, onLine);
 
         BukkitTask[] cleanup = new BukkitTask[1];
         cleanup[0] = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             if (!program.isRunning()) {
-                RunningEntry entry = runningPrograms.get(loc);
+                RunningEntry entry = runningPrograms.get(blockLoc);
                 if (entry != null && entry.program() == program) {
-                    runningPrograms.remove(loc);
+                    runningPrograms.remove(blockLoc);
                 }
                 cleanup[0].cancel();
             }
-        }, 0L, 20L);
-        runningPrograms.put(loc, new RunningEntry(uuid, program, cleanup[0]));
+        }, 1L, 20L);
+        runningPrograms.put(blockLoc, new RunningEntry(uuid, program, cleanup[0]));
     }
 }

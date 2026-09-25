@@ -3,6 +3,7 @@ version: ${project.version}
 main: com.multiverse.programming.MultiverseProgrammingPlugin
 api-version: '1.21'
 description: Programmable computers with Lua, turtles, and blueprints.
+softdepend: [WorldGuard, ProtectionStones]
 
 commands:
   mvprog:

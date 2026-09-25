@@ -13,6 +13,7 @@ public class MultiverseProgrammingPlugin extends JavaPlugin {
     private com.multiverse.programming.turtle.TurtleManager turtleManager;
     private com.multiverse.programming.turtle.TurtleListener turtleListener;
     private com.multiverse.programming.web.WebServerManager webServerManager;
+    private com.multiverse.programming.protection.ProtectionManager protectionManager;
 
     @Override
     public void onEnable() {
@@ -20,6 +21,8 @@ public class MultiverseProgrammingPlugin extends JavaPlugin {
 
         configManager = new ConfigManager(this);
         configManager.load();
+
+        protectionManager = new com.multiverse.programming.protection.ProtectionManager(this);
 
         recipeManager = new RecipeManager(this);
         recipeManager.registerAll(
@@ -143,5 +146,9 @@ public class MultiverseProgrammingPlugin extends JavaPlugin {
 
     public com.multiverse.programming.web.WebServerManager getWebServerManager() {
         return webServerManager;
+    }
+
+    public com.multiverse.programming.protection.ProtectionManager getProtectionManager() {
+        return protectionManager;
     }
 }

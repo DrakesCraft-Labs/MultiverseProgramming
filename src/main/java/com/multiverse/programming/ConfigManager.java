@@ -26,6 +26,25 @@ public final class ConfigManager {
     public static final long DEFAULT_PREVENT_SPAM_DELAY_MS = 500L;
     public static final boolean DEFAULT_DROP_DISKS_ON_BREAK = true;
     public static final boolean DEFAULT_ENABLE_COMPUTER_RECIPE = true;
+    public static final boolean DEFAULT_ENABLE_ADVANCED_COMPUTER_RECIPE = true;
+    public static final boolean DEFAULT_ENABLE_TURTLE_RECIPE = true;
+    public static final boolean DEFAULT_ENABLE_CRAFTER_RECIPE = true;
+    public static final boolean DEFAULT_ENABLE_MONITOR_RECIPE = true;
+    public static final boolean DEFAULT_ENABLE_SPEAKER_RECIPE = true;
+    public static final boolean DEFAULT_ENABLE_TRANSPOSER_RECIPE = true;
+    public static final boolean DEFAULT_ENABLE_DISK_RECIPE = true;
+
+    public static final boolean DEFAULT_ENABLE_COMPUTER = true;
+    public static final boolean DEFAULT_ENABLE_ADVANCED_COMPUTER = true;
+    public static final boolean DEFAULT_ENABLE_TURTLE = true;
+    public static final boolean DEFAULT_ENABLE_CRAFTER = true;
+    public static final boolean DEFAULT_ENABLE_MONITOR = true;
+    public static final boolean DEFAULT_ENABLE_SPEAKER = true;
+    public static final boolean DEFAULT_ENABLE_TRANSPOSER = true;
+
+    public static final boolean DEFAULT_PROTECTION_STONES_REQUIRE_OWNER = false;
+    public static final boolean DEFAULT_WORLDGUARD_PROTECTION_CHECK = true;
+
     public static final int DEFAULT_MAX_CONCURRENT_PROGRAMS = 8;
     public static final int DEFAULT_MAX_INSTRUCTIONS_PER_SLICE = 1_000_000;
 
@@ -60,6 +79,25 @@ public final class ConfigManager {
     private long preventSpamDelayMs = DEFAULT_PREVENT_SPAM_DELAY_MS;
     private boolean dropDisksOnBreak = DEFAULT_DROP_DISKS_ON_BREAK;
     private boolean enableComputerRecipe = DEFAULT_ENABLE_COMPUTER_RECIPE;
+    private boolean enableAdvancedComputerRecipe = DEFAULT_ENABLE_ADVANCED_COMPUTER_RECIPE;
+    private boolean enableTurtleRecipe = DEFAULT_ENABLE_TURTLE_RECIPE;
+    private boolean enableCrafterRecipe = DEFAULT_ENABLE_CRAFTER_RECIPE;
+    private boolean enableMonitorRecipe = DEFAULT_ENABLE_MONITOR_RECIPE;
+    private boolean enableSpeakerRecipe = DEFAULT_ENABLE_SPEAKER_RECIPE;
+    private boolean enableTransposerRecipe = DEFAULT_ENABLE_TRANSPOSER_RECIPE;
+    private boolean enableDiskRecipe = DEFAULT_ENABLE_DISK_RECIPE;
+
+    private boolean enableComputer = DEFAULT_ENABLE_COMPUTER;
+    private boolean enableAdvancedComputer = DEFAULT_ENABLE_ADVANCED_COMPUTER;
+    private boolean enableTurtle = DEFAULT_ENABLE_TURTLE;
+    private boolean enableCrafter = DEFAULT_ENABLE_CRAFTER;
+    private boolean enableMonitor = DEFAULT_ENABLE_MONITOR;
+    private boolean enableSpeaker = DEFAULT_ENABLE_SPEAKER;
+    private boolean enableTransposer = DEFAULT_ENABLE_TRANSPOSER;
+
+    private boolean protectionStonesRequireOwner = DEFAULT_PROTECTION_STONES_REQUIRE_OWNER;
+    private boolean worldGuardProtectionCheck = DEFAULT_WORLDGUARD_PROTECTION_CHECK;
+
     private int maxConcurrentPrograms = DEFAULT_MAX_CONCURRENT_PROGRAMS;
     private int maxInstructionsPerSlice = DEFAULT_MAX_INSTRUCTIONS_PER_SLICE;
 
@@ -184,6 +222,24 @@ public final class ConfigManager {
 
         this.dropDisksOnBreak = config.getBoolean("drop-disks-on-break", DEFAULT_DROP_DISKS_ON_BREAK);
         this.enableComputerRecipe = config.getBoolean("enable-computer-recipe", DEFAULT_ENABLE_COMPUTER_RECIPE);
+        this.enableAdvancedComputerRecipe = config.getBoolean("enable-advanced-computer-recipe", DEFAULT_ENABLE_ADVANCED_COMPUTER_RECIPE);
+        this.enableTurtleRecipe = config.getBoolean("enable-turtle-recipe", DEFAULT_ENABLE_TURTLE_RECIPE);
+        this.enableCrafterRecipe = config.getBoolean("enable-crafter-recipe", DEFAULT_ENABLE_CRAFTER_RECIPE);
+        this.enableMonitorRecipe = config.getBoolean("enable-monitor-recipe", DEFAULT_ENABLE_MONITOR_RECIPE);
+        this.enableSpeakerRecipe = config.getBoolean("enable-speaker-recipe", DEFAULT_ENABLE_SPEAKER_RECIPE);
+        this.enableTransposerRecipe = config.getBoolean("enable-transposer-recipe", DEFAULT_ENABLE_TRANSPOSER_RECIPE);
+        this.enableDiskRecipe = config.getBoolean("enable-disk-recipe", DEFAULT_ENABLE_DISK_RECIPE);
+
+        this.enableComputer = config.getBoolean("enable-computer", DEFAULT_ENABLE_COMPUTER);
+        this.enableAdvancedComputer = config.getBoolean("enable-advanced-computer", DEFAULT_ENABLE_ADVANCED_COMPUTER);
+        this.enableTurtle = config.getBoolean("enable-turtle", DEFAULT_ENABLE_TURTLE);
+        this.enableCrafter = config.getBoolean("enable-crafter", DEFAULT_ENABLE_CRAFTER);
+        this.enableMonitor = config.getBoolean("enable-monitor", DEFAULT_ENABLE_MONITOR);
+        this.enableSpeaker = config.getBoolean("enable-speaker", DEFAULT_ENABLE_SPEAKER);
+        this.enableTransposer = config.getBoolean("enable-transposer", DEFAULT_ENABLE_TRANSPOSER);
+
+        this.protectionStonesRequireOwner = config.getBoolean("protection-stones-require-owner", DEFAULT_PROTECTION_STONES_REQUIRE_OWNER);
+        this.worldGuardProtectionCheck = config.getBoolean("worldguard-protection-check", DEFAULT_WORLDGUARD_PROTECTION_CHECK);
 
         int rawConcurrent = config.getInt("max-concurrent-programs", DEFAULT_MAX_CONCURRENT_PROGRAMS);
         this.maxConcurrentPrograms = Math.max(1, Math.min(rawConcurrent, 64));
@@ -368,5 +424,69 @@ public final class ConfigManager {
 
     public int getBlueprintRetentionDays() {
         return blueprintRetentionDays;
+    }
+
+    public boolean isEnableAdvancedComputerRecipe() {
+        return enableAdvancedComputerRecipe;
+    }
+
+    public boolean isEnableTurtleRecipe() {
+        return enableTurtleRecipe;
+    }
+
+    public boolean isEnableCrafterRecipe() {
+        return enableCrafterRecipe;
+    }
+
+    public boolean isEnableMonitorRecipe() {
+        return enableMonitorRecipe;
+    }
+
+    public boolean isEnableSpeakerRecipe() {
+        return enableSpeakerRecipe;
+    }
+
+    public boolean isEnableTransposerRecipe() {
+        return enableTransposerRecipe;
+    }
+
+    public boolean isEnableDiskRecipe() {
+        return enableDiskRecipe;
+    }
+
+    public boolean isEnableComputer() {
+        return enableComputer;
+    }
+
+    public boolean isEnableAdvancedComputer() {
+        return enableAdvancedComputer;
+    }
+
+    public boolean isEnableTurtle() {
+        return enableTurtle;
+    }
+
+    public boolean isEnableCrafter() {
+        return enableCrafter;
+    }
+
+    public boolean isEnableMonitor() {
+        return enableMonitor;
+    }
+
+    public boolean isEnableSpeaker() {
+        return enableSpeaker;
+    }
+
+    public boolean isEnableTransposer() {
+        return enableTransposer;
+    }
+
+    public boolean isProtectionStonesRequireOwner() {
+        return protectionStonesRequireOwner;
+    }
+
+    public boolean isWorldGuardProtectionCheck() {
+        return worldGuardProtectionCheck;
     }
 }

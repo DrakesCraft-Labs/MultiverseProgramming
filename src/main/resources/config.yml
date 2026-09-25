@@ -29,8 +29,42 @@ prevent-spam-delay-ms: 500
 # If true, when an advanced computer is broken or exploded, any disk inside drops naturally.
 drop-disks-on-break: true
 
-# If true, registers the crafting recipe for the computer block (slabs + bookshelf).
+# ===================================================================== #
+#                   Machine Crafting Recipes Toggles                    #
+# ===================================================================== #
+# Toggle crafting recipes individually for each machine and component.
 enable-computer-recipe: true
+enable-advanced-computer-recipe: true
+enable-turtle-recipe: true
+enable-crafter-recipe: true
+enable-monitor-recipe: true
+enable-speaker-recipe: true
+enable-transposer-recipe: true
+enable-disk-recipe: true
+
+# ===================================================================== #
+#                   Machine Functionality Toggles                       #
+# ===================================================================== #
+# Toggle whether each machine type can be placed, opened, and executed.
+enable-computer: true
+enable-advanced-computer: true
+enable-turtle: true
+enable-crafter: true
+enable-monitor: true
+enable-speaker: true
+enable-transposer: true
+
+# ===================================================================== #
+#                   Region Protection & Security                        #
+# ===================================================================== #
+# If true, only the strictly verified OWNER of a ProtectionStones claim can
+# order a Turtle to build inside. Members will be blocked from building.
+# Default is false (both owners and members can build inside their claims).
+protection-stones-require-owner: false
+
+# Check WorldGuard regions so Turtles cannot grief, raid, or build inside
+# claims unless the turtle owner has building permissions in the region.
+worldguard-protection-check: true
 
 # ===================================================================== #
 #                   Peripherals & Additional Machines                  #

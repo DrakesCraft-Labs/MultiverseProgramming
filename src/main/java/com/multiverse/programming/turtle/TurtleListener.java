@@ -64,6 +64,11 @@ public final class TurtleListener implements Listener {
         }
 
         Player player = event.getPlayer();
+        if (!plugin.getConfigManager().isEnableTurtle()) {
+            player.sendMessage(plugin.getPrefix() + " §cTurtles are currently disabled by the server administration.");
+            event.setCancelled(true);
+            return;
+        }
         BlockFace facing = BlockFace.NORTH;
         float yaw = player.getLocation().getYaw();
         if (yaw < 0) yaw += 360;
@@ -103,6 +108,11 @@ public final class TurtleListener implements Listener {
 
         event.setCancelled(true);
         Player player = event.getPlayer();
+
+        if (!plugin.getConfigManager().isEnableTurtle()) {
+            player.sendMessage(plugin.getPrefix() + " §cTurtles are currently disabled by the server administration.");
+            return;
+        }
 
         if (!player.hasPermission("multiverseprogramming.turtle")) {
             player.sendMessage(plugin.getPrefix() + " §cYou don't have permission to use Turtles.");

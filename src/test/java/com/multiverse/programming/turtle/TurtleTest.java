@@ -279,4 +279,36 @@ class TurtleTest {
         assertFalse(Turtle.isIllegalBlock(Material.STONE));
         assertFalse(Turtle.isIllegalBlock(Material.OAK_PLANKS));
     }
+
+    @Test
+    @DisplayName("startBuild rotates blueprint when rotationDegrees is specified")
+    void testStartBuildRotatesBlueprint() {
+        Turtle turtle = new Turtle(mockPlugin, "T-001", startLoc, BlockFace.NORTH, null);
+        // Original size: 3 x 2 x 1, facing=north
+        Blueprint bp = new Blueprint("ROT", "Rotatable", "Author", "litematic", 3, 2, 1, 1,
+                java.util.Map.of("minecraft:oak_stairs[facing=north]", 1),
+                java.util.List.of(new PlacementBlock(1, 0, 0, "minecraft:oak_stairs[facing=north]")),
+                System.currentTimeMillis());
+
+        Location origin = new Location(mockWorld, 10, 64, 20);
+        when(mockWorld.getMinHeight()).thenReturn(-64);
+        when(mockWorld.getMaxHeight()).thenReturn(320);
+
+        Block mockAirBlock = mock(Block.class);
+        when(mockAirBlock.isEmpty()).thenReturn(true);
+        when(mockWorld.getBlockAt(anyInt(), anyInt(), anyInt())).thenReturn(mockAirBlock);
+
+        // 90 degrees rotation
+        boolean started = turtle.startBuild(bp, origin, 1, false, false, 90, null, null);
+        assertTrue(started);
+        assertEquals(Turtle.Status.BUILDING, turtle.getStatus());
+
+        // The active blueprint should be rotated (dimensions swapped 3x2x1 -> 1x2x3, facing north -> east)
+        Blueprint active = turtle.getActiveBlueprint();
+        assertNotNull(active);
+        assertEquals(1, active.sizeX());
+        assertEquals(2, active.sizeY());
+        assertEquals(3, active.sizeZ());
+        assertEquals("minecraft:oak_stairs[facing=east]", active.blocks().get(0).material());
+    }
 }

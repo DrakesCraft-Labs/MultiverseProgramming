@@ -2,6 +2,7 @@
 package com.multiverse.programming;
 
 import com.multiverse.programming.blueprint.Blueprint;
+import com.multiverse.programming.blueprint.BlueprintRotator;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -174,8 +175,8 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
         }
         if (args.length < 5) {
             sender.sendMessage(plugin.getPrefix() + " §cTarget coordinates (X Y Z) are mandatory. The turtle will not build without coordinates.");
-            sender.sendMessage(" §7Usage: §e/mvprog build <blueprintId|code|url> <x> <y> <z> [turtleId] [clear]");
-            sender.sendMessage(" §7Or: §e/mvprog build <blueprintId|code|url> <turtleId> <x> <y> <z> [clear]");
+            sender.sendMessage(" §7Usage: §e/mvprog build <blueprintId|code|url> <x> <y> <z> [turtleId] [clear] [orientation]");
+            sender.sendMessage(" §7Or: §e/mvprog build <blueprintId|code|url> <turtleId> <x> <y> <z> [clear] [orientation]");
             return;
         }
 
@@ -183,13 +184,7 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
         String turtleId = null;
         int x, y, z;
         boolean clearBlocks = false;
-
-        for (int i = 2; i < args.length; i++) {
-            if (args[i].equalsIgnoreCase("clear") || args[i].equalsIgnoreCase("force") || args[i].equalsIgnoreCase("true")) {
-                clearBlocks = true;
-                break;
-            }
-        }
+        int rotationDegrees = 0;
 
         boolean isCoordArg2;
         try {
@@ -200,7 +195,7 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
         }
 
         if (isCoordArg2) {
-            // Format: /pc build <bp> <x> <y> <z> [turtleId] [clear]
+            // Format: /mvprog build <bp> <x> <y> <z> [turtleId] [clear] [orientation]
             try {
                 x = Integer.parseInt(args[2]);
                 y = Integer.parseInt(args[3]);
@@ -209,15 +204,22 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
                 sender.sendMessage(plugin.getPrefix() + " §cInvalid coordinates. X, Y, and Z must be integers.");
                 return;
             }
-            if (args.length >= 6 && !args[5].equalsIgnoreCase("clear") && !args[5].equalsIgnoreCase("force") && !args[5].equalsIgnoreCase("true")) {
-                turtleId = args[5];
+            for (int i = 5; i < args.length; i++) {
+                String val = args[i];
+                if (val.equalsIgnoreCase("clear") || val.equalsIgnoreCase("force") || val.equalsIgnoreCase("true")) {
+                    clearBlocks = true;
+                } else if (isOrientationToken(val)) {
+                    rotationDegrees = BlueprintRotator.normalizeRotation(val);
+                } else if (turtleId == null) {
+                    turtleId = val;
+                }
             }
         } else {
-            // Format: /pc build <bp> <turtleId> <x> <y> <z> [clear]
+            // Format: /mvprog build <bp> <turtleId> <x> <y> <z> [clear] [orientation]
             turtleId = args[2];
             if (args.length < 6) {
                 sender.sendMessage(plugin.getPrefix() + " §cTarget coordinates (X Y Z) are mandatory. The turtle will not build without coordinates.");
-                sender.sendMessage(" §7Usage: §e/pc build " + bpId + " " + turtleId + " <x> <y> <z> [clear]");
+                sender.sendMessage(" §7Usage: §e/mvprog build " + bpId + " " + turtleId + " <x> <y> <z> [clear] [orientation]");
                 return;
             }
             try {
@@ -227,6 +229,14 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
             } catch (NumberFormatException e) {
                 sender.sendMessage(plugin.getPrefix() + " §cInvalid coordinates. X, Y, and Z must be integers.");
                 return;
+            }
+            for (int i = 6; i < args.length; i++) {
+                String val = args[i];
+                if (val.equalsIgnoreCase("clear") || val.equalsIgnoreCase("force") || val.equalsIgnoreCase("true")) {
+                    clearBlocks = true;
+                } else if (isOrientationToken(val)) {
+                    rotationDegrees = BlueprintRotator.normalizeRotation(val);
+                }
             }
         }
 
@@ -274,10 +284,11 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
 
         final org.bukkit.Location origin = new org.bukkit.Location(world, x, y, z);
         final boolean finalClear = clearBlocks;
+        final int finalRotation = rotationDegrees;
 
         var bp = plugin.getBlueprintManager().getBlueprint(bpId);
         if (bp != null) {
-            dispatchTurtleBuild(sender, bp, targetTurtle, origin, finalClear);
+            dispatchTurtleBuild(sender, bp, targetTurtle, origin, finalClear, finalRotation);
         } else {
             sender.sendMessage(plugin.getPrefix() + " §7Downloading blueprint §e" + bpId + " §7from cloud nexus...");
             String owner = (sender instanceof Player p) ? p.getName() : "Server";
@@ -285,7 +296,7 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
                     .thenAccept(downloadedBp -> {
                         Bukkit.getScheduler().runTask(plugin, () -> {
                             sender.sendMessage(plugin.getPrefix() + " §aBlueprint §e" + downloadedBp.name() + " §areceived and verified!");
-                            dispatchTurtleBuild(sender, downloadedBp, targetTurtle, origin, finalClear);
+                            dispatchTurtleBuild(sender, downloadedBp, targetTurtle, origin, finalClear, finalRotation);
                         });
                     })
                     .exceptionally(ex -> {
@@ -298,16 +309,23 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
         }
     }
 
-    private void dispatchTurtleBuild(CommandSender sender, Blueprint bp, com.multiverse.programming.turtle.Turtle targetTurtle, org.bukkit.Location origin, boolean clearBlocks) {
+    private boolean isOrientationToken(String s) {
+        if (s == null) return false;
+        String upper = s.toUpperCase(Locale.ROOT);
+        return upper.matches("NORTH|EAST|SOUTH|WEST|0|90|180|270");
+    }
+
+    private void dispatchTurtleBuild(CommandSender sender, Blueprint bp, com.multiverse.programming.turtle.Turtle targetTurtle, org.bukkit.Location origin, boolean clearBlocks, int rotationDegrees) {
         int delay = plugin.getConfigManager().getTurtleBuildDelayTicks();
         boolean requireMaterials = plugin.getConfigManager().isTurtleRequireMaterials();
-        boolean started = targetTurtle.startBuild(bp, origin, delay, requireMaterials, clearBlocks,
+        boolean started = targetTurtle.startBuild(bp, origin, delay, requireMaterials, clearBlocks, rotationDegrees,
                 () -> sender.sendMessage(plugin.getPrefix() + " §aTurtle " + targetTurtle.getId() + " finished building " + bp.name() + "!"),
                 err -> sender.sendMessage(plugin.getPrefix() + " §cTurtle " + targetTurtle.getId() + " error: " + err)
         );
         if (started) {
             sender.sendMessage(plugin.getPrefix() + " §aDispatched build §e" + bp.name() + " §ato Turtle §e" + targetTurtle.getId()
                     + " §aat [" + origin.getBlockX() + ", " + origin.getBlockY() + ", " + origin.getBlockZ() + "]"
+                    + (rotationDegrees != 0 ? " §6(Rotation: " + rotationDegrees + "°)§a" : "")
                     + (clearBlocks ? " §c(Area auto-cleared without drops)§a." : "."));
         }
     }
@@ -404,7 +422,7 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage(" §6=== Admin Commands ===");
             sender.sendMessage(" §6/mvprog quota <player> §8- §7view specific player's storage quota");
             sender.sendMessage(" §6/mvprog getbypass <code|url> §8- §7download blueprint bypassing storage quotas");
-            sender.sendMessage(" §6/mvprog build <bp|code> <x> <y> <z> [turtle] [clear] §8- §7order turtle to build");
+            sender.sendMessage(" §6/mvprog build <bp|code> <x> <y> <z> [turtle] [clear] [orientation] §8- §7order turtle to build");
             sender.sendMessage(" §6/mvprog bp clean [days] §8- §7purge old unpinned blueprints");
             sender.sendMessage(" §6/mvprog give <item> §8- §7give custom programming item");
             sender.sendMessage(" §6/mvprog reload §8- §7reload configuration and recipes");
@@ -461,16 +479,24 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
             );
             return StringUtil.copyPartialMatches(args[1], items, completions);
         }
-        if (args.length == 2 && args[0].equalsIgnoreCase("build") && sender.hasPermission("multiverseprogramming.admin")) {
-            if (plugin.getBlueprintManager() != null) {
-                List<String> ids = plugin.getBlueprintManager().getAllBlueprints().stream().map(com.multiverse.programming.blueprint.Blueprint::id).toList();
-                return StringUtil.copyPartialMatches(args[1], ids, completions);
-            }
-        }
-        if (args.length == 3 && args[0].equalsIgnoreCase("build") && sender.hasPermission("multiverseprogramming.admin")) {
-            if (plugin.getTurtleManager() != null) {
-                List<String> ids = plugin.getTurtleManager().getAllTurtles().stream().map(com.multiverse.programming.turtle.Turtle::getId).toList();
-                return StringUtil.copyPartialMatches(args[2], ids, completions);
+        if (args[0].equalsIgnoreCase("build") && sender.hasPermission("multiverseprogramming.admin")) {
+            if (args.length == 2) {
+                if (plugin.getBlueprintManager() != null) {
+                    List<String> ids = plugin.getBlueprintManager().getAllBlueprints().stream().map(com.multiverse.programming.blueprint.Blueprint::id).toList();
+                    return StringUtil.copyPartialMatches(args[1], ids, completions);
+                }
+            } else if (args.length == 3) {
+                List<String> suggestions = new ArrayList<>();
+                if (plugin.getTurtleManager() != null) {
+                    suggestions.addAll(plugin.getTurtleManager().getAllTurtles().stream().map(com.multiverse.programming.turtle.Turtle::getId).toList());
+                }
+                return StringUtil.copyPartialMatches(args[2], suggestions, completions);
+            } else if (args.length >= 6) {
+                List<String> options = new ArrayList<>(List.of("clear", "NORTH", "EAST", "SOUTH", "WEST", "0", "90", "180", "270"));
+                if (plugin.getTurtleManager() != null) {
+                    options.addAll(plugin.getTurtleManager().getAllTurtles().stream().map(com.multiverse.programming.turtle.Turtle::getId).toList());
+                }
+                return StringUtil.copyPartialMatches(args[args.length - 1], options, completions);
             }
         }
         return completions;

@@ -8,6 +8,7 @@ import com.google.gson.JsonParser;
 import com.multiverse.programming.MultiverseProgrammingPlugin;
 import com.multiverse.programming.blueprint.Blueprint;
 import com.multiverse.programming.blueprint.BlueprintParser;
+import com.multiverse.programming.blueprint.BlueprintRotator;
 import com.multiverse.programming.turtle.Turtle;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -345,9 +346,18 @@ public final class WebServerManager {
                 boolean requireMaterials = plugin.getConfigManager().isTurtleRequireMaterials();
 
                 boolean clear = json.has("clear") && json.get("clear").getAsBoolean();
+                int rotationDegrees = 0;
+                if (json.has("orientation")) {
+                    rotationDegrees = BlueprintRotator.normalizeRotation(json.get("orientation").getAsString());
+                } else if (json.has("rotation")) {
+                    rotationDegrees = json.get("rotation").getAsInt();
+                } else if (json.has("facing")) {
+                    rotationDegrees = BlueprintRotator.normalizeRotation(json.get("facing").getAsString());
+                }
 
+                final int finalRotation = rotationDegrees;
                 Bukkit.getScheduler().runTask(plugin, () -> {
-                    turtle.startBuild(bp, targetOrigin, delay, requireMaterials, clear,
+                    turtle.startBuild(bp, targetOrigin, delay, requireMaterials, clear, finalRotation,
                             () -> plugin.getLogger().info("[Turtle " + turtle.getId() + "] Build finished for " + bp.name()),
                             err -> plugin.getLogger().warning("[Turtle " + turtle.getId() + "] Build error: " + err)
                     );

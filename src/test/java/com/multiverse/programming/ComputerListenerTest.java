@@ -46,6 +46,8 @@ class ComputerListenerTest {
         when(configManager.getAdvancedComputerBlock()).thenReturn(Material.ENCHANTING_TABLE);
         when(configManager.isDropDisksOnBreak()).thenReturn(true);
         when(configManager.getPreventSpamDelayMs()).thenReturn(500L);
+        when(configManager.isEnableComputer()).thenReturn(true);
+        when(configManager.isEnableAdvancedComputer()).thenReturn(true);
 
         listener = new ComputerListener(plugin, Material.LECTERN, Material.ENCHANTING_TABLE);
     }

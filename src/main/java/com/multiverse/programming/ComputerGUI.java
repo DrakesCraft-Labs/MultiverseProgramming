@@ -27,7 +27,44 @@ public final class ComputerGUI {
     }
 
     public static Inventory openAdvanced() {
-        return open(ADVANCED_TITLE, "§a✔ Run / Stop");
+        return openAdvanced(false);
+    }
+
+    public static Inventory openAdvanced(boolean isRunning) {
+        Inventory inv = Bukkit.createInventory(null, 9, ADVANCED_TITLE);
+
+        ItemStack frame = new ItemStack(Material.BLACK_STAINED_GLASS_PANE);
+        ItemMeta frameMeta = frame.getItemMeta();
+        if (frameMeta != null) {
+            frameMeta.setDisplayName(" ");
+            frame.setItemMeta(frameMeta);
+        }
+
+        for (int i = 1; i < BUTTON_SLOT; i++) {
+            inv.setItem(i, frame.clone());
+        }
+
+        ItemStack button;
+        if (isRunning) {
+            button = new ItemStack(Material.REDSTONE_BLOCK);
+            ItemMeta buttonMeta = button.getItemMeta();
+            if (buttonMeta != null) {
+                buttonMeta.setDisplayName("§c⏹ Stop Program");
+                buttonMeta.setLore(List.of("§7Program is currently running.", "§7Click to force stop execution."));
+                button.setItemMeta(buttonMeta);
+            }
+        } else {
+            button = new ItemStack(Material.EMERALD);
+            ItemMeta buttonMeta = button.getItemMeta();
+            if (buttonMeta != null) {
+                buttonMeta.setDisplayName("§a▶ Run Program");
+                buttonMeta.setLore(List.of("§7Checks and runs the program on the disk."));
+                button.setItemMeta(buttonMeta);
+            }
+        }
+        inv.setItem(BUTTON_SLOT, button);
+
+        return inv;
     }
 
     private static Inventory open(String title, String buttonLabel) {

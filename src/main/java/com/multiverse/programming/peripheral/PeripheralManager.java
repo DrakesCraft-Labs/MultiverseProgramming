@@ -53,13 +53,13 @@ public final class PeripheralManager {
             Material adjType = adj.getType();
             String dirName = face.name().toLowerCase(Locale.ROOT);
 
-            if (adjType == monitorMat) {
+            if (adjType == monitorMat && (config == null || config.isEnableMonitor())) {
                 result.put(dirName, new MonitorPeripheral(plugin, adj.getLocation()));
-            } else if (adjType == crafterMat) {
+            } else if (adjType == crafterMat && (config == null || config.isEnableCrafter())) {
                 result.put(dirName, new CrafterPeripheral(plugin, adj.getLocation()));
-            } else if (adjType == transposerMat) {
+            } else if (adjType == transposerMat && (config == null || config.isEnableTransposer())) {
                 result.put(dirName, new TransposerPeripheral(plugin, adj.getLocation()));
-            } else if (adjType == speakerMat) {
+            } else if (adjType == speakerMat && (config == null || config.isEnableSpeaker())) {
                 result.put(dirName, new SpeakerPeripheral(plugin, adj.getLocation()));
             }
         }

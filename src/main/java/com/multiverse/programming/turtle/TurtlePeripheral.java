@@ -3,6 +3,7 @@ package com.multiverse.programming.turtle;
 
 import com.multiverse.programming.MultiverseProgrammingPlugin;
 import com.multiverse.programming.blueprint.Blueprint;
+import com.multiverse.programming.blueprint.BlueprintRotator;
 import com.multiverse.programming.peripheral.Peripheral;
 import com.multiverse.programming.peripheral.SyncDispatcher;
 import org.bukkit.Location;
@@ -279,13 +280,33 @@ public final class TurtlePeripheral implements Peripheral {
                 }
 
                 if (args.narg() < 4) {
-                    return varargsOf(LuaBoolean.FALSE, LuaString.valueOf("Coordinates (x, y, z) are mandatory for turtle.build(bpId, x, y, z, [clear])"));
+                    return varargsOf(LuaBoolean.FALSE, LuaString.valueOf("Coordinates (x, y, z) are mandatory for turtle.build(bpId, x, y, z, [clear], [orientation])"));
                 }
 
                 int x = args.checkint(2);
                 int y = args.checkint(3);
                 int z = args.checkint(4);
-                boolean clearBlocks = args.narg() >= 5 && args.checkboolean(5);
+                boolean clearBlocks = false;
+                int rotationDegrees = 0;
+
+                if (args.narg() >= 5) {
+                    LuaValue arg5 = args.arg(5);
+                    if (arg5.isboolean()) {
+                        clearBlocks = arg5.toboolean();
+                        if (args.narg() >= 6) {
+                            LuaValue arg6 = args.arg(6);
+                            if (arg6.isnumber()) {
+                                rotationDegrees = arg6.toint();
+                            } else if (arg6.isstring()) {
+                                rotationDegrees = BlueprintRotator.normalizeRotation(arg6.tojstring());
+                            }
+                        }
+                    } else if (arg5.isnumber()) {
+                        rotationDegrees = arg5.toint();
+                    } else if (arg5.isstring()) {
+                        rotationDegrees = BlueprintRotator.normalizeRotation(arg5.tojstring());
+                    }
+                }
 
                 if (turtle.getLocation().getWorld() == null) {
                     return varargsOf(LuaBoolean.FALSE, LuaString.valueOf("Turtle world is unloaded"));
@@ -295,8 +316,10 @@ public final class TurtlePeripheral implements Peripheral {
                 int delay = plugin.getConfigManager().getTurtleBuildDelayTicks();
                 boolean requireMaterials = plugin.getConfigManager().isTurtleRequireMaterials();
 
+                final boolean finalClear = clearBlocks;
+                final int finalRotation = rotationDegrees;
                 boolean started = SyncDispatcher.sync(plugin, () ->
-                        turtle.startBuild(bp, origin, delay, requireMaterials, clearBlocks, null, null)
+                        turtle.startBuild(bp, origin, delay, requireMaterials, finalClear, finalRotation, null, null)
                 );
 
                 if (!started) {

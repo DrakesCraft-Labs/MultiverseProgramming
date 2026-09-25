@@ -42,6 +42,10 @@ class PeripheralManagerTest {
         when(config.getCrafterBlock()).thenReturn(Material.CRAFTER);
         when(config.getTransposerBlock()).thenReturn(Material.HOPPER);
         when(config.getSpeakerBlock()).thenReturn(Material.NOTE_BLOCK);
+        when(config.isEnableMonitor()).thenReturn(true);
+        when(config.isEnableCrafter()).thenReturn(true);
+        when(config.isEnableTransposer()).thenReturn(true);
+        when(config.isEnableSpeaker()).thenReturn(true);
 
         world = mock(World.class);
         computerLoc = mock(Location.class);

@@ -29,4 +29,12 @@ public record Blueprint(
         materialCounts = Collections.unmodifiableMap(materialCounts);
         blocks = Collections.unmodifiableList(blocks);
     }
+
+    public Blueprint rotate(int degrees) {
+        return BlueprintRotator.rotate(this, degrees);
+    }
+
+    public Blueprint rotate(String orientation) {
+        return BlueprintRotator.rotate(this, BlueprintRotator.normalizeRotation(orientation));
+    }
 }

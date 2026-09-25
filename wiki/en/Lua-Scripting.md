@@ -163,8 +163,13 @@ print("Blueprint: " .. bp.name)
 print("Dimensions: " .. bp.sizeX .. "x" .. bp.sizeY .. "x" .. bp.sizeZ)
 print("Total Blocks: " .. bp.totalBlocks)
 
--- Start construction at specified target coordinates
-turtle.buildBlueprint("BP-A1B2", 100, 64, 200)
+-- Start construction at specified target coordinates with optional clear and orientation
+-- turtle.build(bpId, x, y, z, [clear], [orientation])
+-- orientation can be "NORTH", "EAST", "SOUTH", "WEST", or degrees (0, 90, 180, 270)
+local ok, err = turtle.build("BP-A1B2", 100, 64, 200, false, "EAST")
+if not ok then
+  print("Failed to build: " .. err)
+end
 
 -- Monitor progress
 local prog = turtle.getBuildProgress()
@@ -176,13 +181,16 @@ turtle.resumeBuild()
 turtle.cancelBuild()
 ```
 
+> **Construction Supply & Fuel Chests**:
+> When `turtle-require-materials` or `turtle-fuel-required` are enabled on the server, the turtle automatically spawns designated supply chests with floating holograms (`"Place construction blocks here"` and `"Place fuel here"`). The turtle pulls blocks and fuel directly from these chests as needed.
+
 ---
 
 ## 6. Web Portal & Blueprint Dashboard
 
 Players can access the built-in **Web Portal** by executing in-game:
 ```text
-/pc web
+/mvprog web
 ```
 
 ### Web Portal Features:

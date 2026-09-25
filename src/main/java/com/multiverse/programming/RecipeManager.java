@@ -31,20 +31,39 @@ public final class RecipeManager {
 
     public void registerAll(Material computerBlock, Material advancedBlock, boolean enableComputerRecipe) {
         unregisterAll();
-        registerFloppyDisk();
-        if (enableComputerRecipe) {
-            registerComputer(computerBlock);
-        }
-        registerAdvancedComputer(computerBlock, advancedBlock);
 
         if (plugin instanceof MultiverseProgrammingPlugin mvPlugin) {
             ConfigManager cfg = mvPlugin.getConfigManager();
-            registerMonitor(cfg.getMonitorBlock());
-            registerCrafter(cfg.getCrafterBlock());
-            registerTransposer(cfg.getTransposerBlock());
-            registerSpeaker(cfg.getSpeakerBlock());
-            registerTurtle(computerBlock, cfg.getTurtleBlock());
+            if (cfg.isEnableDiskRecipe()) {
+                registerFloppyDisk();
+            }
+            if (cfg.isEnableComputerRecipe()) {
+                registerComputer(computerBlock);
+            }
+            if (cfg.isEnableAdvancedComputerRecipe()) {
+                registerAdvancedComputer(computerBlock, advancedBlock);
+            }
+            if (cfg.isEnableMonitorRecipe()) {
+                registerMonitor(cfg.getMonitorBlock());
+            }
+            if (cfg.isEnableCrafterRecipe()) {
+                registerCrafter(cfg.getCrafterBlock());
+            }
+            if (cfg.isEnableTransposerRecipe()) {
+                registerTransposer(cfg.getTransposerBlock());
+            }
+            if (cfg.isEnableSpeakerRecipe()) {
+                registerSpeaker(cfg.getSpeakerBlock());
+            }
+            if (cfg.isEnableTurtleRecipe()) {
+                registerTurtle(computerBlock, cfg.getTurtleBlock());
+            }
         } else {
+            registerFloppyDisk();
+            if (enableComputerRecipe) {
+                registerComputer(computerBlock);
+            }
+            registerAdvancedComputer(computerBlock, advancedBlock);
             registerMonitor(Material.OCHRE_FROGLIGHT);
             registerCrafter(Material.CRAFTER);
             registerTransposer(Material.HOPPER);
