@@ -210,30 +210,7 @@ print("¡Cosechados " .. total .. " cultivos maduros!")
 local fertilizado = farmer.fertilize("down")
 ```
 
-### 9. Autonomous Quarry Excavator (`quarry`)
-
-Excava una columna volumétrica (ancho X * largo Z hasta la capa Y objetivo) capa por capa de forma autónoma. Drena agua y lava, deposita los bloques minados en cofres adyacentes y registra las extracciones en CoreProtect.
-
-```lua
--- Iniciar excavación: quarry.start(ancho, largo, capaYObjetivo, [manejarLiquidos])
-local ok, msg = quarry.start(8, 8, -58, true)
-if ok then
-  print("&aCantera iniciada: " .. msg)
-end
-
--- Monitorear estado de la excavación
-local estado = quarry.getStatus()
-print("Activa: " .. tostring(estado.active))
-print("Capa Y actual: " .. estado.currentY .. " / Objetivo: " .. estado.targetY)
-print("Bloques minados: " .. estado.blocksMined .. " (" .. string.format("%.1f", estado.percentage) .. "%)")
-
--- Controles de ejecución
-quarry.pause()
-quarry.resume()
-quarry.stop()
-```
-
-### 10. NPC Chatbot & Quest Interposer (`npc`)
+### 9. NPC Chatbot & Quest Interposer (`npc`)
 
 Crea diálogos interactivos, opciones de chat con jugadores, preguntas de opción múltiple y hologramas flotantes `TextDisplay`.
 
@@ -282,7 +259,7 @@ end
 
 ---
 
-## 11. Programmable Turtle (`turtle`)
+## 10. Programmable Turtle (`turtle`)
 
 La **Tortuga Programable** es un autómata robótico móvil y constructor capaz de desplazarse por el mundo, minar, colocar bloques, almacenar ítems en 16 ranuras internas y construir estructuras completas a partir de esquemas `.litematic` y `.nbt`.
 
@@ -355,7 +332,11 @@ turtle.cancelBuild()
 
 ### Mejora de Motor de Cantera Lateral (Quarry Engine Upgrade)
 
-El **Motor de Cantera** (`BLAST_FURNACE` por defecto) puede acoplarse a la tortuga como una mejora de excavación móvil a cielo abierto o subterránea:
+> [!IMPORTANT]
+> **Exclusivo para la Tortuga:**
+> El Motor de Cantera (Quarry Engine) **no** es un periférico de computadora y no funciona con atriles ni mesas de encantamiento normales. Funciona **únicamente** como accesorio lateral acoplado a la Tortuga Programable mediante la API `turtle.quarry`.
+
+El **Motor de Cantera** (`BLAST_FURNACE` por defecto) se acopla directamente a la tortuga como una mejora de excavación móvil:
 
 - **Requisito de Posicionamiento Lateral:** El bloque de la cantera debe colocarse de forma **lateral y adyacente** (directamente a la **izquierda** o a la **derecha** de la tortuga) antes de iniciar la operación.
 - **Detección y Validación:** La tortuga valida la presencia del motor mediante `turtle.hasQuarryEngine()`.
@@ -396,7 +377,7 @@ turtle.stopQuarry()
 
 ---
 
-## 12. Portal Web, Nube Pastebin y Cuotas
+## 11. Portal Web, Nube Pastebin y Cuotas
 
 Los jugadores pueden interactuar con el sistema web integrado ejecutando en el servidor:
 ```text

@@ -107,8 +107,10 @@ Al ejecutarse un programa, `PeripheralManager.bindAll(globals, plugin, location,
 | **Cartographer** | `CARTOGRAPHY_TABLE` | `cartographer` | `getBiome()`, `createMap(scale)`, `renderToMonitor(side, scale)` |
 | **Alchemist** | `BREWING_STAND` | `alchemist` | `brew(type, [modifier], [splash])`, `getRecipes()`, `inspectStand()` |
 | **Farmer** | `COMPOSTER` | `farmer` | `inspectCrop(dir)`, `harvest(dir)`, `replant(dir)`, `fertilize(dir)` |
-| **Quarry** | `BLAST_FURNACE` | `quarry` | `start(w, l, targetY, liquids)`, `stop()`, `getStatus()` |
-| **NPC** | `PLAYER_HEAD` / `CARVED_PUMPKIN` | `npc` | `say(msg)`, `prompt(choices, cb)`, `setName(name)`, `getHistory()` |
+| **NPC** | `SCULK_CATALYST` | `npc` | `say(msg)`, `ask(jugador, pregunta, opciones)`, `setName(name)`, `getLastResponse()` |
+
+> [!NOTE]
+> El **Motor de Cantera** (`BLAST_FURNACE`) **no** es un periférico de computadora. Como se detalla en la [Sección 2](#2-módulo-de-mejora-lateral-de-cantera-quarry-engine), opera de forma exclusiva como una mejora de acoplamiento lateral para la Tortuga Programable controlada a través de `turtle.quarry(...)`.
 
 ---
 

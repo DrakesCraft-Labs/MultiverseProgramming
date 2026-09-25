@@ -23,7 +23,7 @@ public final class DiskManager {
     public static final String CARTOGRAPHER_NAME = "§6Cartographer Table";
     public static final String ALCHEMIST_NAME = "§dAlchemical Synthesizer";
     public static final String FARMER_NAME = "§aFarming Attachment";
-    public static final String QUARRY_NAME = "§cQuarry Excavator";
+    public static final String QUARRY_NAME = "§cTurtle Quarry Engine";
     public static final String NPC_NAME = "§3NPC Dialogue Core";
 
     private DiskManager() {
@@ -245,8 +245,10 @@ public final class DiskManager {
         if (meta != null) {
             meta.setDisplayName(QUARRY_NAME);
             meta.setLore(List.of(
-                    "§7Autonomous volumetric excavator.",
-                    "§7Mines areas layer-by-layer down to target Y and deposits drops."
+                    "§7Autonomous excavation upgrade for the Turtle.",
+                    "§7Place laterally (left or right) of a Turtle.",
+                    "§7Enables volumetric strip-mining via turtle.quarry().",
+                    "§cOnly functions when attached to a Turtle."
             ));
             item.setItemMeta(meta);
         }

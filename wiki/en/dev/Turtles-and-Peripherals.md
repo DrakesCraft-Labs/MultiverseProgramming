@@ -107,8 +107,10 @@ When a program runs, `PeripheralManager.bindAll(globals, plugin, location, isTur
 | **Cartographer** | `CARTOGRAPHY_TABLE` | `cartographer` | `getBiome()`, `createMap(scale)`, `renderToMonitor(side, scale)` |
 | **Alchemist** | `BREWING_STAND` | `alchemist` | `brew(type, [modifier], [splash])`, `getRecipes()`, `inspectStand()` |
 | **Farmer** | `COMPOSTER` | `farmer` | `inspectCrop(dir)`, `harvest(dir)`, `replant(dir)`, `fertilize(dir)` |
-| **Quarry** | `BLAST_FURNACE` | `quarry` | `start(w, l, targetY, liquids)`, `stop()`, `getStatus()` |
-| **NPC** | `PLAYER_HEAD` / `CARVED_PUMPKIN` | `npc` | `say(msg)`, `prompt(choices, cb)`, `setName(name)`, `getHistory()` |
+| **NPC** | `SCULK_CATALYST` | `npc` | `say(msg)`, `ask(player, question, options)`, `setName(name)`, `getLastResponse()` |
+
+> [!NOTE]
+> The **Quarry Engine** (`BLAST_FURNACE`) is **not** a computer peripheral. As detailed in [Section 2](#2-quarry-engine-lateral-upgrade-module), it is exclusively an autonomous lateral upgrade for the Programmable Turtle operated via `turtle.quarry(...)`.
 
 ---
 

@@ -182,12 +182,12 @@ All custom items can be obtained via vanilla crafting in survival mode.
 **Legend:** `W` = Oak Slab  
 **Result:** 1 **Farming / Harvesting Module** (Composter)
 
-## Autonomous Quarry Excavator & Turtle Quarry Engine (Blast Furnace)
+## Turtle Quarry Engine Upgrade (Blast Furnace)
 
-> [!NOTE]
-> This item serves **dual purposes**:
-> 1. Placed next to a Computer, it operates as an **Autonomous Stationary Quarry Excavator** controlled via the `quarry` Lua API.
-> 2. Placed **laterally** (directly to the left or right) next to a Programmable Turtle, it functions as the **Quarry Engine Upgrade Attachment** for mobile volumetric strip-mining controlled via `turtle.quarry(...)`.
+> [!IMPORTANT]
+> The Quarry Engine **exclusively functions with the Programmable Turtle** (it does not function as a standalone computer peripheral).
+> - It must be placed **laterally** (directly to the left or right) of the Turtle.
+> - Once detected via `turtle.hasQuarryEngine()`, it attaches to the Turtle and moves in tandem during automated volumetric strip-mining controlled via `turtle.quarry(...)`.
 
 ```text
 +---+---+---+
@@ -200,7 +200,7 @@ All custom items can be obtained via vanilla crafting in survival mode.
 ```
 
 **Legend:** `I` = Iron Ingot · `F` = Furnace · `S` = Smooth Stone  
-**Result:** 1 **Quarry Excavator / Turtle Quarry Engine** (Blast Furnace)
+**Result:** 1 **Turtle Quarry Engine Upgrade** (Blast Furnace)
 
 ## NPC Chatbot & Quest Interposer (Sculk Catalyst)
 

@@ -88,6 +88,7 @@ blueprint-player-quota-mb: 15.0
 |---|---|---|---|
 | `computer-block` | `string` | `LECTERN` | Material used as standard computer block |
 | `advanced-computer-block` | `string` | `ENCHANTING_TABLE` | Material used as advanced computer block |
+| `quarry-block` | `string` | `BLAST_FURNACE` | Material used as Turtle Quarry Engine Upgrade (functions exclusively with turtles) |
 | `enable-recipe-*` | `boolean` | `true` | Independent toggle to enable or disable crafting recipe for each device |
 | `enable-*` | `boolean` | `true` | Independent toggle to enable or disable gameplay functionality for each device |
 | `worldguard-protection-check` | `boolean` | `true` | Prevents turtles from building in WorldGuard regions without membership/ownership |

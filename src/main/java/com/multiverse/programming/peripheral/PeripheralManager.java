@@ -47,7 +47,6 @@ public final class PeripheralManager {
         Material cartographerMat = config != null ? config.getCartographerBlock() : Material.CARTOGRAPHY_TABLE;
         Material alchemistMat = config != null ? config.getAlchemistBlock() : Material.BREWING_STAND;
         Material farmerMat = config != null ? config.getFarmerBlock() : Material.COMPOSTER;
-        Material quarryMat = config != null ? config.getQuarryBlock() : Material.BLAST_FURNACE;
         Material npcMat = config != null ? config.getNpcBlock() : Material.SCULK_CATALYST;
 
         Block computerBlock = computerLoc.getBlock();
@@ -75,8 +74,6 @@ public final class PeripheralManager {
                 result.put(dirName, new AlchemistPeripheral(plugin, adj.getLocation()));
             } else if (adjType == farmerMat && (config == null || config.isEnableFarmer())) {
                 result.put(dirName, new FarmerPeripheral(plugin, adj.getLocation()));
-            } else if (adjType == quarryMat && (config == null || config.isEnableQuarry())) {
-                result.put(dirName, new QuarryPeripheral(plugin, adj.getLocation()));
             } else if (adjType == npcMat && (config == null || config.isEnableNpc())) {
                 result.put(dirName, new NpcPeripheral(plugin, adj.getLocation()));
             }

@@ -62,7 +62,6 @@ MultiverseProgramming/
 │   │   ├── CartographerPeripheral.java
 │   │   ├── AlchemistPeripheral.java
 │   │   ├── FarmerPeripheral.java
-│   │   ├── QuarryPeripheral.java
 │   │   └── NpcPeripheral.java
 │   ├── protection/                       # Reclamos de terceros y registro CoreProtect
 │   │   ├── ProtectionManager.java

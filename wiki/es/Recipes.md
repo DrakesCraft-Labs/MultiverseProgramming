@@ -188,12 +188,12 @@ La computadora avanzada es una **mesa de encantamientos** y depende de la comput
 **Leyenda:** `W` = Losa de roble (Oak Slab)  
 **Resultado:** 1 **Farming / Harvesting Module** (Compostador)
 
-## Autonomous Quarry Excavator & Turtle Quarry Engine (Cantera / Mejora de Tortuga)
+## Turtle Quarry Engine Upgrade (Mejora de Motor de Cantera para Tortuga)
 
-> [!NOTE]
-> Este objeto cumple **dos propósitos**:
-> 1. Colocado junto a una Computadora, funciona como **Cantera Excavadora Estacionaria** controlada mediante el módulo Lua `quarry`.
-> 2. Colocado de forma **lateral** (a la izquierda o derecha) de una Tortuga Programable, opera como la **Mejora de Motor de Cantera (Quarry Engine)** para minería volumétrica móvil mediante `turtle.quarry(...)`.
+> [!IMPORTANT]
+> El Motor de Cantera (Quarry Engine) **funciona exclusivamente con la Tortuga Programable** (no funciona como periférico de computadoras normales).
+> - Debe colocarse de forma **lateral** (directamente a la izquierda o derecha) de la Tortuga.
+> - Al detectarse mediante `turtle.hasQuarryEngine()`, se vincula a la tortuga y se desplaza físicamente junto a ella durante la excavación volumétrica mediante `turtle.quarry(...)`.
 
 ```text
 +---+---+---+
@@ -206,7 +206,7 @@ La computadora avanzada es una **mesa de encantamientos** y depende de la comput
 ```
 
 **Leyenda:** `I` = Lingote de hierro · `F` = Horno (Furnace) · `S` = Piedra lisa (Smooth Stone)  
-**Resultado:** 1 **Quarry Excavator / Turtle Quarry Engine** (Alto horno)
+**Resultado:** 1 **Turtle Quarry Engine Upgrade** (Alto horno)
 
 ## NPC Chatbot & Quest Interposer (Núcleo de Diálogo NPC)
 

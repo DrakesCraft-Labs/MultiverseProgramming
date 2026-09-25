@@ -110,7 +110,8 @@ alchemist-block: BREWING_STAND
 # Block that acts as a Farming and Harvesting Attachment.
 farmer-block: COMPOSTER
 
-# Block that acts as an Autonomous Quarry Excavator.
+# Block that acts as the Turtle Quarry Engine Upgrade (placed laterally next to a turtle).
+# Note: The Quarry Engine exclusively functions when attached to a Turtle (via turtle.quarry).
 quarry-block: BLAST_FURNACE
 
 # Block that acts as an Interactive NPC Dialogue Core.

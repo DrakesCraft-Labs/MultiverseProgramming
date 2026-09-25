@@ -189,30 +189,7 @@ print("Harvested " .. count .. " mature crops!")
 local fertilized = farmer.fertilize("down")
 ```
 
-### 9. Autonomous Quarry Excavator (`quarry`)
-
-Excavates a volumetric column (width X * length Z down to target Y layer) layer-by-layer, clearing fluids, safely depositing mined drops into adjacent chests, and logging all block removals via CoreProtect.
-
-```lua
--- quarry.start(width, length, targetY, [handleLiquids])
-local ok, msg = quarry.start(8, 8, -58, true)
-if ok then
-  print("&aQuarry started: " .. msg)
-end
-
--- Monitor excavation status
-local status = quarry.getStatus()
-print("Active: " .. tostring(status.active))
-print("Current Y: " .. status.currentY .. " / Target: " .. status.targetY)
-print("Blocks mined: " .. status.blocksMined .. " (" .. string.format("%.1f", status.percentage) .. "%)")
-
--- Control commands
-quarry.pause()
-quarry.resume()
-quarry.stop()
-```
-
-### 10. NPC Chatbot & Quest Interposer (`npc`)
+### 9. NPC Chatbot & Quest Interposer (`npc`)
 
 Enables interactive dialogues, floating TextDisplay holograms, chat choice prompts, and capturing player responses.
 
@@ -261,7 +238,7 @@ end
 
 ---
 
-## 11. Programmable Turtle (`turtle`)
+## 10. Programmable Turtle (`turtle`)
 
 The **Programmable Turtle** is a robotic mobile computer & constructor capable of navigating the world, mining blocks, placing blocks, managing a 16-slot inventory, and building entire structures from `.litematic` and `.nbt` blueprint files.
 
@@ -332,7 +309,11 @@ turtle.cancelBuild()
 
 ### Quarry Engine Upgrade (Autonomous Volumetric Excavation)
 
-The **Quarry Engine** (`BLAST_FURNACE` by default) can be attached to the Turtle as a mobile excavation upgrade module:
+> [!IMPORTANT]
+> **Exclusive to Turtles:**
+> The Quarry Engine is **not** a computer peripheral and cannot be operated from stationary lectern or enchanting table computers. It functions **strictly** as a lateral attachment for Programmable Turtles via the `turtle.quarry` API.
+
+The **Quarry Engine** (`BLAST_FURNACE` by default) attaches directly to the Turtle:
 
 - **Lateral Attachment Requirement:** The Quarry Engine block must be placed directly adjacent to the **left** or **right** of the turtle before launching the program.
 - **Physical Movement:** Once activated, the quarry engine attaches to the turtle and travels in lockstep across coordinates and rotations as the turtle excavates.
@@ -370,7 +351,9 @@ turtle.resumeQuarry()
 turtle.stopQuarry()
 ```
 
-## 12. Web Portal, Cloud Pastebin & Quotas
+---
+
+## 11. Web Portal, Cloud Pastebin & Quotas
 
 Players can access the built-in **Web Portal** by executing in-game:
 ```text

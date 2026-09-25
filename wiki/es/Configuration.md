@@ -88,6 +88,7 @@ blueprint-player-quota-mb: 15.0
 |---|---|---|---|
 | `computer-block` | `string` | `LECTERN` | Material usado como bloque de computadora estándar |
 | `advanced-computer-block` | `string` | `ENCHANTING_TABLE` | Material usado como bloque de computadora avanzada |
+| `quarry-block` | `string` | `BLAST_FURNACE` | Material usado como Mejora de Motor de Cantera (funciona exclusivamente con la tortuga) |
 | `enable-recipe-*` | `boolean` | `true` | Interruptor independiente para activar/desactivar la receta de crafteo de cada máquina |
 | `enable-*` | `boolean` | `true` | Interruptor independiente para activar/desactivar la funcionalidad de cada máquina |
 | `worldguard-protection-check` | `boolean` | `true` | Evita que las tortugas y canteras operen en regiones de WorldGuard sin permisos |
