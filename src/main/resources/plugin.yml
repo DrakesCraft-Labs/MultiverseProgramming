@@ -2,18 +2,19 @@ name: MultiverseProgramming
 version: ${project.version}
 main: com.multiverse.programming.MultiverseProgrammingPlugin
 api-version: '1.21'
-description: Programmable computers with Lua and floppy disks.
+description: Programmable computers with Lua, turtles, and blueprints.
 
 commands:
-  pc:
-    description: Computer and floppy disks
-    aliases: [computador, computadora, disco]
-    usage: /pc <give|help>
+  mvprog:
+    description: Main MultiverseProgramming command for computers, turtles, and blueprints.
+    aliases: [pc, mvp, computador, computadora, disco]
+    usage: /mvprog <help|web|get|getbypass|quota|bp|build|give|reload>
+    permission: multiverseprogramming.use
 
 permissions:
   multiverseprogramming.use:
-    description: Allows using computers
+    description: Allows using computers, web portal, downloading blueprints and checking quota
     default: true
   multiverseprogramming.admin:
-    description: Allows giving custom items
+    description: Full administrative access (bypass, give, reload, build, purge, view others' quotas)
     default: op

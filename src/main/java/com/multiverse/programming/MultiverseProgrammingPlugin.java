@@ -46,9 +46,16 @@ public class MultiverseProgrammingPlugin extends JavaPlugin {
         webServerManager = new com.multiverse.programming.web.WebServerManager(this);
         webServerManager.start();
 
+        getServer().getPluginManager().registerEvents(new ItemSecurityListener(this), this);
+
         ComputerCommand commandHandler = new ComputerCommand(this);
+        PluginCommand mvprogCommand = getCommand("mvprog");
+        if (mvprogCommand != null) {
+            mvprogCommand.setExecutor(commandHandler);
+            mvprogCommand.setTabCompleter(commandHandler);
+        }
         PluginCommand pcCommand = getCommand("pc");
-        if (pcCommand != null) {
+        if (pcCommand != null && pcCommand != mvprogCommand) {
             pcCommand.setExecutor(commandHandler);
             pcCommand.setTabCompleter(commandHandler);
         }

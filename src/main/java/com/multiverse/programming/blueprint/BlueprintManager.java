@@ -113,6 +113,10 @@ public final class BlueprintManager {
      * Registers an uploaded blueprint enforcing security, quotas (15 MB), and deduplication.
      */
     public synchronized Blueprint register(String fileName, byte[] data, String owner) throws IOException {
+        return register(fileName, data, owner, false);
+    }
+
+    public synchronized Blueprint register(String fileName, byte[] data, String owner, boolean bypass) throws IOException {
         if (owner == null || owner.isBlank()) {
             owner = "Server";
         }
@@ -124,11 +128,17 @@ public final class BlueprintManager {
         int maxBlocks = cfg != null ? cfg.getBlueprintMaxBlocks() : 250_000;
         boolean filterDangerous = cfg != null && cfg.isBlueprintFilterDangerous();
 
+        if (bypass) {
+            maxFileMb = Math.max(maxFileMb, 100.0);
+            maxDim = Math.max(maxDim, 4096);
+            maxBlocks = Math.max(maxBlocks, 10_000_000);
+        }
+
         // 1. Security check: Magic bytes & file size limit
         BlueprintSecurityValidator.validateFileHeader(data, fileName, maxFileMb);
 
-        // 2. Quota check: 15 MB per player (unless Server/Admin)
-        if (!"Server".equalsIgnoreCase(owner)) {
+        // 2. Quota check: 15 MB per player (unless Server/Admin or bypass)
+        if (!bypass && !"Server".equalsIgnoreCase(owner) && !"Admin".equalsIgnoreCase(owner)) {
             long usedBytes = getPlayerUsageBytes(owner);
             long quotaBytes = (long) (quotaMb * 1024 * 1024);
             if (usedBytes + data.length > quotaBytes) {
@@ -208,6 +218,10 @@ public final class BlueprintManager {
      * @return CompletableFuture completing with the parsed, validated, and registered Blueprint.
      */
     public CompletableFuture<Blueprint> getOrDownloadBlueprint(String codeOrUrl, String owner) {
+        return getOrDownloadBlueprint(codeOrUrl, owner, false);
+    }
+
+    public CompletableFuture<Blueprint> getOrDownloadBlueprint(String codeOrUrl, String owner, boolean bypass) {
         if (codeOrUrl == null || codeOrUrl.isBlank()) {
             return CompletableFuture.failedFuture(new IllegalArgumentException("Blueprint code or URL cannot be empty"));
         }
@@ -285,7 +299,7 @@ public final class BlueprintManager {
             }
 
             try {
-                Blueprint bp = register(filename, downloadedBytes, owner);
+                Blueprint bp = register(filename, downloadedBytes, owner, bypass);
                 synchronized (this) {
                     blueprints.put(target.toUpperCase(Locale.ROOT), bp);
                 }

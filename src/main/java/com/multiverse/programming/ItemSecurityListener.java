@@ -1,0 +1,94 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+package com.multiverse.programming;
+
+import org.bukkit.Material;
+import org.bukkit.entity.ItemFrame;
+import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
+import org.bukkit.event.inventory.InventoryMoveItemEvent;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.ItemStack;
+
+/**
+ * Prevents players from placing writable books, written books, or storage containers
+ * (shulkers, chests, barrels, hoppers, dispensers, droppers) into Item Frames or Chiseled Bookshelves.
+ * Protects against item duplication, chunk overloading, and NBT crash exploits.
+ */
+public final class ItemSecurityListener implements Listener {
+
+    private final MultiverseProgrammingPlugin plugin;
+
+    public ItemSecurityListener(MultiverseProgrammingPlugin plugin) {
+        this.plugin = plugin;
+    }
+
+    public static boolean isStorageBlock(Material mat) {
+        if (mat == null) return false;
+        String name = mat.name();
+        return name.endsWith("SHULKER_BOX") ||
+                name.equals("CHEST") ||
+                name.equals("TRAPPED_CHEST") ||
+                name.equals("BARREL") ||
+                name.equals("DISPENSER") ||
+                name.equals("DROPPER") ||
+                name.equals("HOPPER") ||
+                name.equals("BUNDLE") ||
+                name.equals("DECORATED_POT");
+    }
+
+    public static boolean isForbiddenBook(Material mat) {
+        if (mat == null) return false;
+        return mat == Material.WRITABLE_BOOK || mat == Material.WRITTEN_BOOK;
+    }
+
+    public static boolean isForbiddenInItemFrame(Material mat) {
+        return isStorageBlock(mat) || isForbiddenBook(mat);
+    }
+
+    public static boolean isForbiddenInBookshelf(Material mat) {
+        return isForbiddenBook(mat) || isStorageBlock(mat);
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onPlayerInteractEntity(PlayerInteractEntityEvent event) {
+        if (event.getRightClicked() instanceof ItemFrame) {
+            Player player = event.getPlayer();
+            EquipmentSlot hand = event.getHand();
+            ItemStack item = (hand == EquipmentSlot.OFF_HAND)
+                    ? player.getInventory().getItemInOffHand()
+                    : player.getInventory().getItemInMainHand();
+
+            if (item != null && isForbiddenInItemFrame(item.getType())) {
+                event.setCancelled(true);
+                player.sendMessage(plugin.getPrefix() + " §cPlacing books or storage containers in item frames is prohibited to prevent duplication exploits.");
+            }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onPlayerInteractBlock(PlayerInteractEvent event) {
+        if (event.getAction() == Action.RIGHT_CLICK_BLOCK && event.getClickedBlock() != null) {
+            if (event.getClickedBlock().getType() == Material.CHISELED_BOOKSHELF) {
+                ItemStack item = event.getItem();
+                if (item != null && isForbiddenInBookshelf(item.getType())) {
+                    event.setCancelled(true);
+                    event.getPlayer().sendMessage(plugin.getPrefix() + " §cPlacing writable books or storage blocks in chiseled bookshelves is prohibited.");
+                }
+            }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onInventoryMove(InventoryMoveItemEvent event) {
+        if (event.getDestination().getType().name().equals("CHISELED_BOOKSHELF")) {
+            if (event.getItem() != null && isForbiddenInBookshelf(event.getItem().getType())) {
+                event.setCancelled(true);
+            }
+        }
+    }
+}

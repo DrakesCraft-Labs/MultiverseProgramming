@@ -13,6 +13,7 @@ import org.bukkit.util.StringUtil;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public final class ComputerCommand implements CommandExecutor, TabCompleter {
 
@@ -32,8 +33,10 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
         switch (args[0].toLowerCase()) {
             case "reload" -> reload(sender);
             case "web", "portal", "dashboard" -> showWebPortal(sender);
+            case "quota" -> handleQuotaCommand(sender, args);
             case "blueprint", "blueprints", "bp" -> handleBlueprintCommand(sender, args);
-            case "get", "download", "pastebin" -> handleGetCommand(sender, args);
+            case "get", "download", "pastebin" -> handleGetCommand(sender, args, false);
+            case "getbypass", "bypassget", "import" -> handleGetCommand(sender, args, true);
             case "build" -> triggerBuild(sender, args);
             case "give" -> {
                 if (sender instanceof Player player) {
@@ -64,6 +67,45 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(" §7Connect to any active Turtle and dispatch builds with visual preview!");
     }
 
+    private void handleQuotaCommand(CommandSender sender, String[] args) {
+        if (!sender.hasPermission("multiverseprogramming.use")) {
+            sender.sendMessage(plugin.getPrefix() + " §cYou don't have permission to use this command.");
+            return;
+        }
+
+        var manager = plugin.getBlueprintManager();
+        if (manager == null) {
+            sender.sendMessage(plugin.getPrefix() + " §cBlueprint manager is not available.");
+            return;
+        }
+
+        String targetPlayer;
+        if (args.length > 1) {
+            if (!sender.hasPermission("multiverseprogramming.admin")) {
+                sender.sendMessage(plugin.getPrefix() + " §cYou can only view your own storage quota.");
+                return;
+            }
+            targetPlayer = args[1];
+        } else {
+            if (sender instanceof Player p) {
+                targetPlayer = p.getName();
+            } else {
+                targetPlayer = "Server";
+            }
+        }
+
+        long used = manager.getPlayerUsageBytes(targetPlayer);
+        double quotaMb = plugin.getConfigManager().getBlueprintPlayerQuotaMb();
+        double usedMb = Math.round((used / (1024.0 * 1024.0)) * 100.0) / 100.0;
+        double remainingMb = Math.max(0.0, Math.round((quotaMb - usedMb) * 100.0) / 100.0);
+        double percent = Math.min(100.0, Math.round((used / (quotaMb * 1024.0 * 1024.0)) * 1000.0) / 10.0);
+
+        sender.sendMessage(plugin.getPrefix() + " §b=== Blueprint Storage Quota ===");
+        sender.sendMessage(" §7Player: §f" + targetPlayer);
+        sender.sendMessage(String.format(Locale.ROOT, " §7Storage Used: §e%.2f MB §7/ §a%.2f MB §8(§b%.1f%%§8)", usedMb, quotaMb, percent));
+        sender.sendMessage(String.format(Locale.ROOT, " §7Available Remaining: §a%.2f MB", remainingMb));
+    }
+
     private void handleBlueprintCommand(CommandSender sender, String[] args) {
         var manager = plugin.getBlueprintManager();
         if (manager == null) {
@@ -74,18 +116,12 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
         String sub = args.length > 1 ? args[1].toLowerCase() : "list";
         switch (sub) {
             case "quota" -> {
-                String targetPlayer = args.length > 2 ? args[2] : (sender instanceof Player p ? p.getName() : "Server");
-                long used = manager.getPlayerUsageBytes(targetPlayer);
-                double quotaMb = plugin.getConfigManager().getBlueprintPlayerQuotaMb();
-                double usedMb = Math.round((used / (1024.0 * 1024.0)) * 100.0) / 100.0;
-                double percent = Math.min(100.0, Math.round((used / (quotaMb * 1024.0 * 1024.0)) * 1000.0) / 10.0);
-                sender.sendMessage(plugin.getPrefix() + " §b=== Blueprint Storage Quota ===");
-                sender.sendMessage(" §7Player: §f" + targetPlayer);
-                sender.sendMessage(String.format(" §7Storage Used: §e%.2f MB §7/ §a%.2f MB §8(§b%.1f%%§8)", usedMb, quotaMb, percent));
+                String[] forwardedArgs = args.length > 2 ? new String[]{"quota", args[2]} : new String[]{"quota"};
+                handleQuotaCommand(sender, forwardedArgs);
             }
             case "delete", "remove" -> {
                 if (args.length < 3) {
-                    sender.sendMessage(plugin.getPrefix() + " §cUsage: /pc blueprint delete <blueprintId>");
+                    sender.sendMessage(plugin.getPrefix() + " §cUsage: /mvprog bp delete <blueprintId>");
                     return;
                 }
                 String bpId = args[2];
@@ -118,7 +154,7 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
             default -> {
                 var all = manager.getAllBlueprints();
                 if (all.isEmpty()) {
-                    sender.sendMessage(plugin.getPrefix() + " §eNo blueprints loaded. Upload .litematic or .nbt via /pc web!");
+                    sender.sendMessage(plugin.getPrefix() + " §eNo blueprints loaded. Upload .litematic or .nbt via /mvprog web!");
                     return;
                 }
                 sender.sendMessage(plugin.getPrefix() + " §b=== Loaded Blueprints (" + all.size() + ") ===");
@@ -133,13 +169,13 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
 
     private void triggerBuild(CommandSender sender, String[] args) {
         if (!sender.hasPermission("multiverseprogramming.admin")) {
-            sender.sendMessage(plugin.getPrefix() + " §cYou don't have permission to use this command. Only administrators can use /pc build.");
+            sender.sendMessage(plugin.getPrefix() + " §cYou don't have permission to use this command. Only administrators can use /mvprog build.");
             return;
         }
         if (args.length < 5) {
             sender.sendMessage(plugin.getPrefix() + " §cTarget coordinates (X Y Z) are mandatory. The turtle will not build without coordinates.");
-            sender.sendMessage(" §7Usage: §e/pc build <blueprintId|code|url> <x> <y> <z> [turtleId] [clear]");
-            sender.sendMessage(" §7Or: §e/pc build <blueprintId|code|url> <turtleId> <x> <y> <z> [clear]");
+            sender.sendMessage(" §7Usage: §e/mvprog build <blueprintId|code|url> <x> <y> <z> [turtleId] [clear]");
+            sender.sendMessage(" §7Or: §e/mvprog build <blueprintId|code|url> <turtleId> <x> <y> <z> [clear]");
             return;
         }
 
@@ -276,27 +312,37 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
         }
     }
 
-    private void handleGetCommand(CommandSender sender, String[] args) {
-        if (!sender.hasPermission("multiverseprogramming.use")) {
-            sender.sendMessage(plugin.getPrefix() + " §cYou don't have permission to use this command.");
-            return;
+    private void handleGetCommand(CommandSender sender, String[] args, boolean isBypass) {
+        boolean bypass = isBypass || (args.length > 2 && args[2].equalsIgnoreCase("bypass") && sender.hasPermission("multiverseprogramming.admin"));
+        if (bypass) {
+            if (!sender.hasPermission("multiverseprogramming.admin")) {
+                sender.sendMessage(plugin.getPrefix() + " §cYou don't have permission to use the get bypass command. Only administrators can bypass quotas.");
+                return;
+            }
+        } else {
+            if (!sender.hasPermission("multiverseprogramming.use")) {
+                sender.sendMessage(plugin.getPrefix() + " §cYou don't have permission to use this command.");
+                return;
+            }
         }
+
         if (args.length < 2) {
-            sender.sendMessage(plugin.getPrefix() + " §cUsage: /pc get <pasteCode|url>");
-            sender.sendMessage(" §7Example: §e/pc get eIoNTIWqo1 §7or §e/pc get BP-NETHER-PORTAL");
+            sender.sendMessage(plugin.getPrefix() + " §cUsage: /mvprog " + (bypass ? "getbypass" : "get") + " <pasteCode|url>");
+            sender.sendMessage(" §7Example: §e/mvprog " + (bypass ? "getbypass" : "get") + " eIoNTIWqo1 §7or §e/mvprog " + (bypass ? "getbypass" : "get") + " BP-NETHER-PORTAL");
             return;
         }
+
         String code = args[1];
-        sender.sendMessage(plugin.getPrefix() + " §7Downloading blueprint §e" + code + " §7from cloud nexus...");
-        String owner = (sender instanceof Player p) ? p.getName() : "Server";
-        plugin.getBlueprintManager().getOrDownloadBlueprint(code, owner)
+        sender.sendMessage(plugin.getPrefix() + (bypass ? " §6[Admin Bypass] §7Downloading blueprint §e" : " §7Downloading blueprint §e") + code + " §7from cloud nexus...");
+        String owner = bypass ? "Admin" : ((sender instanceof Player p) ? p.getName() : "Server");
+        plugin.getBlueprintManager().getOrDownloadBlueprint(code, owner, bypass)
                 .thenAccept(bp -> {
                     Bukkit.getScheduler().runTask(plugin, () -> {
-                        sender.sendMessage(plugin.getPrefix() + " §a✓ Blueprint downloaded successfully!");
+                        sender.sendMessage(plugin.getPrefix() + " §a✓ Blueprint downloaded successfully!" + (bypass ? " §6(Quota Bypassed)" : ""));
                         sender.sendMessage(" §7Name: §f" + bp.name());
                         sender.sendMessage(" §7ID/Code: §e" + bp.id());
-                        sender.sendMessage(String.format(" §7Size: §b%d×%d×%d §8(§e%,d blocks§8)", bp.sizeX(), bp.sizeY(), bp.sizeZ(), bp.totalBlocks()));
-                        sender.sendMessage(" §7To build with Turtle: §a/pc build " + bp.id());
+                        sender.sendMessage(String.format(Locale.ROOT, " §7Size: §b%d×%d×%d §8(§e%,d blocks§8)", bp.sizeX(), bp.sizeY(), bp.sizeZ(), bp.totalBlocks()));
+                        sender.sendMessage(" §7To build with Turtle: §a/mvprog build " + bp.id() + " <x> <y> <z>");
                     });
                 })
                 .exceptionally(ex -> {
@@ -323,7 +369,7 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
             return;
         }
         if (args.length < 2) {
-            player.sendMessage(plugin.getPrefix() + " §cUsage: /pc give <floppydisk|computer|advancedcomputer>");
+            player.sendMessage(plugin.getPrefix() + " §cUsage: /mvprog give <floppydisk|computer|advancedcomputer|turtle...>");
             return;
         }
         ItemStack item;
@@ -350,16 +396,20 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
 
     private void help(CommandSender sender) {
         sender.sendMessage(plugin.getPrefix() + " §7Commands:");
-        sender.sendMessage(" §e/pc web §8- §7view Web Dashboard link for uploading .litematic & .nbt");
-        sender.sendMessage(" §e/pc get <code|url> §8- §7download blueprint from cloud pastebin/github");
-        sender.sendMessage(" §e/pc bp [list|quota|delete] §8- §7manage blueprints and check storage quota");
+        sender.sendMessage(" §e/mvprog web §8- §7view Web Dashboard link for uploading .litematic & .nbt");
+        sender.sendMessage(" §e/mvprog get <code|url> §8- §7download blueprint from cloud pastebin/github");
+        sender.sendMessage(" §e/mvprog quota §8- §7view your blueprint storage quota and remaining space");
+        sender.sendMessage(" §e/mvprog bp [list|quota|delete] §8- §7manage blueprints and check storage quota");
         if (sender.hasPermission("multiverseprogramming.admin")) {
-            sender.sendMessage(" §e/pc build <code|id> <x> <y> <z> [turtle] [clear] §8- §7admin: order turtle to build");
-            sender.sendMessage(" §e/pc bp clean [days] §8- §7admin: clean old unused blueprints");
-            sender.sendMessage(" §e/pc give <item> §8- §7admin: give yourself a custom item");
-            sender.sendMessage(" §e/pc reload §8- §7admin: reload configuration and recipes");
+            sender.sendMessage(" §6=== Admin Commands ===");
+            sender.sendMessage(" §6/mvprog quota <player> §8- §7view specific player's storage quota");
+            sender.sendMessage(" §6/mvprog getbypass <code|url> §8- §7download blueprint bypassing storage quotas");
+            sender.sendMessage(" §6/mvprog build <bp|code> <x> <y> <z> [turtle] [clear] §8- §7order turtle to build");
+            sender.sendMessage(" §6/mvprog bp clean [days] §8- §7purge old unpinned blueprints");
+            sender.sendMessage(" §6/mvprog give <item> §8- §7give custom programming item");
+            sender.sendMessage(" §6/mvprog reload §8- §7reload configuration and recipes");
         } else {
-            sender.sendMessage(" §e/pc help §8- §7shows this help menu");
+            sender.sendMessage(" §e/mvprog help §8- §7shows this help menu");
         }
     }
 
@@ -371,15 +421,21 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
             subcommands.add("help");
             subcommands.add("web");
             subcommands.add("get");
+            subcommands.add("quota");
             subcommands.add("blueprint");
             subcommands.add("blueprints");
             subcommands.add("bp");
             if (sender.hasPermission("multiverseprogramming.admin")) {
+                subcommands.add("getbypass");
                 subcommands.add("build");
                 subcommands.add("give");
                 subcommands.add("reload");
             }
             return StringUtil.copyPartialMatches(args[0], subcommands, completions);
+        }
+        if (args.length == 2 && args[0].equalsIgnoreCase("quota") && sender.hasPermission("multiverseprogramming.admin")) {
+            List<String> playerNames = Bukkit.getOnlinePlayers().stream().map(Player::getName).toList();
+            return StringUtil.copyPartialMatches(args[1], playerNames, completions);
         }
         if (args.length == 2 && (args[0].equalsIgnoreCase("blueprint") || args[0].equalsIgnoreCase("blueprints") || args[0].equalsIgnoreCase("bp"))) {
             List<String> subs = new ArrayList<>(List.of("list", "quota", "delete"));
@@ -387,6 +443,10 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
                 subs.add("clean");
             }
             return StringUtil.copyPartialMatches(args[1], subs, completions);
+        }
+        if (args.length == 3 && (args[0].equalsIgnoreCase("blueprint") || args[0].equalsIgnoreCase("blueprints") || args[0].equalsIgnoreCase("bp")) && args[1].equalsIgnoreCase("quota") && sender.hasPermission("multiverseprogramming.admin")) {
+            List<String> playerNames = Bukkit.getOnlinePlayers().stream().map(Player::getName).toList();
+            return StringUtil.copyPartialMatches(args[2], playerNames, completions);
         }
         if (args.length == 3 && (args[0].equalsIgnoreCase("blueprint") || args[0].equalsIgnoreCase("blueprints") || args[0].equalsIgnoreCase("bp")) && args[1].equalsIgnoreCase("delete")) {
             if (plugin.getBlueprintManager() != null) {

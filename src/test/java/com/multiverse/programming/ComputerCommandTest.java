@@ -137,27 +137,27 @@ class ComputerCommandTest {
     }
 
     @Test
-    @DisplayName("/pc build is denied for non-admin players")
+    @DisplayName("/mvprog build is denied for non-admin players")
     void testBuildDeniedForNonAdmin() {
         Player player = mock(Player.class);
         when(player.hasPermission("multiverseprogramming.admin")).thenReturn(false);
 
-        assertTrue(command.onCommand(player, mockCmd, "pc", new String[]{"build", "TEST-BP", "10", "64", "20"}));
-        verify(player).sendMessage(contains("Only administrators can use /pc build"));
+        assertTrue(command.onCommand(player, mockCmd, "mvprog", new String[]{"build", "TEST-BP", "10", "64", "20"}));
+        verify(player).sendMessage(contains("Only administrators can use /mvprog build"));
     }
 
     @Test
-    @DisplayName("/pc build rejects command if coordinates are missing")
+    @DisplayName("/mvprog build rejects command if coordinates are missing")
     void testBuildRejectsMissingCoordinates() {
         Player admin = mock(Player.class);
         when(admin.hasPermission("multiverseprogramming.admin")).thenReturn(true);
 
-        assertTrue(command.onCommand(admin, mockCmd, "pc", new String[]{"build", "TEST-BP"}));
+        assertTrue(command.onCommand(admin, mockCmd, "mvprog", new String[]{"build", "TEST-BP"}));
         verify(admin).sendMessage(contains("coordinates (X Y Z) are mandatory"));
     }
 
     @Test
-    @DisplayName("/pc get triggers cloud download and notifies sender")
+    @DisplayName("/mvprog get triggers cloud download and notifies sender")
     void testGetCommand() {
         Player player = mock(Player.class);
         when(player.getName()).thenReturn("Dany");
@@ -168,10 +168,80 @@ class ComputerCommandTest {
 
         com.multiverse.programming.blueprint.Blueprint mockBp = new com.multiverse.programming.blueprint.Blueprint(
                 "TEST-CODE", "Cloud Castle", "Author", "litematic", 10, 10, 10, 100, java.util.Map.of(), java.util.List.of(), System.currentTimeMillis());
-        when(bpManager.getOrDownloadBlueprint("TEST-CODE", "Dany")).thenReturn(java.util.concurrent.CompletableFuture.completedFuture(mockBp));
+        when(bpManager.getOrDownloadBlueprint("TEST-CODE", "Dany", false)).thenReturn(java.util.concurrent.CompletableFuture.completedFuture(mockBp));
 
-        assertTrue(command.onCommand(player, mockCmd, "pc", new String[]{"get", "TEST-CODE"}));
-        verify(bpManager).getOrDownloadBlueprint("TEST-CODE", "Dany");
+        assertTrue(command.onCommand(player, mockCmd, "mvprog", new String[]{"get", "TEST-CODE"}));
+        verify(bpManager).getOrDownloadBlueprint("TEST-CODE", "Dany", false);
         verify(player).sendMessage(contains("Downloading"));
+    }
+
+    @Test
+    @DisplayName("/mvprog getbypass is admin-only and invokes download with bypass=true")
+    void testGetBypassCommand() {
+        Player admin = mock(Player.class);
+        when(admin.getName()).thenReturn("AdminUser");
+        when(admin.hasPermission("multiverseprogramming.admin")).thenReturn(true);
+
+        com.multiverse.programming.blueprint.BlueprintManager bpManager = mock(com.multiverse.programming.blueprint.BlueprintManager.class);
+        when(plugin.getBlueprintManager()).thenReturn(bpManager);
+
+        com.multiverse.programming.blueprint.Blueprint mockBp = new com.multiverse.programming.blueprint.Blueprint(
+                "BIG-BP", "Giant Structure", "Author", "litematic", 50, 50, 50, 10000, java.util.Map.of(), java.util.List.of(), System.currentTimeMillis());
+        when(bpManager.getOrDownloadBlueprint("BIG-BP", "Admin", true)).thenReturn(java.util.concurrent.CompletableFuture.completedFuture(mockBp));
+
+        assertTrue(command.onCommand(admin, mockCmd, "mvprog", new String[]{"getbypass", "BIG-BP"}));
+        verify(bpManager).getOrDownloadBlueprint("BIG-BP", "Admin", true);
+        verify(admin).sendMessage(contains("Admin Bypass"));
+    }
+
+    @Test
+    @DisplayName("/mvprog quota displays player's own quota and remaining space")
+    void testQuotaCommandSelf() {
+        Player player = mock(Player.class);
+        when(player.getName()).thenReturn("Dany");
+        when(player.hasPermission("multiverseprogramming.use")).thenReturn(true);
+        when(configManager.getBlueprintPlayerQuotaMb()).thenReturn(15.0);
+
+        com.multiverse.programming.blueprint.BlueprintManager bpManager = mock(com.multiverse.programming.blueprint.BlueprintManager.class);
+        when(plugin.getBlueprintManager()).thenReturn(bpManager);
+        when(bpManager.getPlayerUsageBytes("Dany")).thenReturn(5 * 1024 * 1024L); // 5 MB
+
+        assertTrue(command.onCommand(player, mockCmd, "mvprog", new String[]{"quota"}));
+        verify(player).sendMessage(contains("Storage Used: §e5.00 MB"));
+        verify(player).sendMessage(contains("Available Remaining: §a10.00 MB"));
+    }
+
+    @Test
+    @DisplayName("Non-admin player cannot view other players' quota")
+    void testQuotaOtherPlayerDeniedForNonAdmin() {
+        Player player = mock(Player.class);
+        when(player.getName()).thenReturn("Dany");
+        when(player.hasPermission("multiverseprogramming.use")).thenReturn(true);
+        when(player.hasPermission("multiverseprogramming.admin")).thenReturn(false);
+
+        com.multiverse.programming.blueprint.BlueprintManager bpManager = mock(com.multiverse.programming.blueprint.BlueprintManager.class);
+        when(plugin.getBlueprintManager()).thenReturn(bpManager);
+
+        assertTrue(command.onCommand(player, mockCmd, "mvprog", new String[]{"quota", "OtherPlayer"}));
+        verify(player).sendMessage(contains("You can only view your own storage quota"));
+        verify(bpManager, never()).getPlayerUsageBytes("OtherPlayer");
+    }
+
+    @Test
+    @DisplayName("Admin can view other players' quota")
+    void testQuotaOtherPlayerAllowedForAdmin() {
+        Player admin = mock(Player.class);
+        when(admin.getName()).thenReturn("AdminUser");
+        when(admin.hasPermission("multiverseprogramming.use")).thenReturn(true);
+        when(admin.hasPermission("multiverseprogramming.admin")).thenReturn(true);
+        when(configManager.getBlueprintPlayerQuotaMb()).thenReturn(15.0);
+
+        com.multiverse.programming.blueprint.BlueprintManager bpManager = mock(com.multiverse.programming.blueprint.BlueprintManager.class);
+        when(plugin.getBlueprintManager()).thenReturn(bpManager);
+        when(bpManager.getPlayerUsageBytes("OtherPlayer")).thenReturn(2 * 1024 * 1024L);
+
+        assertTrue(command.onCommand(admin, mockCmd, "mvprog", new String[]{"quota", "OtherPlayer"}));
+        verify(admin).sendMessage(contains("Player: §fOtherPlayer"));
+        verify(admin).sendMessage(contains("Storage Used: §e2.00 MB"));
     }
 }
