@@ -15,6 +15,7 @@ import org.bukkit.block.BlockFace;
 import com.multiverse.programming.MultiverseProgrammingPlugin;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.Directional;
+import org.bukkit.block.data.Waterlogged;
 import org.bukkit.entity.Item;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
@@ -832,12 +833,24 @@ public final class Turtle {
             return null;
         }
         try {
-            return Bukkit.createBlockData(blockState);
+            BlockData data = Bukkit.createBlockData(blockState);
+            if (data instanceof Waterlogged wl) {
+                if (!blockState.contains("waterlogged=true")) {
+                    wl.setWaterlogged(false);
+                }
+            }
+            return data;
         } catch (Throwable t) {
             try {
                 Material mat = parseMaterialFromBlockState(blockState);
                 if (mat != null && !mat.isAir()) {
-                    return Bukkit.createBlockData(mat);
+                    BlockData data = Bukkit.createBlockData(mat);
+                    if (data instanceof Waterlogged wl) {
+                        if (!blockState.contains("waterlogged=true")) {
+                            wl.setWaterlogged(false);
+                        }
+                    }
+                    return data;
                 }
             } catch (Throwable ignored) {}
             return null;
