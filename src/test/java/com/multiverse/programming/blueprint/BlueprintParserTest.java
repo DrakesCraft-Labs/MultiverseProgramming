@@ -264,6 +264,8 @@ class BlueprintParserTest {
         assertTrue(BlueprintSecurityValidator.isDangerousBlock("minecraft:command_block"));
         assertTrue(BlueprintSecurityValidator.isDangerousBlock("minecraft:barrier"));
         assertTrue(BlueprintSecurityValidator.isDangerousBlock("minecraft:structure_block"));
+        assertTrue(BlueprintSecurityValidator.isDangerousBlock("minecraft:nether_portal"));
+        assertTrue(BlueprintSecurityValidator.isDangerousBlock("NETHER_PORTAL"));
         assertFalse(BlueprintSecurityValidator.isDangerousBlock("minecraft:stone"));
         assertFalse(BlueprintSecurityValidator.isDangerousBlock("minecraft:oak_planks"));
     }

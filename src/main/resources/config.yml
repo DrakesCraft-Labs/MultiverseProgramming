@@ -180,7 +180,7 @@ blueprint-max-dimension: 512
 # Maximum non-air blocks allowed in a single blueprint to prevent memory crashes.
 blueprint-max-blocks: 250000
 
-# Strip dangerous / illegal blocks (Bedrock, Command Blocks, End Portals, Barriers, etc.)
+# Strip dangerous / illegal blocks (Bedrock, Command Blocks, End Portals, Nether Portals, Barriers, etc.)
 # and replace them with AIR to protect survival worlds from malicious blueprints.
 blueprint-filter-dangerous-blocks: true
 

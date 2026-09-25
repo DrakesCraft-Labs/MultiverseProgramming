@@ -172,3 +172,17 @@ Los bloques con propiedades direccionales (escaleras, cofres, repetidores, puert
 - `facing=north` $\to$ `facing=east` (en giro de 90°)
 - `axis=x` $\to$ `axis=z`
 - `shape=straight` vs `shape=inner_left`, etc.
+
+### D. Filtrado de Seguridad y Bloques Ilegales (`BlueprintSecurityValidator.java`)
+Antes de almacenar o enviar esquemas a las tortugas, las estructuras son analizadas por `BlueprintSecurityValidator.sanitizeAndValidate()`:
+- **Bloques Peligrosos / Ilegales Eliminados**: Reemplaza bloques prohibidos por AIR para proteger mundos survival contra exploits:
+  - `BEDROCK`, `REINFORCED_DEEPSLATE`
+  - `BARRIER`, `LIGHT`, `STRUCTURE_BLOCK`, `STRUCTURE_VOID`, `JIGSAW`
+  - `COMMAND_BLOCK`, `CHAIN_COMMAND_BLOCK`, `REPEATING_COMMAND_BLOCK`
+  - `END_PORTAL`, `END_PORTAL_FRAME`, `END_GATEWAY`
+  - `NETHER_PORTAL`
+- **Límites de Recursos**: Aplica los topes configurados en `config.yml`:
+  - `blueprint-max-file-size-mb` (10 MB por defecto)
+  - `blueprint-max-dimension` (512 bloques de ancho/alto/largo)
+  - `blueprint-max-blocks` (250,000 bloques)
+  - Previene ataques de bombas ZIP GZIP y agotamiento de memoria.

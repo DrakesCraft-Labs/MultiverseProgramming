@@ -276,6 +276,7 @@ class TurtleTest {
         assertTrue(Turtle.isIllegalBlock(Material.COMMAND_BLOCK));
         assertTrue(Turtle.isIllegalBlock(Material.STRUCTURE_BLOCK));
         assertTrue(Turtle.isIllegalBlock(Material.END_PORTAL));
+        assertTrue(Turtle.isIllegalBlock(Material.NETHER_PORTAL));
         assertFalse(Turtle.isIllegalBlock(Material.STONE));
         assertFalse(Turtle.isIllegalBlock(Material.OAK_PLANKS));
     }

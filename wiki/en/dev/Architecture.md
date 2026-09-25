@@ -172,3 +172,17 @@ Blocks with directional states (stairs, chests, repeaters, doors, signs) have th
 - `facing=north` $\to$ `facing=east` (for 90°)
 - `axis=x` $\to$ `axis=z`
 - `shape=straight` vs `shape=inner_left`, etc.
+
+### D. Security Filtering & Illegal Blocks (`BlueprintSecurityValidator.java`)
+Before blueprints are stored or dispatched to turtles, structures are passed through `BlueprintSecurityValidator.sanitizeAndValidate()`:
+- **Stripped Dangerous / Illegal Blocks**: Replaces illegal blocks with AIR to protect survival worlds from exploits:
+  - `BEDROCK`, `REINFORCED_DEEPSLATE`
+  - `BARRIER`, `LIGHT`, `STRUCTURE_BLOCK`, `STRUCTURE_VOID`, `JIGSAW`
+  - `COMMAND_BLOCK`, `CHAIN_COMMAND_BLOCK`, `REPEATING_COMMAND_BLOCK`
+  - `END_PORTAL`, `END_PORTAL_FRAME`, `END_GATEWAY`
+  - `NETHER_PORTAL`
+- **Resource Constraints**: Enforces limits defined in `config.yml`:
+  - `blueprint-max-file-size-mb` (10 MB default)
+  - `blueprint-max-dimension` (512 blocks)
+  - `blueprint-max-blocks` (250,000 blocks)
+  - Prevents GZIP zip-bombs and memory exhaustion attacks.

@@ -27,6 +27,7 @@ public final class BlueprintSecurityValidator {
             "END_PORTAL",
             "END_PORTAL_FRAME",
             "END_GATEWAY",
+            "NETHER_PORTAL",
             "REINFORCED_DEEPSLATE"
     );
 
