@@ -566,4 +566,16 @@ class TurtleTest {
         when(mockRepeater.isEmpty()).thenReturn(false);
         assertFalse(Turtle.canSafelyOccupy(mockRepeater));
     }
+
+    @Test
+    @DisplayName("ProtectionManager checkRegionArea allows excavation in wilderness without claims")
+    void testCheckRegionAreaWithoutProtectionPlugins() {
+        MultiverseProgrammingPlugin mvPlugin = mock(MultiverseProgrammingPlugin.class);
+        com.multiverse.programming.protection.ProtectionManager pm = new com.multiverse.programming.protection.ProtectionManager(mvPlugin);
+
+        Location loc1 = new Location(mockWorld, 0, 10, 0);
+        Location loc2 = new Location(mockWorld, 15, 60, 15);
+
+        assertNull(pm.checkRegionArea(UUID.randomUUID(), loc1, loc2));
+    }
 }

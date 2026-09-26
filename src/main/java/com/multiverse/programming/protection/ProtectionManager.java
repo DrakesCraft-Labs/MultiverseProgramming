@@ -25,11 +25,11 @@ public final class ProtectionManager {
     }
 
     public boolean isWorldGuardPresent() {
-        return Bukkit.getPluginManager().isPluginEnabled("WorldGuard");
+        return Bukkit.getPluginManager() != null && Bukkit.getPluginManager().isPluginEnabled("WorldGuard");
     }
 
     public boolean isProtectionStonesPresent() {
-        return Bukkit.getPluginManager().isPluginEnabled("ProtectionStones");
+        return Bukkit.getPluginManager() != null && Bukkit.getPluginManager().isPluginEnabled("ProtectionStones");
     }
 
     /**
@@ -100,6 +100,67 @@ public final class ProtectionManager {
         for (Blueprint.PlacementBlock block : blueprint.blocks()) {
             Location checkLoc = origin.clone().add(block.x(), block.y(), block.z());
             if (!canBuildAt(playerUuid, checkLoc)) {
+                boolean requireStrictOwner = plugin.getConfigManager().isProtectionStonesRequireOwner();
+                if (requireStrictOwner) {
+                    return "Target area contains protected regions (WorldGuard/ProtectionStones). You must be the OWNER of the region to build here.";
+                } else {
+                    return "Target area contains protected regions (WorldGuard/ProtectionStones). You must be an OWNER or MEMBER of the region to build here.";
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Validates whether a cuboid area (e.g. for a quarry excavation) is permissible for the player.
+     * Checks key sample points (corners and center) of the excavation volume.
+     *
+     * @return null if allowed, or an error message explaining the protection obstruction.
+     */
+    public String checkRegionArea(UUID playerUuid, Location min, Location max) {
+        if (min == null || max == null || min.getWorld() == null || max.getWorld() == null) {
+            return "Invalid region location.";
+        }
+
+        if (!isWorldGuardPresent() && !isProtectionStonesPresent()) {
+            return null;
+        }
+
+        if (playerUuid != null) {
+            Player onlinePlayer = Bukkit.getPlayer(playerUuid);
+            if (onlinePlayer != null && onlinePlayer.hasPermission("multiverseprogramming.admin")) {
+                return null;
+            }
+        }
+
+        int minX = Math.min(min.getBlockX(), max.getBlockX());
+        int maxX = Math.max(min.getBlockX(), max.getBlockX());
+        int minY = Math.min(min.getBlockY(), max.getBlockY());
+        int maxY = Math.max(min.getBlockY(), max.getBlockY());
+        int minZ = Math.min(min.getBlockZ(), max.getBlockZ());
+        int maxZ = Math.max(min.getBlockZ(), max.getBlockZ());
+        var world = min.getWorld();
+
+        // Sample 8 corners + center
+        int midX = (minX + maxX) / 2;
+        int midY = (minY + maxY) / 2;
+        int midZ = (minZ + maxZ) / 2;
+
+        Location[] samples = new Location[] {
+                new Location(world, minX, minY, minZ),
+                new Location(world, maxX, minY, minZ),
+                new Location(world, minX, minY, maxZ),
+                new Location(world, maxX, minY, maxZ),
+                new Location(world, minX, maxY, minZ),
+                new Location(world, maxX, maxY, minZ),
+                new Location(world, minX, maxY, maxZ),
+                new Location(world, maxX, maxY, maxZ),
+                new Location(world, midX, midY, midZ)
+        };
+
+        for (Location loc : samples) {
+            if (!canBuildAt(playerUuid, loc)) {
                 boolean requireStrictOwner = plugin.getConfigManager().isProtectionStonesRequireOwner();
                 if (requireStrictOwner) {
                     return "Target area contains protected regions (WorldGuard/ProtectionStones). You must be the OWNER of the region to build here.";

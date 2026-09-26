@@ -1572,14 +1572,22 @@ public final class Turtle {
             if (pm != null) {
                 BlockFace forward = this.facing;
                 BlockFace lateral = getRightFace(this.facing);
-                int minX = location.getBlockX() + Math.min(forward.getModX() * length, lateral.getModX() * width);
-                int maxX = location.getBlockX() + Math.max(forward.getModX() * length, lateral.getModX() * width);
-                int minZ = location.getBlockZ() + Math.min(forward.getModZ() * length, lateral.getModZ() * width);
-                int maxZ = location.getBlockZ() + Math.max(forward.getModZ() * length, lateral.getModZ() * width);
-                Location c1 = new Location(world, minX, minY, minZ);
-                Location c2 = new Location(world, maxX, startY, maxZ);
-                if (pm.checkBuildArea(this.owner, c1, null) != null || pm.checkBuildArea(this.owner, c2, null) != null) {
-                    failQuarry("Protected region claim prevents quarry excavation", onError);
+
+                // Quarry area extends from:
+                // forward: 1 to length
+                // lateral: 0 to (width - 1)
+                int c1X = location.getBlockX() + (forward.getModX() * 1) + (lateral.getModX() * 0);
+                int c1Z = location.getBlockZ() + (forward.getModZ() * 1) + (lateral.getModZ() * 0);
+
+                int c2X = location.getBlockX() + (forward.getModX() * length) + (lateral.getModX() * (width - 1));
+                int c2Z = location.getBlockZ() + (forward.getModZ() * length) + (lateral.getModZ() * (width - 1));
+
+                Location minLoc = new Location(world, Math.min(c1X, c2X), minY, Math.min(c1Z, c2Z));
+                Location maxLoc = new Location(world, Math.max(c1X, c2X), startY, Math.max(c1Z, c2Z));
+
+                String protErr = pm.checkRegionArea(this.owner, minLoc, maxLoc);
+                if (protErr != null) {
+                    failQuarry(protErr, onError);
                     return false;
                 }
             }
