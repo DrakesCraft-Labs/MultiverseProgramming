@@ -95,6 +95,19 @@
     .canvas-btn:hover { border-color: var(--primary); color: var(--primary); }
 
     .canvas-hints { position: absolute; bottom: 8px; left: 12px; font-size: 0.72rem; color: var(--text-dim); pointer-events: none; }
+    .canvas-tooltip-2d {
+      position: absolute;
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid var(--primary);
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 0.78rem;
+      color: #fff;
+      pointer-events: none;
+      z-index: 20;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      white-space: nowrap;
+    }
 
     .view-mode-tabs { display: flex; gap: 8px; }
     .tab-btn { background: #070a13; border: 1px solid var(--card-border); color: var(--text-muted); padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; }
@@ -221,6 +234,8 @@
       <!-- Interactive Canvas Container -->
       <div class="preview-canvas-container" id="canvasContainer">
         <canvas id="previewCanvas"></canvas>
+        <canvas id="previewCanvas2D" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; cursor:crosshair;"></canvas>
+        <div id="canvasTooltip2D" class="canvas-tooltip-2d" style="display:none;"></div>
         <div class="canvas-overlay-controls">
           <button class="canvas-btn" onclick="zoomIn()" title="Acercar" id="btnZoomIn">+</button>
           <button class="canvas-btn" onclick="zoomOut()" title="Alejar" id="btnZoomOut">-</button>
@@ -500,6 +515,8 @@
         rotateTip: 'Rotar 45°',
         resetTip: 'Reiniciar Cámara',
         canvasHints: '🖱 Click Izquierdo: Rotar • Click Derecho: Desplazar • Rueda: Zoom',
+        canvas2DHints: '📐 Vista 2D: Capa actual • Desplaza la barra inferior para ver capas • Pasa el ratón sobre un bloque',
+        emptyLayer: 'Capa vacía (sin bloques en Y = ',
         prevLayerTip: 'Capa Anterior',
         nextLayerTip: 'Capa Siguiente',
         playTip: 'Reproducir Animación de Capas',
@@ -582,6 +599,8 @@
         rotateTip: 'Rotate 45°',
         resetTip: 'Reset Camera',
         canvasHints: '🖱 Left Click: Rotate • Right Click: Pan • Scroll: Zoom',
+        canvas2DHints: '📐 2D Slice View • Move layer slider below • Hover over blocks for coordinates',
+        emptyLayer: 'Empty layer (no blocks at Y = ',
         prevLayerTip: 'Previous Layer',
         nextLayerTip: 'Next Layer',
         playTip: 'Play Layer Animation',
@@ -704,6 +723,7 @@
       syncLibrary();
       setupDropzone();
       window.addEventListener('resize', onWindowResize);
+      setup2DCanvasInteractions();
       applyLanguage();
     });
 
@@ -808,6 +828,18 @@
         camRadius = Math.max(5, Math.min(1200, camRadius * factor));
         updateCameraPosition();
       }, { passive: false });
+    }
+
+    function onWindowResize() {
+      const container = document.getElementById('canvasContainer');
+      if (!container || !renderer || !camera) return;
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+      if (width === 0 || height === 0) return;
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     }
 
     function zoomIn() { camRadius = Math.max(5, camRadius * 0.82); updateCameraPosition(); }
@@ -1628,16 +1660,31 @@
     // =========================================================================
     // SLIDER & AUTOMATIC ANIMATION CONTROLS (ZERO LAG)
     // =========================================================================
+    let last2DState = null;
+
     function setViewMode(mode) {
       viewMode = mode;
       document.getElementById('tab3D').className = 'tab-btn' + (mode === '3D' ? ' active' : '');
       document.getElementById('tab2D').className = 'tab-btn' + (mode === '2D' ? ' active' : '');
       const hints = document.getElementById('canvasHints');
+      const canvas3D = document.getElementById('previewCanvas');
+      const canvas2D = document.getElementById('previewCanvas2D');
+      const tooltip2D = document.getElementById('canvasTooltip2D');
+      const overlay3D = document.querySelector('.canvas-overlay-controls');
+      const t = I18N[currentLang] || I18N.es;
+
       if (mode === '3D') {
-        hints.textContent = '🖱 Left Click: Rotate • Right Click: Pan • Scroll: Zoom';
+        canvas3D.style.display = 'block';
+        canvas2D.style.display = 'none';
+        if (tooltip2D) tooltip2D.style.display = 'none';
+        if (overlay3D) overlay3D.style.display = 'flex';
+        hints.textContent = t.canvasHints || '🖱 Left Click: Rotate • Right Click: Pan • Scroll: Zoom';
         onWindowResize();
       } else {
-        hints.textContent = '2D Layer Slice View';
+        canvas3D.style.display = 'none';
+        canvas2D.style.display = 'block';
+        if (overlay3D) overlay3D.style.display = 'none';
+        hints.textContent = t.canvas2DHints || '📐 Vista 2D: Capa actual • Desplaza la barra para ver capas • Pasa el ratón sobre un bloque';
         render2DSlice();
       }
     }
@@ -1678,30 +1725,168 @@
     }
 
     function render2DSlice() {
-      // 2D slice fallback rendering on canvas
-      const canvas = document.getElementById('previewCanvas');
-      const ctx = canvas.getContext('2d');
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const container = document.getElementById('canvasContainer');
+      const canvas2D = document.getElementById('previewCanvas2D');
+      if (!container || !canvas2D) return;
 
-      if (!selectedBlueprint || !selectedBlueprint.blocks) return;
+      const rect = container.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      const w = rect.width;
+      const h = rect.height;
+
+      canvas2D.width = w * dpr;
+      canvas2D.height = h * dpr;
+      canvas2D.style.width = w + 'px';
+      canvas2D.style.height = h + 'px';
+
+      const ctx = canvas2D.getContext('2d');
+      if (!ctx) return;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      // Background
+      ctx.fillStyle = '#050814';
+      ctx.fillRect(0, 0, w, h);
+
+      const t = I18N[currentLang] || I18N.es;
+
+      if (!selectedBlueprint || !selectedBlueprint.blocks || selectedBlueprint.blocks.length === 0) {
+        ctx.fillStyle = '#64748b';
+        ctx.font = '14px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(t.visualizerDefaultDims || 'Selecciona un plano para ver el corte 2D', w / 2, h / 2);
+        last2DState = null;
+        return;
+      }
 
       const layerY = parseInt(document.getElementById('layerSlider').value, 10);
       const layerBlocks = selectedBlueprint.blocks.filter(b => b.y === layerY);
 
-      const sx = selectedBlueprint.sizeX || 1;
-      const sz = selectedBlueprint.sizeZ || 1;
+      const sx = Math.max(1, selectedBlueprint.sizeX || 1);
+      const sz = Math.max(1, selectedBlueprint.sizeZ || 1);
 
-      const cellSize = Math.min(Math.floor(canvas.width / sx), Math.floor(canvas.height / sz), 30);
-      const offX = Math.floor((canvas.width - sx * cellSize) / 2);
-      const offY = Math.floor((canvas.height - sz * cellSize) / 2);
+      const padX = 35;
+      const padY = 35;
+      const availW = w - padX * 2;
+      const availH = h - padY * 2;
 
-      ctx.strokeStyle = '#1e293b';
-      ctx.strokeRect(offX, offY, sx * cellSize, sz * cellSize);
+      const cellSize = Math.max(3, Math.min(Math.floor(availW / sx), Math.floor(availH / sz), 32));
+      const gridW = sx * cellSize;
+      const gridH = sz * cellSize;
+      const offX = Math.floor((w - gridW) / 2);
+      const offY = Math.floor((h - gridH) / 2);
 
+      last2DState = { offX, offY, cellSize, sx, sz, layerY, layerBlocks };
+
+      // Draw grid lines
+      ctx.strokeStyle = '#0e172a';
+      ctx.lineWidth = 1;
+      for (let x = 0; x <= sx; x++) {
+        ctx.beginPath();
+        ctx.moveTo(offX + x * cellSize, offY);
+        ctx.lineTo(offX + x * cellSize, offY + gridH);
+        ctx.stroke();
+      }
+      for (let z = 0; z <= sz; z++) {
+        ctx.beginPath();
+        ctx.moveTo(offX, offY + z * cellSize);
+        ctx.lineTo(offX + gridW, offY + z * cellSize);
+        ctx.stroke();
+      }
+
+      // Draw outer boundary
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(offX, offY, gridW, gridH);
+
+      // Ruler axis labels
+      ctx.fillStyle = '#64748b';
+      ctx.font = '10px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('X →', offX + gridW + 16, offY + Math.max(12, gridH / 2));
+      ctx.fillText('Z ↓', offX + gridW / 2, offY + gridH + 16);
+
+      // Draw Blocks on this layer
       layerBlocks.forEach(b => {
         const hex = '#' + getMinecraftColorHex(b.material).toString(16).padStart(6, '0');
+        const bx = offX + b.x * cellSize;
+        const bz = offY + b.z * cellSize;
+
         ctx.fillStyle = hex;
-        ctx.fillRect(offX + b.x * cellSize, offY + b.z * cellSize, Math.max(1, cellSize - 1), Math.max(1, cellSize - 1));
+        ctx.fillRect(bx, bz, cellSize, cellSize);
+
+        if (cellSize >= 8) {
+          ctx.strokeStyle = 'rgba(0, 0, 0, 0.35)';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(bx, bz, cellSize, cellSize);
+        }
+      });
+
+      // Layer info badge on top-left of canvas
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+      ctx.fillRect(10, 10, 240, 30);
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.3)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(10, 10, 240, 30);
+
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = 'bold 11px monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText(`CAPA Y = ${layerY} (${layerBlocks.length} bloques)`, 18, 29);
+
+      if (layerBlocks.length === 0) {
+        ctx.fillStyle = 'rgba(148, 163, 184, 0.75)';
+        ctx.font = 'italic 12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText((t.emptyLayer || 'Capa vacía (sin bloques en Y = ') + layerY + ')', w / 2, h / 2);
+      }
+    }
+
+    function setup2DCanvasInteractions() {
+      const canvas2D = document.getElementById('previewCanvas2D');
+      const tooltip = document.getElementById('canvasTooltip2D');
+      if (!canvas2D || !tooltip) return;
+
+      canvas2D.addEventListener('mousemove', (e) => {
+        if (viewMode !== '2D' || !last2DState || !selectedBlueprint) {
+          tooltip.style.display = 'none';
+          return;
+        }
+        const rect = canvas2D.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+
+        const { offX, offY, cellSize, sx, sz, layerY, layerBlocks } = last2DState;
+        if (mx < offX || mx >= offX + sx * cellSize || my < offY || my >= offY + sz * cellSize) {
+          tooltip.style.display = 'none';
+          return;
+        }
+
+        const bx = Math.floor((mx - offX) / cellSize);
+        const bz = Math.floor((my - offY) / cellSize);
+
+        const block = layerBlocks.find(b => b.x === bx && b.z === bz);
+        if (block) {
+          tooltip.style.display = 'block';
+          tooltip.style.left = (mx + 15) + 'px';
+          tooltip.style.top = (my + 10) + 'px';
+          const hex = '#' + getMinecraftColorHex(block.material).toString(16).padStart(6, '0');
+          tooltip.innerHTML = `
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span style="display:inline-block; width:9px; height:9px; background:${hex}; border-radius:2px; border:1px solid #fff;"></span>
+              <strong style="color:var(--primary); font-family:monospace;">${escapeHtml(block.material)}</strong>
+            </div>
+            <div style="color:var(--text-muted); margin-top:2px; font-family:monospace;">X: ${bx} • Y: ${layerY} • Z: ${bz}</div>
+          `;
+        } else {
+          tooltip.style.display = 'block';
+          tooltip.style.left = (mx + 15) + 'px';
+          tooltip.style.top = (my + 10) + 'px';
+          tooltip.innerHTML = `<span style="color:#64748b; font-family:monospace;">(X: ${bx}, Y: ${layerY}, Z: ${bz}) - Aire</span>`;
+        }
+      });
+
+      canvas2D.addEventListener('mouseleave', () => {
+        tooltip.style.display = 'none';
       });
     }
 
