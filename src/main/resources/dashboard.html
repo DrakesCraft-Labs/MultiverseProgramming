@@ -276,7 +276,7 @@
     <div class="header-controls">
       <button id="serverNetworkBtn" class="network-badge-btn" onclick="openServerModal()" title="Red de Servidores Activos / Active Servers Network">
         <span class="status-pulse-dot"></span>
-        <span id="headerServerCount">4 Servidores Activos</span>
+        <span id="headerServerCount">Servidores Conectados</span>
       </button>
       <button id="langToggleBtn" class="lang-btn" onclick="toggleLanguage()" title="Cambiar idioma / Switch language">
         🌐 <span id="langLabel">ES</span>
@@ -435,7 +435,7 @@
             <strong data-i18n="serverSelectorLabel">Servidor Activo</strong>
           </div>
           <button class="server-network-badge-btn" onclick="openServerModal()" title="Ver red de servidores">
-            <span id="serverBadgeCount">4 Activos</span> ⚙
+            <span id="serverBadgeCount">Gestionar</span> ⚙
           </button>
         </div>
         <select id="serverSelect" class="server-select-dropdown" onchange="onServerSelectChange(this.value)">
@@ -896,55 +896,31 @@
     let selectedBlueprint = null;
     let viewMode = '3D'; // '3D' or '2D'
     // =========================================================================
-    // MULTIVERSE ACTIVE SERVERS NETWORK STATE
+    // DYNAMIC SERVER CONNECTION & NETWORK STATE
     // =========================================================================
     const DEFAULT_SERVERS = [
       {
-        id: 'drakes-skyblock',
-        name: 'DrakesCraft Skyblock',
+        id: 'default-server',
+        name: 'DrakesCraft Network',
         host: 'play.drakescraft.net',
         port: 25565,
-        mode: 'Skyblock • BentoBox Safety',
-        description: 'Construcción automática dentro del rango de tu isla respetando permisos de miembros.',
-        tags: ['Skyblock', 'BentoBox', 'Multi-Turtle'],
-        pingText: '🟢 En Línea • Tortugas Activas'
-      },
-      {
-        id: 'drakes-dallas',
-        name: 'DrakesCraft Dallas / Survival',
-        host: 'dallas.drakescraft.net',
-        port: 25565,
-        mode: 'Survival • Slimefun + Networks',
-        description: 'Servidor principal con soporte técnico Slimefun y logging de bloques con CoreProtect.',
-        tags: ['Survival', 'Slimefun', 'CoreProtect'],
-        pingText: '🟢 En Línea • Tortugas Activas'
-      },
-      {
-        id: 'drakes-creative',
-        name: 'DrakesCraft Creativo',
-        host: 'creative.drakescraft.net',
-        port: 25565,
-        mode: 'Creativo • Schematics Sandbox',
-        description: 'Importación instantánea de planos sin costo de materiales para testeo y diseño rápido.',
-        tags: ['Creative', 'FastBuild', 'Sandbox'],
-        pingText: '🟢 En Línea • Instant Build'
-      },
-      {
-        id: 'drakes-dev',
-        name: 'DrakesCraft Dev & Automation Lab',
-        host: 'dev.drakescraft.net',
-        port: 25570,
-        mode: 'Dev Lab • WebPortal HTTP API Directa',
-        description: 'Servidor con API HTTP en puerto 8080. Despacho directo web-to-game con 1-click.',
-        tags: ['WebPortal', 'HTTP API', 'Automations'],
-        pingText: '🟢 API Web Activa (Port 8080)'
+        mode: 'Servidor Principal',
+        description: 'Servidor con soporte de Tortugas computacionales y construcción de planos.',
+        tags: ['Tortugas', 'Multiverse'],
+        pingText: '🟢 En Línea'
       }
     ];
 
     let serverList = [];
-    let selectedServerId = 'drakes-skyblock';
+    let selectedServerId = 'default-server';
 
     function initServerNetwork() {
+      // Auto-detect if loaded directly from an embedded plugin HTTP server
+      const isEmbedded = window.location.protocol.startsWith('http') && 
+                         !window.location.hostname.includes('github.io') && 
+                         !window.location.hostname.includes('localhost') &&
+                         window.location.port !== '';
+
       try {
         const saved = localStorage.getItem('mp_server_list');
         if (saved) {
@@ -961,11 +937,32 @@
         serverList = [...DEFAULT_SERVERS];
       }
 
-      const savedSel = localStorage.getItem('mp_selected_server');
-      if (savedSel && serverList.some(s => s.id === savedSel)) {
-        selectedServerId = savedSel;
+      // If running directly on a server instance, add/select it automatically
+      if (isEmbedded) {
+        const currentHost = window.location.hostname;
+        const currentPort = parseInt(window.location.port, 10) || 8080;
+        let localInst = serverList.find(s => s.host === currentHost && s.port === currentPort);
+        if (!localInst) {
+          localInst = {
+            id: 'instance-' + currentHost + '-' + currentPort,
+            name: 'Servidor Local (' + currentHost + ')',
+            host: currentHost,
+            port: currentPort,
+            mode: 'Instancia Embebida',
+            description: 'Conectado directamente a la API web de este servidor.',
+            tags: ['Conexión Directa', 'API Activa'],
+            pingText: '🟢 Conectado'
+          };
+          serverList.unshift(localInst);
+        }
+        selectedServerId = localInst.id;
       } else {
-        selectedServerId = serverList[0].id;
+        const savedSel = localStorage.getItem('mp_selected_server');
+        if (savedSel && serverList.some(s => s.id === savedSel)) {
+          selectedServerId = savedSel;
+        } else if (serverList.length > 0) {
+          selectedServerId = serverList[0].id;
+        }
       }
 
       populateServerDropdown();
@@ -976,6 +973,10 @@
     function populateServerDropdown() {
       const select = document.getElementById('serverSelect');
       if (!select) return;
+      if (serverList.length === 0) {
+        select.innerHTML = '<option value="">(Sin servidores configurados)</option>';
+        return;
+      }
       select.innerHTML = serverList.map(s => `
         <option value="${escapeHtml(s.id)}" ${s.id === selectedServerId ? 'selected' : ''}>
           🟢 ${escapeHtml(s.name)} (${escapeHtml(s.host)})
@@ -984,7 +985,7 @@
     }
 
     function getActiveServer() {
-      return serverList.find(s => s.id === selectedServerId) || serverList[0];
+      return serverList.find(s => s.id === selectedServerId) || serverList[0] || null;
     }
 
     function updateServerUI() {
@@ -995,20 +996,33 @@
       const badgeCount = document.getElementById('headerServerCount');
       const serverBadgeCount = document.getElementById('serverBadgeCount');
 
+      if (!s) {
+        if (hostEl) hostEl.textContent = 'Ningún servidor vinculado';
+        if (pingEl) pingEl.textContent = '⚪ Inactivo';
+        if (badgeCount) badgeCount.textContent = 'Servidores (0)';
+        if (serverBadgeCount) serverBadgeCount.textContent = '0 Activos';
+        return;
+      }
+
       if (hostEl) hostEl.textContent = s.host + (s.port && s.port !== 25565 ? ':' + s.port : '');
       if (pingEl) pingEl.textContent = s.pingText || '🟢 En Línea';
       if (selectEl && selectEl.value !== s.id) selectEl.value = s.id;
-      if (badgeCount) badgeCount.textContent = `${serverList.length} Servidores Activos`;
-      if (serverBadgeCount) serverBadgeCount.textContent = `${serverList.length} Activos`;
+      
+      const countLabel = serverList.length === 1 ? '1 Servidor' : `${serverList.length} Servidores`;
+      if (badgeCount) badgeCount.textContent = countLabel;
+      if (serverBadgeCount) serverBadgeCount.textContent = `${serverList.length} Conectado${serverList.length > 1 ? 's' : ''}`;
     }
 
     function onServerSelectChange(id) {
+      if (!id) return;
       selectedServerId = id;
       localStorage.setItem('mp_selected_server', id);
       updateServerUI();
       const s = getActiveServer();
-      const t = I18N[currentLang] || I18N.es;
-      showToast((t.toastServerSelected || 'Servidor seleccionado: ') + s.name);
+      if (s) {
+        const t = I18N[currentLang] || I18N.es;
+        showToast((t.toastServerSelected || 'Servidor seleccionado: ') + s.name);
+      }
     }
 
     function openServerModal() {
@@ -1027,6 +1041,11 @@
       if (!listEl) return;
       const t = I18N[currentLang] || I18N.es;
 
+      if (serverList.length === 0) {
+        listEl.innerHTML = `<div style="text-align:center; padding:20px; color:var(--text-muted);">No tienes servidores configurados. Pulsa en "+ Añadir Servidor" para vincular uno.</div>`;
+        return;
+      }
+
       listEl.innerHTML = serverList.map(s => {
         const isCurrent = s.id === selectedServerId;
         const hostPort = s.host + (s.port && s.port !== 25565 ? ':' + s.port : '');
@@ -1037,7 +1056,10 @@
                 <span class="status-pulse-dot"></span>
                 <strong style="color:#fff; font-size:0.92rem;">${escapeHtml(s.name)}</strong>
               </div>
-              <span class="server-ping-badge" style="font-size:0.75rem;">${escapeHtml(s.pingText || '🟢 En Línea')}</span>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span class="server-ping-badge" style="font-size:0.75rem;">${escapeHtml(s.pingText || '🟢 En Línea')}</span>
+                <button class="bp-action-btn bp-delete-btn" title="Eliminar servidor" onclick="deleteServer('${escapeHtml(s.id)}')">🗑</button>
+              </div>
             </div>
             <div style="color:var(--text-muted); font-size:0.8rem; line-height:1.4;">${escapeHtml(s.description || s.mode)}</div>
             <div class="server-tags">
@@ -1055,6 +1077,25 @@
           </div>
         `;
       }).join('');
+    }
+
+    function deleteServer(id) {
+      if (serverList.length <= 1) {
+        showToast('Debes mantener al menos un servidor en la lista.');
+        return;
+      }
+      serverList = serverList.filter(s => s.id !== id);
+      try {
+        localStorage.setItem('mp_server_list', JSON.stringify(serverList));
+      } catch (e) {}
+
+      if (selectedServerId === id) {
+        selectedServerId = serverList[0].id;
+      }
+      populateServerDropdown();
+      updateServerUI();
+      renderServerListModal();
+      showToast('🗑 Servidor eliminado');
     }
 
     function selectServerFromModal(id) {
@@ -1082,8 +1123,8 @@
         host: host.trim(),
         port: 25565,
         mode: 'Servidor Personalizado',
-        description: 'Servidor configurado por el usuario con MultiverseProgramming.',
-        tags: ['Custom', 'Turtle Matrix'],
+        description: 'Servidor con MultiverseProgramming configurado por el usuario.',
+        tags: ['Personalizado', 'Tortugas'],
         pingText: '🟢 En Línea'
       };
 
@@ -1100,7 +1141,6 @@
     }
 
     async function checkServerLivePings() {
-      // Query public server status API for live players and ping
       for (const s of serverList) {
         if (!s.host || s.host === 'localhost' || s.host.startsWith('192.168.')) continue;
         try {
@@ -1119,966 +1159,6 @@
       }
     }
 
-    let animInterval = null;
-
-    // Three.js Scene Variables
-    let renderer, scene, camera;
-    let instancedMesh = null;
-    let bboxHelper = null;
-    let showBBox = false;
-    let currentBlueprintBlocks = [];
-    let layerBuckets = []; // layerBuckets[y] = [block indices]
-
-    // Camera Orbit State
-    let isDragging = false;
-    let dragMode = 'rotate'; // 'rotate' (left click) or 'pan' (right click)
-    let prevMouseX = 0, prevMouseY = 0;
-    let camTarget = new THREE.Vector3(0, 0, 0);
-    let camRadius = 80;
-    let camTheta = Math.PI / 4; // azimuth
-    let camPhi = Math.PI / 3;   // elevation
-
-    window.addEventListener('DOMContentLoaded', async () => {
-      initThreeJs();
-      setup2DCanvasInteractions();
-      initServerNetwork();
-      loadLocalLibrary();
-      await loadCommunityCatalog();
-      syncLibrary();
-      setupDropzone();
-      window.addEventListener('resize', onWindowResize);
-      applyLanguage();
-    });
-
-    function showToast(msg, isError = false) {
-      const toast = document.getElementById('toast');
-      toast.textContent = msg;
-      toast.style.borderColor = isError ? 'var(--danger)' : 'var(--accent)';
-      toast.style.display = 'block';
-      setTimeout(() => { toast.style.display = 'none'; }, 3500);
-    }
-
-    function openHelpModal() { document.getElementById('helpModal').style.display = 'flex'; }
-    function closeHelpModal(e) { if (!e || e.target.id === 'helpModal' || e.target.tagName === 'BUTTON') document.getElementById('helpModal').style.display = 'none'; }
-
-    // =========================================================================
-    // GPU WEBGL THREE.JS INITIALIZATION
-    // =========================================================================
-    function initThreeJs() {
-      const container = document.getElementById('canvasContainer');
-      const canvas = document.getElementById('previewCanvas');
-
-      scene = new THREE.Scene();
-
-      // Camera
-      camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.5, 2000);
-      updateCameraPosition();
-
-      // Renderer
-      renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-      renderer.setSize(container.clientWidth, container.clientHeight);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-
-      // Lights
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-      scene.add(ambientLight);
-
-      const sunLight = new THREE.DirectionalLight(0xffffff, 0.85);
-      sunLight.position.set(100, 200, 100);
-      scene.add(sunLight);
-
-      const fillLight = new THREE.DirectionalLight(0x818cf8, 0.35);
-      fillLight.position.set(-100, -50, -100);
-      scene.add(fillLight);
-
-      setupCameraControls(canvas);
-      requestAnimationFrame(renderLoop);
-    }
-
-    function renderLoop() {
-      requestAnimationFrame(renderLoop);
-      if (viewMode === '3D' && renderer && scene && camera) {
-        renderer.render(scene, camera);
-      }
-    }
-
-    function updateCameraPosition() {
-      camPhi = Math.max(0.05, Math.min(Math.PI - 0.05, camPhi));
-      camera.position.x = camTarget.x + camRadius * Math.sin(camPhi) * Math.sin(camTheta);
-      camera.position.y = camTarget.y + camRadius * Math.cos(camPhi);
-      camera.position.z = camTarget.z + camRadius * Math.sin(camPhi) * Math.cos(camTheta);
-      camera.lookAt(camTarget);
-    }
-
-    function setupCameraControls(canvas) {
-      canvas.addEventListener('contextmenu', (e) => e.preventDefault());
-
-      canvas.addEventListener('mousedown', (e) => {
-        isDragging = true;
-        dragMode = (e.button === 2 || e.shiftKey) ? 'pan' : 'rotate';
-        prevMouseX = e.clientX;
-        prevMouseY = e.clientY;
-      });
-
-      window.addEventListener('mouseup', () => { isDragging = false; });
-
-      window.addEventListener('mousemove', (e) => {
-        if (!isDragging) return;
-        const dx = e.clientX - prevMouseX;
-        const dy = e.clientY - prevMouseY;
-        prevMouseX = e.clientX;
-        prevMouseY = e.clientY;
-
-        if (dragMode === 'rotate') {
-          camTheta -= dx * 0.008;
-          camPhi -= dy * 0.008;
-        } else {
-          // Pan camera relative to orientation
-          const panSpeed = camRadius * 0.0015;
-          const forward = new THREE.Vector3().subVectors(camTarget, camera.position).normalize();
-          const right = new THREE.Vector3().crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
-          const up = new THREE.Vector3().crossVectors(right, forward).normalize();
-
-          camTarget.addScaledVector(right, -dx * panSpeed);
-          camTarget.addScaledVector(up, dy * panSpeed);
-        }
-        updateCameraPosition();
-      });
-
-      canvas.addEventListener('wheel', (e) => {
-        e.preventDefault();
-        const factor = e.deltaY < 0 ? 0.88 : 1.14;
-        camRadius = Math.max(5, Math.min(1200, camRadius * factor));
-        updateCameraPosition();
-      }, { passive: false });
-    }
-
-    function zoomIn() { camRadius = Math.max(5, camRadius * 0.82); updateCameraPosition(); }
-    function zoomOut() { camRadius = Math.min(1200, camRadius * 1.22); updateCameraPosition(); }
-    function rotateYaw(deg) { camTheta += (deg * Math.PI) / 180; updateCameraPosition(); }
-    function toggleBoundingBox() {
-      showBBox = !showBBox;
-      const btn = document.getElementById('btnBBox');
-      if (btn) btn.style.borderColor = showBBox ? 'var(--primary)' : 'var(--card-border)';
-      updateBoundingBox();
-      const t = I18N[currentLang] || I18N.es;
-      showToast(showBBox ? t.toastBBoxOn : t.toastBBoxOff);
-    }
-
-    function updateBoundingBox() {
-      if (bboxHelper && scene) {
-        scene.remove(bboxHelper);
-        if (bboxHelper.geometry) bboxHelper.geometry.dispose();
-        if (bboxHelper.material) bboxHelper.material.dispose();
-        bboxHelper = null;
-      }
-      if (!showBBox || !selectedBlueprint || !scene) return;
-      const sx = selectedBlueprint.sizeX || 1;
-      const sy = selectedBlueprint.sizeY || 1;
-      const sz = selectedBlueprint.sizeZ || 1;
-      const geom = new THREE.BoxGeometry(sx, sy, sz);
-      const edges = new THREE.EdgesGeometry(geom);
-      bboxHelper = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x38bdf8, linewidth: 2 }));
-      bboxHelper.position.set(0, sy / 2, 0);
-      scene.add(bboxHelper);
-    }
-
-    function resetCamera() {
-      if (!selectedBlueprint) return;
-      const maxDim = Math.max(selectedBlueprint.sizeX || 1, selectedBlueprint.sizeY || 1, selectedBlueprint.sizeZ || 1);
-      camTarget.set(0, (selectedBlueprint.sizeY || 1) / 2, 0);
-      camRadius = maxDim * 1.7;
-      camTheta = Math.PI / 4;
-      camPhi = Math.PI / 3;
-      updateCameraPosition();
-    }
-
-    function onWindowResize() {
-      const container = document.getElementById('canvasContainer');
-      if (!container) return;
-      if (renderer && camera) {
-        camera.aspect = container.clientWidth / container.clientHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(container.clientWidth, container.clientHeight);
-      }
-      if (viewMode === '2D') {
-        render2DSlice();
-      }
-    }
-
-    // =========================================================================
-    // COMMUNITY CATALOG & LOCAL STORAGE
-    // =========================================================================
-    async function loadCommunityCatalog() {
-      const sample = {
-        id: 'BP-NETHER-PORTAL',
-        cloudCode: 'eIoNTIWqo1',
-        name: 'Monumental Nether Portal',
-        author: 'elmagra',
-        format: 'litematic',
-        sizeX: 66,
-        sizeY: 148,
-        sizeZ: 113,
-        totalBlocks: 49298,
-        owner: 'Repository',
-        isCommunity: true,
-        fileSizeBytes: 39476,
-        materialCounts: {
-          'POLISHED_DEEPSLATE': 22716,
-          'DEEPSLATE_TILES': 14694,
-          'POLISHED_BLACKSTONE': 7362,
-          'NETHER_PORTAL': 1998,
-          'DEEPSLATE_BRICKS': 1056,
-          'OBSIDIAN': 562,
-          'DEEPSLATE_BRICK_STAIRS': 528,
-          'DEEPSLATE': 377,
-          'REDSTONE_BLOCK': 4,
-          'GLASS': 1
-        },
-        sampleUrl: 'blueprints/nether_portal.litematic'
-      };
-
-      if (!blueprints.some(b => b.id === sample.id)) {
-        blueprints.push(sample);
-      }
-    }
-
-    function resolveBlueprintName(metaName, fileName) {
-      const cleanFileName = fileName ? fileName.replace(/[.](litematic|nbt)$/i, '').trim() : '';
-      if (!metaName || typeof metaName !== 'string') return cleanFileName || 'Unnamed Blueprint';
-      const trimmed = metaName.trim();
-      const isRepeated = trimmed.length > 1 && trimmed.split('').every(c => c.toLowerCase() === trimmed[0].toLowerCase());
-      const isPlaceholder = /^(test|temp|schematic|untitled|new|sample|litematic|nbt|aaaa+.*)$/i.test(trimmed);
-      if ((isRepeated || isPlaceholder || trimmed.length <= 2) && cleanFileName.length > 2) {
-        return cleanFileName;
-      }
-      return trimmed;
-    }
-
-    function loadLocalLibrary() {
-      try {
-        const raw = localStorage.getItem('mp_user_blueprints');
-        if (raw) {
-          const localList = JSON.parse(raw);
-          const seenSignatures = new Set();
-          localList.forEach(bp => {
-            const sig = bp.sha256 || `${bp.sizeX}x${bp.sizeY}x${bp.sizeZ}_${bp.totalBlocks}`;
-            const isDup = seenSignatures.has(sig) || blueprints.some(b => 
-              b.id === bp.id || 
-              (b.sizeX === bp.sizeX && b.sizeY === bp.sizeY && b.sizeZ === bp.sizeZ && b.totalBlocks === bp.totalBlocks)
-            );
-
-            if (!isDup) {
-              seenSignatures.add(sig);
-              if (bp.name && (bp.name === 'aaaaa' || (bp.name.trim().length > 1 && bp.name.trim().split('').every(c => c.toLowerCase() === bp.name.trim()[0].toLowerCase())))) {
-                bp.name = 'nether-portal-g-jnftbzaq';
-              }
-              blueprints.push(bp);
-            }
-          });
-          saveLocalLibraryToStorage();
-        }
-      } catch (e) {
-        console.error('Failed to load local library:', e);
-      }
-    }
-
-    function saveLocalLibraryToStorage() {
-      try {
-        const localsOnly = blueprints.filter(b => b.isLocal);
-        localStorage.setItem('mp_user_blueprints', JSON.stringify(localsOnly));
-      } catch (e) {
-        console.warn('LocalStorage limit:', e);
-      }
-    }
-
-    function saveToLocalLibrary(bp, fileSizeBytes) {
-      bp.fileSizeBytes = fileSizeBytes;
-      bp.isLocal = true;
-      bp.owner = bp.owner || 'Custom';
-
-      blueprints = blueprints.filter(b => b.id !== bp.id);
-      blueprints.unshift(bp);
-
-      saveLocalLibraryToStorage();
-      return true;
-    }
-
-    function deleteBlueprint(id, e) {
-      if (e) e.stopPropagation();
-      const t = I18N[currentLang] || I18N.es;
-      const bp = blueprints.find(b => b.id === id);
-      if (!bp) return;
-      if (bp.isCommunity) {
-        showToast(t.toastNoDeleteFeatured, true);
-        return;
-      }
-      if (!confirm(t.confirmDelete + ' "' + bp.name + '" (' + bp.id + ')')) {
-        return;
-      }
-      blueprints = blueprints.filter(b => b.id !== id);
-      saveLocalLibraryToStorage();
-      showToast(`${t.toastDeleted}"${bp.name}"`);
-      if (selectedBlueprint && selectedBlueprint.id === id) {
-        selectedBlueprint = null;
-        if (blueprints.length > 0) {
-          selectBlueprint(blueprints[0].id);
-        } else {
-          document.getElementById('visualizerTitle').textContent = t.visualizerDefaultTitle;
-          document.getElementById('visualizerDims').textContent = t.visualizerDefaultDims;
-          document.getElementById('titleRenameBtn').style.display = 'none';
-          document.getElementById('titleDeleteBtn').style.display = 'none';
-          if (instancedMesh) { scene.remove(instancedMesh); instancedMesh = null; }
-          renderBlueprintList();
-        }
-      } else {
-        renderBlueprintList();
-      }
-    }
-
-    function renameBlueprint(id, e) {
-      if (e) e.stopPropagation();
-      const t = I18N[currentLang] || I18N.es;
-      const bp = blueprints.find(b => b.id === id);
-      if (!bp) return;
-      if (bp.isCommunity) {
-        showToast(t.toastNoRenameFeatured, true);
-        return;
-      }
-      const newName = prompt(t.promptRename, bp.name);
-      if (!newName || !newName.trim()) return;
-      bp.name = newName.trim();
-      saveLocalLibraryToStorage();
-      renderBlueprintList();
-      if (selectedBlueprint && selectedBlueprint.id === id) {
-        document.getElementById('visualizerTitle').textContent = bp.name;
-      }
-      showToast(`${t.toastRenamed}"${bp.name}"`);
-    }
-
-    function renameCurrentBlueprint() {
-      if (selectedBlueprint) renameBlueprint(selectedBlueprint.id);
-    }
-
-    function deleteCurrentBlueprint() {
-      if (selectedBlueprint) deleteBlueprint(selectedBlueprint.id);
-    }
-
-    // =========================================================================
-    // CLIENT-SIDE NBT & LITEMATICA DECOMPRESSOR / PARSER
-    // =========================================================================
-    async function decompressGzip(arrayBuffer) {
-      const bytes = new Uint8Array(arrayBuffer);
-      if (bytes[0] === 0x1f && bytes[1] === 0x8b) {
-        if (typeof DecompressionStream !== 'undefined') {
-          const ds = new DecompressionStream('gzip');
-          const decompressedStream = new Response(new Blob([arrayBuffer])).body.pipeThrough(ds);
-          return await new Response(decompressedStream).arrayBuffer();
-        }
-      }
-      return arrayBuffer;
-    }
-
-    function parseNbtBuffer(buffer) {
-      let offset = 0;
-      const view = new DataView(buffer);
-      const decoder = new TextDecoder('utf-8');
-
-      function readString() {
-        const len = view.getUint16(offset);
-        offset += 2;
-        const str = decoder.decode(new Uint8Array(buffer, offset, len));
-        offset += len;
-        return str;
-      }
-
-      function readTag(type) {
-        switch (type) {
-          case 0: return null;
-          case 1: { const v = view.getInt8(offset); offset += 1; return v; }
-          case 2: { const v = view.getInt16(offset); offset += 2; return v; }
-          case 3: { const v = view.getInt32(offset); offset += 4; return v; }
-          case 4: { const v = view.getBigInt64(offset); offset += 8; return v; }
-          case 5: { const v = view.getFloat32(offset); offset += 4; return v; }
-          case 6: { const v = view.getFloat64(offset); offset += 8; return v; }
-          case 7: {
-            const len = view.getInt32(offset); offset += 4;
-            const arr = new Int8Array(buffer, offset, len);
-            offset += len;
-            return arr;
-          }
-          case 8: return readString();
-          case 9: {
-            const itemType = view.getInt8(offset++);
-            const len = view.getInt32(offset); offset += 4;
-            const list = [];
-            for (let i = 0; i < len; i++) list.push(readTag(itemType));
-            return list;
-          }
-          case 10: {
-            const comp = {};
-            while (offset < buffer.byteLength) {
-              const t = view.getInt8(offset++);
-              if (t === 0) break;
-              const name = readString();
-              comp[name] = readTag(t);
-            }
-            return comp;
-          }
-          case 11: {
-            const len = view.getInt32(offset); offset += 4;
-            const arr = [];
-            for (let i = 0; i < len; i++) { arr.push(view.getInt32(offset)); offset += 4; }
-            return arr;
-          }
-          case 12: {
-            const len = view.getInt32(offset); offset += 4;
-            const arr = [];
-            for (let i = 0; i < len; i++) { arr.push(view.getBigInt64(offset)); offset += 8; }
-            return arr;
-          }
-          default: throw new Error('Unknown NBT tag: ' + type);
-        }
-      }
-
-      const rootType = view.getInt8(offset++);
-      if (rootType !== 10) throw new Error('Root must be Compound (10), got ' + rootType);
-      readString();
-      return readTag(10);
-    }
-
-    function formatBlockState(p) {
-      if (!p) return 'AIR';
-      let name = (p.Name || 'minecraft:air').replace('minecraft:', '').toUpperCase();
-      if (p.Properties && typeof p.Properties === 'object') {
-        const keys = Object.keys(p.Properties).sort();
-        if (keys.length > 0) {
-          const props = keys.map(k => `${k}=${p.Properties[k]}`).join(',');
-          name = `${name}[${props}]`;
-        }
-      }
-      return name;
-    }
-
-    function resolveItemName(blockName) {
-      let base = blockName;
-      if (base.includes('[')) base = base.substring(0, base.indexOf('['));
-      if (base.startsWith('WALL_TORCH')) return 'TORCH';
-      if (base.startsWith('SOUL_WALL_TORCH')) return 'SOUL_TORCH';
-      if (base.startsWith('REDSTONE_WALL_TORCH')) return 'REDSTONE_TORCH';
-      if (base.endsWith('_WALL_SIGN')) return base.replace('_WALL_SIGN', '_SIGN');
-      if (base.endsWith('_WALL_HANGING_SIGN')) return base.replace('_WALL_HANGING_SIGN', '_HANGING_SIGN');
-      if (base.endsWith('_WALL_FAN')) return base.replace('_WALL_FAN', '_FAN');
-      if (base.startsWith('POTTED_')) return 'FLOWER_POT';
-      return base;
-    }
-
-    const DANGEROUS_BLOCKS = new Set([
-      'BEDROCK', 'BARRIER', 'COMMAND_BLOCK', 'CHAIN_COMMAND_BLOCK', 'REPEATING_COMMAND_BLOCK',
-      'STRUCTURE_BLOCK', 'STRUCTURE_VOID', 'JIGSAW', 'LIGHT', 'END_PORTAL', 'END_PORTAL_FRAME',
-      'END_GATEWAY', 'REINFORCED_DEEPSLATE'
-    ]);
-
-    function isDangerousBlock(name) {
-      if (!name) return false;
-      let clean = name.toUpperCase();
-      if (clean.includes('[')) clean = clean.substring(0, clean.indexOf('['));
-      if (clean.startsWith('MINECRAFT:')) clean = clean.substring('MINECRAFT:'.length);
-      return DANGEROUS_BLOCKS.has(clean);
-    }
-
-    function getPlacementPriority(state) {
-      if (state.includes('half=upper') || state.includes('part=head')) return 3;
-      if (state.includes('half=lower') || state.includes('part=foot') || state.includes('_DOOR') || state.includes('_BED')) return 2;
-      if (state.includes('TORCH') || state.includes('LANTERN') || state.includes('LADDER') ||
-          state.includes('LEVER') || state.includes('BUTTON') || state.includes('PICKLE') ||
-          state.includes('SIGN') || state.includes('BANNER') || state.includes('RAIL') ||
-          state.includes('CARPET') || state.includes('VINE') || state.includes('TRIPWIRE') ||
-          state.includes('BELL') || state.includes('PRESSURE_PLATE')) {
-        return 4;
-      }
-      if (state.includes('WATER') || state.includes('LAVA')) return 5;
-      if (state.includes('STAIRS') || state.includes('SLAB') || state.includes('WALL') ||
-          state.includes('FENCE') || state.includes('GATE') || state.includes('TRAPDOOR') ||
-          state.includes('GLASS_PANE')) {
-        return 1;
-      }
-      return 0;
-    }
-
-    function parseLitematicData(id, fileName, buffer) {
-      const root = parseNbtBuffer(buffer);
-      const metadata = root.Metadata || {};
-      const name = resolveBlueprintName(metadata.Name, fileName);
-      const author = metadata.Author || 'Unknown';
-      const size = metadata.EnclosingSize || { x: 1, y: 1, z: 1 };
-      const sizeX = Math.abs(size.x || 1);
-      const sizeY = Math.abs(size.y || 1);
-      const sizeZ = Math.abs(size.z || 1);
-
-      const materials = {};
-      const blocks = [];
-
-      const regions = root.Regions || {};
-      for (const regKey of Object.keys(regions)) {
-        const reg = regions[regKey];
-        const rSize = reg.Size || { x: 1, y: 1, z: 1 };
-        const rx = Math.abs(rSize.x || 1);
-        const ry = Math.abs(rSize.y || 1);
-        const rz = Math.abs(rSize.z || 1);
-
-        const palette = (reg.BlockStatePalette || []).map(p => formatBlockState(p));
-        const blockStates = reg.BlockStates || [];
-
-        if (palette.length <= 1) continue;
-
-        const bitsPerEntry = Math.max(2, Math.ceil(Math.log2(palette.length)));
-        const mask = (1n << BigInt(bitsPerEntry)) - 1n;
-        const total = rx * ry * rz;
-
-        for (let i = 0; i < total; i++) {
-          const bitIndex = BigInt(i * bitsPerEntry);
-          const startLong = Number(bitIndex / 64n);
-          const startBit = Number(bitIndex % 64n);
-
-          if (startLong >= blockStates.length) break;
-
-          const curLong = BigInt.asUintN(64, blockStates[startLong]);
-          let val = curLong >> BigInt(startBit);
-
-          if (startBit + bitsPerEntry > 64 && startLong + 1 < blockStates.length) {
-            const nextLong = BigInt.asUintN(64, blockStates[startLong + 1]);
-            val |= (nextLong << BigInt(64 - startBit));
-          }
-
-          const pIdx = Number(val & mask);
-          if (pIdx >= 0 && pIdx < palette.length) {
-            const mat = palette[pIdx];
-            if (mat !== 'AIR' && mat !== 'CAVE_AIR' && mat !== 'VOID_AIR' && !isDangerousBlock(mat)) {
-              const y = Math.floor(i / (rx * rz)) % ry;
-              const z = Math.floor(i / rx) % rz;
-              const x = i % rx;
-              blocks.push({ x, y, z, material: mat });
-              const itemKey = resolveItemName(mat);
-              const isUpper = mat.includes('half=upper') || mat.includes('part=head');
-              if (!isUpper) {
-                materials[itemKey] = (materials[itemKey] || 0) + 1;
-              }
-            }
-          }
-        }
-      }
-
-      blocks.sort((a, b) => {
-        if (a.y !== b.y) return a.y - b.y;
-        const pA = getPlacementPriority(a.material);
-        const pB = getPlacementPriority(b.material);
-        if (pA !== pB) return pA - pB;
-        if (a.z !== b.z) return a.z - b.z;
-        return a.x - b.x;
-      });
-
-      return {
-        id,
-        name,
-        author,
-        format: 'litematic',
-        sizeX,
-        sizeY,
-        sizeZ,
-        totalBlocks: blocks.length,
-        materialCounts: materials,
-        blocks
-      };
-    }
-
-    function parseVanillaNbtData(id, fileName, buffer) {
-      const root = parseNbtBuffer(buffer);
-      const name = resolveBlueprintName(root.name || null, fileName);
-      const author = root.author || 'Unknown';
-
-      let sizeX = 1, sizeY = 1, sizeZ = 1;
-      if (root.size && root.size.length >= 3) {
-        sizeX = Math.max(1, root.size[0]);
-        sizeY = Math.max(1, root.size[1]);
-        sizeZ = Math.max(1, root.size[2]);
-      }
-
-      const palette = (root.palette || []).map(p => formatBlockState(p));
-      const blocks = [];
-      const materials = {};
-
-      if (root.blocks) {
-        root.blocks.forEach(b => {
-          const state = b.state || 0;
-          const mat = palette[state] || 'AIR';
-          if (mat !== 'AIR' && mat !== 'CAVE_AIR' && mat !== 'VOID_AIR' && !isDangerousBlock(mat) && b.pos && b.pos.length >= 3) {
-            blocks.push({ x: b.pos[0], y: b.pos[1], z: b.pos[2], material: mat });
-            const itemKey = resolveItemName(mat);
-            const isUpper = mat.includes('half=upper') || mat.includes('part=head');
-            if (!isUpper) {
-              materials[itemKey] = (materials[itemKey] || 0) + 1;
-            }
-          }
-        });
-      }
-
-      blocks.sort((a, b) => {
-        if (a.y !== b.y) return a.y - b.y;
-        const pA = getPlacementPriority(a.material);
-        const pB = getPlacementPriority(b.material);
-        if (pA !== pB) return pA - pB;
-        if (a.z !== b.z) return a.z - b.z;
-        return a.x - b.x;
-      });
-
-      return {
-        id,
-        name,
-        author,
-        format: 'nbt',
-        sizeX,
-        sizeY,
-        sizeZ,
-        totalBlocks: blocks.length,
-        materialCounts: materials,
-        blocks
-      };
-    }
-
-    // =========================================================================
-    // DRAG AND DROP & UPLOAD
-    // =========================================================================
-    function setupDropzone() {
-      const dz = document.getElementById('dropzone');
-      dz.addEventListener('dragover', (e) => { e.preventDefault(); dz.classList.add('dragover'); });
-      dz.addEventListener('dragleave', () => { dz.classList.remove('dragover'); });
-      dz.addEventListener('drop', (e) => {
-        e.preventDefault();
-        dz.classList.remove('dragover');
-        if (e.dataTransfer.files.length > 0) {
-          processBlueprintFile(e.dataTransfer.files[0]);
-        }
-      });
-    }
-
-    function handleFileSelect(e) {
-      if (e.target.files.length > 0) {
-        processBlueprintFile(e.target.files[0]);
-      }
-    }
-
-    async function computeSha256Hex(buffer) {
-      const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    }
-
-    async function processBlueprintFile(file) {
-      const lower = file.name.toLowerCase();
-      const t = I18N[currentLang] || I18N.es;
-      if (!lower.endsWith('.litematic') && !lower.endsWith('.nbt')) {
-        showToast(t.toastFormatErr, true);
-        return;
-      }
-
-      showToast(t.toastProcessing + file.name + '…');
-      try {
-        const rawBuffer = await file.arrayBuffer();
-        const sha256 = await computeSha256Hex(rawBuffer);
-        const generatedId = 'BP-' + sha256.substring(0, 6).toUpperCase();
-
-        const decompressed = await decompressGzip(rawBuffer);
-
-        let parsedBp;
-        if (lower.endsWith('.litematic')) {
-          parsedBp = parseLitematicData(generatedId, file.name, decompressed);
-        } else {
-          parsedBp = parseVanillaNbtData(generatedId, file.name, decompressed);
-        }
-        parsedBp.sha256 = sha256;
-
-        // Check for duplicates: identical hash, ID, or matching dimensions and total blocks
-        const existing = blueprints.find(b => 
-          b.sha256 === sha256 ||
-          b.id === generatedId ||
-          (b.sizeX === parsedBp.sizeX && b.sizeY === parsedBp.sizeY && b.sizeZ === parsedBp.sizeZ && b.totalBlocks === parsedBp.totalBlocks)
-        );
-
-        if (existing) {
-          showToast(`${t.toastAlreadyLoaded}"${existing.name}" (${existing.id})`);
-          selectBlueprint(existing.id);
-          return;
-        }
-
-        saveToLocalLibrary(parsedBp, file.size);
-        showToast(`${t.toastRegistered}"${parsedBp.name}" (${parsedBp.totalBlocks.toLocaleString()} ${t.toastBlocks})`);
-        renderBlueprintList();
-        selectBlueprint(parsedBp.id);
-
-        // Upload to Cloud Pastebin (Bytebin) in background for instant universal cross-server code
-        uploadToCloudPastebin(rawBuffer, parsedBp);
-      } catch (err) {
-        console.error(err);
-        showToast(t.toastParseErr + err.message, true);
-      }
-    }
-
-    async function uploadToCloudPastebin(rawBuffer, bp) {
-      const t = I18N[currentLang] || I18N.es;
-      showToast(t.toastCloudUploading || '☁️ Subiendo a Cloud Pastebin...');
-      try {
-        const res = await fetch('https://bytebin.lucko.me/post', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/octet-stream'
-          },
-          body: rawBuffer
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data && data.key) {
-            const oldId = bp.id;
-            bp.cloudCode = data.key;
-            bp.id = data.key;
-            const idx = blueprints.findIndex(b => b.sha256 === bp.sha256 || b.id === oldId);
-            if (idx !== -1) {
-              blueprints[idx] = bp;
-            }
-            saveLocalLibraryToStorage();
-            renderBlueprintList();
-            if (selectedBlueprint && (selectedBlueprint.sha256 === bp.sha256 || selectedBlueprint.id === oldId || selectedBlueprint.id === bp.id)) {
-              selectBlueprint(bp.id);
-            }
-            showToast((t.toastCloudSuccess || '☁️ ¡Código universal generado!: ') + data.key);
-            return data.key;
-          }
-        }
-      } catch (e) {
-        console.warn('Bytebin upload failed or offline:', e);
-      }
-      return null;
-    }
-
-    // =========================================================================
-    // BLUEPRINT SELECTION & HARDWARE INSTANCING SETUP
-    // =========================================================================
-    function syncLibrary() {
-      renderBlueprintList();
-      if (blueprints.length > 0 && !selectedBlueprint) {
-        selectBlueprint(blueprints[0].id);
-      }
-    }
-
-    function renderBlueprintList(filterText = '') {
-      const list = document.getElementById('bpList');
-      const t = I18N[currentLang] || I18N.es;
-      const filtered = blueprints.filter(bp => {
-        if (!filterText) return true;
-        const q = filterText.toLowerCase();
-        return bp.name.toLowerCase().includes(q) || (bp.id && bp.id.toLowerCase().includes(q));
-      });
-
-      if (filtered.length === 0) {
-        list.innerHTML = `<div style="text-align:center; padding: 24px; color: var(--text-muted);">${t.noBlueprints}</div>`;
-        return;
-      }
-
-      list.innerHTML = filtered.map(bp => `
-        <div class="bp-item ${selectedBlueprint && selectedBlueprint.id === bp.id ? 'selected' : ''}" onclick="selectBlueprint('${bp.id}')">
-          <div class="bp-header">
-            <span class="bp-name" title="${escapeHtml(bp.name)}">${escapeHtml(bp.name)}</span>
-            <div class="badges-row">
-              <span class="badge ${bp.format === 'litematic' || bp.format === 'LITEMATIC' ? 'badge-litematic' : 'badge-nbt'}">${bp.format}</span>
-              ${bp.isCommunity ? `<span class="badge badge-community">${t.featuredBadge}</span>` : ''}
-              ${!bp.isCommunity ? `
-                <button class="bp-action-btn" title="${t.renameTitle}" onclick="renameBlueprint('${bp.id}', event)">✏️</button>
-                <button class="bp-action-btn bp-delete-btn" title="${t.deleteTitle}" onclick="deleteBlueprint('${bp.id}', event)">🗑</button>
-              ` : ''}
-            </div>
-          </div>
-          <div class="bp-meta">
-            <span>📐 ${bp.sizeX}×${bp.sizeY}×${bp.sizeZ} • 🧱 ${bp.totalBlocks.toLocaleString()}</span>
-            <span style="color:var(--primary); font-weight:700;">${bp.id}</span>
-          </div>
-        </div>
-      `).join('');
-    }
-
-    function filterBlueprints(query) {
-      renderBlueprintList(query);
-    }
-
-    async function selectBlueprint(id) {
-      let bp = blueprints.find(b => b.id === id);
-      if (!bp) return;
-
-      if (bp.sampleUrl && (!bp.blocks || bp.blocks.length === 0)) {
-        showToast('Loading full 3D voxels…');
-        try {
-          const res = await fetch(bp.sampleUrl);
-          const buf = await res.arrayBuffer();
-          const decomp = await decompressGzip(buf);
-          const full = parseLitematicData(bp.id, bp.name, decomp);
-          bp.blocks = full.blocks;
-          bp.materialCounts = full.materialCounts;
-        } catch (e) {
-          console.warn('Could not load sample blocks:', e);
-        }
-      }
-
-      selectedBlueprint = bp;
-      renderBlueprintList();
-
-      document.getElementById('visualizerTitle').textContent = bp.name;
-      document.getElementById('visualizerDims').textContent = `${bp.sizeX} × ${bp.sizeY} × ${bp.sizeZ} (${bp.totalBlocks.toLocaleString()} blocks) • Author: ${bp.author || 'Unknown'}`;
-
-      const isCustom = !bp.isCommunity;
-      const renameBtn = document.getElementById('titleRenameBtn');
-      const deleteBtn = document.getElementById('titleDeleteBtn');
-      if (renameBtn) renameBtn.style.display = isCustom ? 'inline-block' : 'none';
-      if (deleteBtn) deleteBtn.style.display = isCustom ? 'inline-block' : 'none';
-
-      // Update In-Game Code Display & Copy Boxes
-      const activeCode = bp.cloudCode || bp.id;
-      document.getElementById('bpCodeDisplay').textContent = activeCode;
-      document.getElementById('inGameCommandDisplay').textContent = `/mvprog build ${activeCode} ~ ~ ~`;
-      const getDisplay = document.getElementById('inGameGetCommandDisplay');
-      if (getDisplay) getDisplay.textContent = `/mvprog get ${activeCode}`;
-      document.getElementById('luaCodeDisplay').textContent = `turtle.build("${activeCode}", 0, 0, 0)`;
-
-      // Slider setup
-      const slider = document.getElementById('layerSlider');
-      slider.max = Math.max(0, bp.sizeY - 1);
-      slider.value = slider.max; // Default to full build view!
-      document.getElementById('layerDisplay').textContent = `${slider.value} / ${slider.max}`;
-
-      // Materials table setup
-      const tbody = document.getElementById('matTableBody');
-      const mats = bp.materialCounts || {};
-      const keys = Object.keys(mats).sort((a,b) => mats[b] - mats[a]);
-      const t = I18N[currentLang] || I18N.es;
-      document.getElementById('totalMaterialsCount').textContent = keys.length + ' ' + t.matTypesSuffix;
-
-      if (keys.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:15px; color:var(--text-muted);">${t.noBlocksRecorded}</td></tr>`;
-      } else {
-        tbody.innerHTML = keys.map(k => {
-          const count = mats[k];
-          const stacks = Math.floor(count / 64);
-          const rem = count % 64;
-          const stackStr = stacks > 0 ? `${stacks}s + ${rem}` : `${rem}`;
-          const colorHex = '#' + getMinecraftColorHex(k).toString(16).padStart(6, '0');
-          return `
-            <tr>
-              <td>
-                <span style="display:inline-block; width:10px; height:10px; border-radius:2px; background:${colorHex}; margin-right:6px; vertical-align:middle; border:1px solid rgba(255,255,255,0.2);"></span>
-                <code style="color:var(--text);">${escapeHtml(k)}</code>
-              </td>
-              <td style="font-weight:700;">${count.toLocaleString()}</td>
-              <td style="color:var(--text-muted);">${stackStr}</td>
-            </tr>
-          `;
-        }).join('');
-      }
-
-      build3DInstancedMesh();
-      resetCamera();
-      if (viewMode === '2D') {
-        render2DSlice();
-      }
-    }
-
-    // =========================================================================
-    // ULTRA-FAST 60 FPS GPU INSTANCED MESH CREATION
-    // =========================================================================
-    function build3DInstancedMesh() {
-      if (instancedMesh) {
-        scene.remove(instancedMesh);
-        instancedMesh.geometry.dispose();
-        instancedMesh.material.dispose();
-        instancedMesh = null;
-      }
-      if (bboxHelper) {
-        scene.remove(bboxHelper);
-        if (bboxHelper.geometry) bboxHelper.geometry.dispose();
-        if (bboxHelper.material) bboxHelper.material.dispose();
-        bboxHelper = null;
-      }
-      if (renderer) {
-        renderer.renderLists.dispose();
-      }
-
-      if (!selectedBlueprint || !selectedBlueprint.blocks || selectedBlueprint.blocks.length === 0) {
-        return;
-      }
-
-      // Sort blocks bottom to top by Y so adjusting mesh.count reveals layers progressively
-      currentBlueprintBlocks = [...selectedBlueprint.blocks];
-      currentBlueprintBlocks.sort((a, b) => a.y - b.y);
-
-      // Pre-compute layer cutoffs for instantaneous zero-lag layer animations
-      layerBuckets = [];
-      let curBucketIdx = 0;
-      for (let i = 0; i < currentBlueprintBlocks.length; i++) {
-        const by = currentBlueprintBlocks[i].y;
-        while (curBucketIdx <= by) {
-          layerBuckets[curBucketIdx] = i;
-          curBucketIdx++;
-        }
-      }
-      while (curBucketIdx <= selectedBlueprint.sizeY) {
-        layerBuckets[curBucketIdx] = currentBlueprintBlocks.length;
-        curBucketIdx++;
-      }
-
-      const total = currentBlueprintBlocks.length;
-      const boxGeo = new THREE.BoxGeometry(0.98, 0.98, 0.98);
-      const boxMat = new THREE.MeshLambertMaterial({ vertexColors: false });
-
-      instancedMesh = new THREE.InstancedMesh(boxGeo, boxMat, total);
-      instancedMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-
-      const dummy = new THREE.Object3D();
-      const color = new THREE.Color();
-
-      const centerX = (selectedBlueprint.sizeX || 1) / 2;
-      const centerZ = (selectedBlueprint.sizeZ || 1) / 2;
-
-      for (let i = 0; i < total; i++) {
-        const b = currentBlueprintBlocks[i];
-        // Center the structure at (0, 0, 0)
-        dummy.position.set(b.x - centerX + 0.5, b.y, b.z - centerZ + 0.5);
-        dummy.updateMatrix();
-        instancedMesh.setMatrixAt(i, dummy.matrix);
-
-        // Real Minecraft block color!
-        const hex = getMinecraftColorHex(b.material);
-        color.setHex(hex);
-        instancedMesh.setColorAt(i, color);
-      }
-
-      instancedMesh.instanceMatrix.needsUpdate = true;
-      if (instancedMesh.instanceColor) instancedMesh.instanceColor.needsUpdate = true;
-
-      // Set visible count according to slider
-      const curLayer = parseInt(document.getElementById('layerSlider').value, 10);
-      updateVisibleLayer(curLayer);
-
-      scene.add(instancedMesh);
-      updateBoundingBox();
-    }
-
-    function updateVisibleLayer(maxLayer) {
-      if (!instancedMesh || !selectedBlueprint) return;
-      const visibleCount = layerBuckets[maxLayer] !== undefined ? layerBuckets[maxLayer] : currentBlueprintBlocks.length;
-      instancedMesh.count = visibleCount;
-      instancedMesh.instanceMatrix.needsUpdate = true;
-    }
-
-    // =========================================================================
-    // SLIDER & AUTOMATIC ANIMATION CONTROLS (ZERO LAG)
-    // =========================================================================
     let last2DState = null;
 
     function setViewMode(mode) {
