@@ -861,7 +861,7 @@ public final class Turtle {
 
             Block candidateBlock = world.getBlockAt(cx, cy, cz);
             boolean isSelf = (cx == curX && cy == curY && cz == curZ);
-            if (isSelf || (candidateBlock != null && (candidateBlock.isEmpty() || candidateBlock.isPassable()))) {
+            if (isSelf || canSafelyOccupy(candidateBlock)) {
                 double distSq = (cx - curX) * (cx - curX) + (cy - curY) * (cy - curY) + (cz - curZ) * (cz - curZ);
                 if (i >= 4) {
                     distSq += 0.5; // slight preference for ground/horizontal
@@ -886,6 +886,48 @@ public final class Turtle {
                 setTurtleFacing(bestFacing);
             }
         }
+    }
+
+    /**
+     * Determines whether the turtle can safely relocate to a block location without destroying
+     * valuable components like redstone dust, crops, torches, rails, or delicate flora.
+     */
+    public static boolean canSafelyOccupy(Block block) {
+        if (block == null) return false;
+        Material mat = block.getType();
+        if (mat.isAir()) return true;
+
+        // Disallow delicate blocks, redstone components, crops, plants, rails, etc.
+        // Even though Bukkit considers them isPassable(), stepping on them destroys or pops them off.
+        String name = mat.name();
+        if (name.contains("REDSTONE") || name.contains("WIRE")
+                || name.contains("REPEATER") || name.contains("COMPARATOR")
+                || name.contains("RAIL") || name.contains("TORCH")
+                || name.contains("CROP") || name.contains("STEM")
+                || name.contains("SAPLING") || name.contains("CARROT")
+                || name.contains("POTATO") || name.contains("BEETROOT")
+                || name.contains("WHEAT") || name.contains("FLOWER")
+                || name.contains("TULIP") || name.contains("ORCHID")
+                || name.contains("ROSE") || name.contains("DAISY")
+                || name.contains("POPPY") || name.contains("BLUET")
+                || name.contains("ALLIUM") || name.contains("LILY")
+                || name.contains("BERRY") || name.contains("MUSHROOM")
+                || name.contains("FUNGUS") || name.contains("VINE")
+                || name.contains("LICHEN") || name.contains("HANGING")
+                || name.contains("LEVER") || name.contains("BUTTON")
+                || name.contains("PRESSURE_PLATE") || name.contains("TRIPWIRE")
+                || name.contains("CARPET") || name.contains("STRING")
+                || name.contains("AMETHYST_CLUSTER") || name.contains("BUD")
+                || name.contains("SPORE_BLOSSOM") || name.contains("DRIPSTONE")
+                || name.contains("SCULK_VEIN") || name.contains("KELP")
+                || name.contains("SEAGRASS") || name.contains("CORAL")
+                || name.contains("LANTERN") || name.contains("BELL")
+                || name.contains("BANNER") || name.contains("SIGN")) {
+            return false;
+        }
+
+        // Only allow empty or non-solid passable blocks (like pure light air, water/air voids)
+        return block.isEmpty();
     }
 
     private BlockFace determineFacing(int dx, int dy, int dz) {

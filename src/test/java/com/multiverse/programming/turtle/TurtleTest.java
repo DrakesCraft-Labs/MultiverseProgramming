@@ -530,4 +530,40 @@ class TurtleTest {
         assertEquals(owner1, t3.getOwner());
         assertEquals(2, tm.getTurtlesByOwner(owner1).size());
     }
+
+    @Test
+    @DisplayName("canSafelyOccupy protects redstone, crops, and delicate blocks from turtle relocation")
+    void testCanSafelyOccupy() {
+        assertFalse(Turtle.canSafelyOccupy(null));
+
+        Block mockAir = mock(Block.class);
+        when(mockAir.getType()).thenReturn(Material.AIR);
+        when(mockAir.isEmpty()).thenReturn(true);
+        assertTrue(Turtle.canSafelyOccupy(mockAir));
+
+        Block mockRedstone = mock(Block.class);
+        when(mockRedstone.getType()).thenReturn(Material.REDSTONE_WIRE);
+        when(mockRedstone.isEmpty()).thenReturn(false);
+        assertFalse(Turtle.canSafelyOccupy(mockRedstone));
+
+        Block mockWheat = mock(Block.class);
+        when(mockWheat.getType()).thenReturn(Material.WHEAT);
+        when(mockWheat.isEmpty()).thenReturn(false);
+        assertFalse(Turtle.canSafelyOccupy(mockWheat));
+
+        Block mockCarrot = mock(Block.class);
+        when(mockCarrot.getType()).thenReturn(Material.CARROTS);
+        when(mockCarrot.isEmpty()).thenReturn(false);
+        assertFalse(Turtle.canSafelyOccupy(mockCarrot));
+
+        Block mockTorch = mock(Block.class);
+        when(mockTorch.getType()).thenReturn(Material.TORCH);
+        when(mockTorch.isEmpty()).thenReturn(false);
+        assertFalse(Turtle.canSafelyOccupy(mockTorch));
+
+        Block mockRepeater = mock(Block.class);
+        when(mockRepeater.getType()).thenReturn(Material.REPEATER);
+        when(mockRepeater.isEmpty()).thenReturn(false);
+        assertFalse(Turtle.canSafelyOccupy(mockRepeater));
+    }
 }
