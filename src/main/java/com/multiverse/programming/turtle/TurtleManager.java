@@ -8,6 +8,7 @@ import org.bukkit.World;
 import org.bukkit.block.BlockFace;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.inventory.ItemStack;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -30,6 +31,8 @@ public final class TurtleManager {
     private final Map<Location, Turtle> turtlesByLocation = new ConcurrentHashMap<>();
     private final Map<String, Turtle> turtlesById = new ConcurrentHashMap<>();
     private final AtomicInteger idCounter = new AtomicInteger(1);
+    private final java.util.concurrent.atomic.AtomicBoolean dirty = new java.util.concurrent.atomic.AtomicBoolean(false);
+    private org.bukkit.scheduler.BukkitTask autoSaveTask;
 
     public TurtleManager(MultiverseProgrammingPlugin plugin) {
         this.plugin = Objects.requireNonNull(plugin, "plugin cannot be null");
@@ -118,7 +121,23 @@ public final class TurtleManager {
         Location newBlock = normalizeLocation(newLoc);
         turtlesByLocation.remove(oldBlock);
         turtlesByLocation.put(newBlock, turtle);
-        saveAll();
+        markDirty();
+    }
+
+    public void markDirty() {
+        dirty.set(true);
+    }
+
+    public synchronized void saveIfDirty() {
+        if (dirty.compareAndSet(true, false)) {
+            saveAll();
+        }
+    }
+
+    public void startAutoSaver() {
+        if (autoSaveTask == null && plugin.isEnabled() && Bukkit.getScheduler() != null) {
+            this.autoSaveTask = Bukkit.getScheduler().runTaskTimer(plugin, this::saveIfDirty, 600L, 600L);
+        }
     }
 
     public boolean isTurtle(Location location) {
@@ -142,6 +161,10 @@ public final class TurtleManager {
     }
 
     public synchronized void cancelAll() {
+        if (autoSaveTask != null) {
+            autoSaveTask.cancel();
+            autoSaveTask = null;
+        }
         for (Turtle turtle : turtlesById.values()) {
             turtle.stopAnyWork();
         }
@@ -152,12 +175,14 @@ public final class TurtleManager {
 
     public synchronized void loadAll() {
         if (dataFile == null || !dataFile.exists()) {
+            startAutoSaver();
             return;
         }
         try {
             YamlConfiguration config = YamlConfiguration.loadConfiguration(dataFile);
             ConfigurationSection section = config.getConfigurationSection("turtles");
             if (section == null) {
+                startAutoSaver();
                 return;
             }
             for (String key : section.getKeys(false)) {
@@ -189,6 +214,24 @@ public final class TurtleManager {
                 int fuel = tSec.getInt("fuel", 1000);
                 Turtle turtle = new Turtle(plugin, key, loc, facing, ownerUuid);
                 turtle.setFuel(fuel);
+
+                // Restore disk
+                ItemStack disk = tSec.getItemStack("disk");
+                if (disk != null && !disk.getType().isAir()) {
+                    turtle.setDisk(disk);
+                }
+
+                // Restore 16-slot inventory
+                ConfigurationSection invSec = tSec.getConfigurationSection("inventory");
+                if (invSec != null) {
+                    for (int i = 0; i < 16; i++) {
+                        ItemStack item = invSec.getItemStack("slot_" + i);
+                        if (item != null && !item.getType().isAir()) {
+                            turtle.setItem(i, item);
+                        }
+                    }
+                }
+
                 turtlesByLocation.put(loc, turtle);
                 turtlesById.put(key, turtle);
 
@@ -202,6 +245,7 @@ public final class TurtleManager {
         } catch (Throwable e) {
             plugin.getLogger().warning("Failed to load turtles.yml: " + e.getMessage());
         }
+        startAutoSaver();
     }
 
     public synchronized void saveAll() {
@@ -227,8 +271,23 @@ public final class TurtleManager {
                     sec.set("owner", turtle.getOwner().toString());
                 }
                 sec.set("fuel", turtle.getFuel());
+
+                // Save disk
+                if (turtle.getDisk() != null && !turtle.getDisk().getType().isAir()) {
+                    sec.set("disk", turtle.getDisk());
+                }
+
+                // Save 16-slot inventory
+                ItemStack[] items = turtle.getInventory();
+                ConfigurationSection invSec = sec.createSection("inventory");
+                for (int i = 0; i < 16; i++) {
+                    if (items[i] != null && !items[i].getType().isAir()) {
+                        invSec.set("slot_" + i, items[i]);
+                    }
+                }
             }
             config.save(dataFile);
+            dirty.set(false);
         } catch (Throwable e) {
             plugin.getLogger().warning("Failed to save turtles.yml: " + e.getMessage());
         }

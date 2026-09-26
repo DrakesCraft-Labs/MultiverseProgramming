@@ -27,11 +27,16 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitTask;
 
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.YamlConfiguration;
+
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 public final class ComputerListener implements Listener {
@@ -46,10 +51,10 @@ public final class ComputerListener implements Listener {
     private Material computerBlock;
     private Material advancedComputerBlock;
 
-    private static final Map<Location, ItemStack> advancedDisks = new HashMap<>();
-    private static final Map<Location, RunningEntry> runningPrograms = new HashMap<>();
-    private static final Map<UUID, BlockRef> openByPlayer = new HashMap<>();
-    private static final Map<UUID, Long> lastClickTime = new HashMap<>();
+    private static final Map<Location, ItemStack> advancedDisks = new ConcurrentHashMap<>();
+    private static final Map<Location, RunningEntry> runningPrograms = new ConcurrentHashMap<>();
+    private static final Map<UUID, BlockRef> openByPlayer = new ConcurrentHashMap<>();
+    private static final Map<UUID, Long> lastClickTime = new ConcurrentHashMap<>();
 
     public ComputerListener(MultiverseProgrammingPlugin plugin, Material computerBlock, Material advancedComputerBlock) {
         this.plugin = plugin;
@@ -60,6 +65,62 @@ public final class ComputerListener implements Listener {
     public void updateMaterials(Material computerBlock, Material advancedComputerBlock) {
         this.computerBlock = computerBlock;
         this.advancedComputerBlock = advancedComputerBlock;
+    }
+
+    public void loadAdvancedDisks() {
+        if (plugin.getDataFolder() == null) return;
+        File file = new File(plugin.getDataFolder(), "advanced_disks.yml");
+        if (!file.exists()) return;
+        try {
+            YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
+            ConfigurationSection sec = config.getConfigurationSection("disks");
+            if (sec == null) return;
+            for (String key : sec.getKeys(false)) {
+                ConfigurationSection itemSec = sec.getConfigurationSection(key);
+                if (itemSec == null) continue;
+                String wName = itemSec.getString("world");
+                if (wName == null) continue;
+                World world = Bukkit.getWorld(wName);
+                if (world == null) continue;
+                int x = itemSec.getInt("x");
+                int y = itemSec.getInt("y");
+                int z = itemSec.getInt("z");
+                Location loc = new Location(world, x, y, z);
+                ItemStack disk = itemSec.getItemStack("item");
+                if (disk != null && !disk.getType().isAir()) {
+                    advancedDisks.put(loc, disk);
+                }
+            }
+        } catch (Throwable e) {
+            plugin.getLogger().warning("Failed to load advanced_disks.yml: " + e.getMessage());
+        }
+    }
+
+    public void saveAdvancedDisks() {
+        if (plugin.getDataFolder() == null) return;
+        File file = new File(plugin.getDataFolder(), "advanced_disks.yml");
+        try {
+            if (!plugin.getDataFolder().exists()) {
+                plugin.getDataFolder().mkdirs();
+            }
+            YamlConfiguration config = new YamlConfiguration();
+            ConfigurationSection sec = config.createSection("disks");
+            int counter = 0;
+            for (Map.Entry<Location, ItemStack> entry : advancedDisks.entrySet()) {
+                Location loc = entry.getKey();
+                ItemStack disk = entry.getValue();
+                if (loc == null || loc.getWorld() == null || disk == null || disk.getType().isAir()) continue;
+                ConfigurationSection itemSec = sec.createSection("disk_" + (counter++));
+                itemSec.set("world", loc.getWorld().getName());
+                itemSec.set("x", loc.getBlockX());
+                itemSec.set("y", loc.getBlockY());
+                itemSec.set("z", loc.getBlockZ());
+                itemSec.set("item", disk);
+            }
+            config.save(file);
+        } catch (Throwable e) {
+            plugin.getLogger().warning("Failed to save advanced_disks.yml: " + e.getMessage());
+        }
     }
 
     public static void cancelAll() {

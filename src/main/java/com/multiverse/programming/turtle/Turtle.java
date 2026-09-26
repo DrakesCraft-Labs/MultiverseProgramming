@@ -280,7 +280,7 @@ public final class Turtle {
             Block newEngineBlock = location.getBlock().getRelative(lateralFace);
             BlockFace oldLateralFace = getLateralFace(oldFacing, quarryLateralSide);
             Block oldEngineBlock = location.getBlock().getRelative(oldLateralFace);
-            if (newEngineBlock != null && !newEngineBlock.isPassable() && !newEngineBlock.isEmpty()
+            if (newEngineBlock != null && !canSafelyOccupy(newEngineBlock)
                     && oldEngineBlock != null && !newEngineBlock.getLocation().equals(oldEngineBlock.getLocation())) {
                 this.facing = oldFacing;
                 return false;
@@ -312,7 +312,7 @@ public final class Turtle {
             Block newEngineBlock = location.getBlock().getRelative(lateralFace);
             BlockFace oldLateralFace = getLateralFace(oldFacing, quarryLateralSide);
             Block oldEngineBlock = location.getBlock().getRelative(oldLateralFace);
-            if (newEngineBlock != null && !newEngineBlock.isPassable() && !newEngineBlock.isEmpty()
+            if (newEngineBlock != null && !canSafelyOccupy(newEngineBlock)
                     && oldEngineBlock != null && !newEngineBlock.getLocation().equals(oldEngineBlock.getLocation())) {
                 this.facing = oldFacing;
                 return false;
@@ -353,18 +353,18 @@ public final class Turtle {
             Block currentBlock = location.getBlock();
             Block targetBlock = currentBlock.getRelative(dir);
 
-            if (!targetBlock.isPassable() && !targetBlock.isEmpty()) {
-                return false; // Obstacle
+            if (!canSafelyOccupy(targetBlock)) {
+                return false; // Obstacle or delicate block (redstone, crops, torch, etc.)
             }
 
             if (quarryLateralSide != null) {
                 BlockFace lateralFace = getLateralFace(facing, quarryLateralSide);
                 Block targetEngineBlock = targetBlock.getRelative(lateralFace);
                 Location currEngineLoc = currentBlock.getRelative(lateralFace).getLocation();
-                if (targetEngineBlock != null && !targetEngineBlock.isPassable() && !targetEngineBlock.isEmpty()
+                if (targetEngineBlock != null && !canSafelyOccupy(targetEngineBlock)
                         && !targetEngineBlock.getLocation().equals(location)
                         && !targetEngineBlock.getLocation().equals(currEngineLoc)) {
-                    return false; // Engine obstructed
+                    return false; // Engine obstructed or delicate block
                 }
 
                 if (!consumeQuarryFuel()) {
@@ -575,7 +575,7 @@ public final class Turtle {
         return false;
     }
 
-    private static int getFuelValue(Material mat) {
+    public static int getFuelValue(Material mat) {
         if (mat == null) return 0;
         return switch (mat) {
             case COAL, CHARCOAL -> 80;
@@ -584,6 +584,41 @@ public final class Turtle {
             case COAL_BLOCK -> 800;
             default -> 0;
         };
+    }
+
+    /**
+     * Consumes fuel directly from an external ItemStack (e.g. from the player's cursor)
+     * without touching or overwriting the turtle's internal inventory slot.
+     *
+     * @param stack The fuel item stack to consume from.
+     * @param count The number of items to consume (0 or less consumes the entire stack).
+     * @return The remaining item stack (e.g. reduced count or empty BUCKET), or null if fully consumed.
+     */
+    public synchronized ItemStack refuelWithItem(ItemStack stack, int count) {
+        if (stack == null || stack.getType().isAir() || stack.getAmount() <= 0) {
+            return stack;
+        }
+        int fuelPerItem = getFuelValue(stack.getType());
+        if (fuelPerItem <= 0) {
+            return stack;
+        }
+        int consume = (count <= 0) ? stack.getAmount() : Math.min(count, stack.getAmount());
+        this.fuel += consume * fuelPerItem;
+
+        if (stack.getType() == Material.LAVA_BUCKET) {
+            if (stack.getAmount() == 1) {
+                return new ItemStack(Material.BUCKET);
+            } else {
+                stack.setAmount(stack.getAmount() - 1);
+                return stack;
+            }
+        } else {
+            stack.setAmount(stack.getAmount() - consume);
+            if (stack.getAmount() <= 0) {
+                return null;
+            }
+            return stack;
+        }
     }
 
     // =========================================================================

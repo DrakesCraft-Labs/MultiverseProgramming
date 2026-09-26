@@ -229,13 +229,22 @@ public final class TurtleListener implements Listener {
                 event.setCancelled(true);
                 ItemStack cursor = event.getCursor();
                 if (cursor != null && !cursor.getType().isAir()) {
-                    turtle.setItem(turtle.getSelectedSlot(), cursor);
-                    if (turtle.refuel(cursor.getAmount())) {
-                        event.getView().setCursor(turtle.getItem(turtle.getSelectedSlot()));
-                        player.sendMessage(plugin.getPrefix() + " §aRefueled! Current fuel: " + turtle.getFuel());
+                    if (Turtle.getFuelValue(cursor.getType()) > 0) {
+                        int oldFuel = turtle.getFuel();
+                        Material fuelType = cursor.getType();
+                        ItemStack remaining = turtle.refuelWithItem(cursor, cursor.getAmount());
+                        event.getView().setCursor(remaining);
+                        if (fuelType == Material.LAVA_BUCKET && remaining != null && remaining.getType() != Material.BUCKET) {
+                            var overflow = player.getInventory().addItem(new ItemStack(Material.BUCKET));
+                            for (ItemStack rest : overflow.values()) {
+                                player.getWorld().dropItemNaturally(player.getLocation(), rest);
+                            }
+                        }
+                        player.sendMessage(plugin.getPrefix() + " §aRefueled! Current fuel: " + turtle.getFuel()
+                                + " §7(+" + (turtle.getFuel() - oldFuel) + ")");
                         gui.setupGUI();
                     } else {
-                        player.sendMessage(plugin.getPrefix() + " §cItem on cursor is not a valid fuel source (coal, blaze rod, lava bucket).");
+                        player.sendMessage(plugin.getPrefix() + " §cItem on cursor is not a valid fuel source (coal, charcoal, blaze rod, lava bucket, coal block).");
                     }
                 }
                 return;

@@ -10,9 +10,12 @@ import org.bukkit.block.BlockState;
 import org.bukkit.block.Crafter;
 import org.bukkit.block.data.Directional;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import java.util.Map;
 import org.luaj.vm2.LuaBoolean;
 import org.luaj.vm2.LuaError;
 import org.luaj.vm2.LuaTable;
@@ -87,16 +90,31 @@ public final class CrafterPeripheral implements Peripheral {
                             }
                         }
 
-                        // Determine output location: facing direction or above
+                        // Determine output location and target container: facing direction or above
                         Location dropLoc = crafter.getLocation().clone().add(0.5, 0.5, 0.5);
+                        Block targetContainerBlock;
                         if (crafter.getBlockData() instanceof Directional dir) {
                             BlockFace face = dir.getFacing();
                             dropLoc.add(face.getModX() * 0.7, face.getModY() * 0.7, face.getModZ() * 0.7);
+                            targetContainerBlock = crafter.getBlock().getRelative(face);
                         } else {
                             dropLoc.add(0, 0.7, 0);
+                            targetContainerBlock = crafter.getBlock().getRelative(BlockFace.UP);
                         }
 
-                        crafter.getWorld().dropItemNaturally(dropLoc, result);
+                        // Try direct insertion into adjacent container if present
+                        if (targetContainerBlock != null && targetContainerBlock.getState() instanceof InventoryHolder holder) {
+                            Map<Integer, ItemStack> overflow = holder.getInventory().addItem(result);
+                            if (overflow.isEmpty()) {
+                                result = null;
+                            } else {
+                                result = overflow.values().iterator().next();
+                            }
+                        }
+
+                        if (result != null && !result.getType().isAir() && result.getAmount() > 0) {
+                            crafter.getWorld().dropItemNaturally(dropLoc, result);
+                        }
                         crafter.setTriggered(true);
                         crafter.update(true);
                         return LuaBoolean.TRUE;

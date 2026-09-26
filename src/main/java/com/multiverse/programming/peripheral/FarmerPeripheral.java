@@ -51,21 +51,24 @@ public final class FarmerPeripheral implements Peripheral {
 
     private void depositDrops(World world, Collection<ItemStack> drops, Location loc) {
         for (ItemStack drop : drops) {
-            boolean stored = false;
+            ItemStack toStore = drop.clone();
             // Search adjacent containers around the farmer block
             for (BlockFace face : new BlockFace[]{BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST, BlockFace.UP, BlockFace.DOWN}) {
+                if (toStore == null || toStore.getAmount() <= 0) break;
                 Block rel = location.getBlock().getRelative(face);
                 if (rel != null && rel.getState() instanceof InventoryHolder holder) {
                     Inventory inv = holder.getInventory();
-                    if (inv.firstEmpty() != -1) {
-                        inv.addItem(drop);
-                        stored = true;
+                    var leftover = inv.addItem(toStore);
+                    if (leftover.isEmpty()) {
+                        toStore = null;
                         break;
+                    } else {
+                        toStore = leftover.values().iterator().next();
                     }
                 }
             }
-            if (!stored) {
-                world.dropItemNaturally(loc.clone().add(0.5, 0.5, 0.5), drop);
+            if (toStore != null && !toStore.getType().isAir() && toStore.getAmount() > 0) {
+                world.dropItemNaturally(loc.clone().add(0.5, 0.5, 0.5), toStore);
             }
         }
     }

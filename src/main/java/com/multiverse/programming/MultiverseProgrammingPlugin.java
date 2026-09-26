@@ -36,6 +36,7 @@ public class MultiverseProgrammingPlugin extends JavaPlugin {
                 configManager.getComputerBlock(),
                 configManager.getAdvancedComputerBlock()
         );
+        computerListener.loadAdvancedDisks();
         getServer().getPluginManager().registerEvents(computerListener, this);
 
         // Initialize Blueprints, Turtles, and Web Server
@@ -71,6 +72,9 @@ public class MultiverseProgrammingPlugin extends JavaPlugin {
         }
         if (turtleManager != null) {
             turtleManager.cancelAll();
+        }
+        if (computerListener != null) {
+            computerListener.saveAdvancedDisks();
         }
         ComputerListener.cancelAll();
         if (recipeManager != null) {
