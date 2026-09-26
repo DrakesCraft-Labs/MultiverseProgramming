@@ -150,4 +150,22 @@ class NbtReaderTest {
         assertNotNull(root);
         assertEquals("gzipWorks", root.getString("status"));
     }
+
+    @Test
+    @DisplayName("Reject excessive array length")
+    void testRejectExcessiveArray() {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try (DataOutputStream out = new DataOutputStream(baos)) {
+            out.writeByte(10);
+            out.writeUTF("root");
+            out.writeByte(7); // Byte Array
+            out.writeUTF("bomb");
+            out.writeInt(100_000_000); // 100 MB -> exceeds MAX_ARRAY_LENGTH
+            out.writeByte(0);
+        } catch (IOException ignored) {}
+
+        assertThrows(IOException.class, () -> {
+            NbtReader.read(new ByteArrayInputStream(baos.toByteArray()));
+        });
+    }
 }

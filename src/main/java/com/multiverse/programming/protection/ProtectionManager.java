@@ -9,11 +9,12 @@ import org.bukkit.entity.Player;
 
 import java.lang.reflect.Method;
 import java.util.Collection;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.logging.Level;
 
 /**
- * Handles region protection checks for WorldGuard and ProtectionStones using reflection.
+ * Handles region protection checks for WorldGuard, ProtectionStones, and BentoBox using reflection.
  * Ensures soft-dependency safety without hard class dependencies.
  */
 public final class ProtectionManager {
@@ -32,9 +33,13 @@ public final class ProtectionManager {
         return Bukkit.getPluginManager() != null && Bukkit.getPluginManager().isPluginEnabled("ProtectionStones");
     }
 
+    public boolean isBentoBoxPresent() {
+        return Bukkit.getPluginManager() != null && Bukkit.getPluginManager().isPluginEnabled("BentoBox");
+    }
+
     /**
-     * Checks if a player has permission to build at a specific location, respecting WorldGuard
-     * and ProtectionStones region ownership and membership.
+     * Checks if a player has permission to build at a specific location, respecting WorldGuard,
+     * ProtectionStones, and BentoBox island ownership and membership.
      *
      * @param playerUuid The UUID of the player who placed the Turtle.
      * @param loc        The target block location.
@@ -71,6 +76,14 @@ public final class ProtectionManager {
             }
         }
 
+        // 3. BentoBox (SkyBlock / OneBlock) Check
+        if (isBentoBoxPresent()) {
+            Boolean bbAllowed = checkBentoBox(playerUuid, loc, requireStrictOwner);
+            if (bbAllowed != null && !bbAllowed) {
+                return false;
+            }
+        }
+
         return true;
     }
 
@@ -84,8 +97,8 @@ public final class ProtectionManager {
             return "Invalid build location or blueprint.";
         }
 
-        // Quick check: if neither protection plugin is present, allow immediately
-        if (!isWorldGuardPresent() && !isProtectionStonesPresent()) {
+        // Quick check: if no protection plugin is present, allow immediately
+        if (!isWorldGuardPresent() && !isProtectionStonesPresent() && !isBentoBoxPresent()) {
             return null;
         }
 
@@ -102,9 +115,9 @@ public final class ProtectionManager {
             if (!canBuildAt(playerUuid, checkLoc)) {
                 boolean requireStrictOwner = plugin.getConfigManager().isProtectionStonesRequireOwner();
                 if (requireStrictOwner) {
-                    return "Target area contains protected regions (WorldGuard/ProtectionStones). You must be the OWNER of the region to build here.";
+                    return "Target area contains protected regions (WorldGuard/ProtectionStones/BentoBox). You must be the OWNER of the region/island to build here.";
                 } else {
-                    return "Target area contains protected regions (WorldGuard/ProtectionStones). You must be an OWNER or MEMBER of the region to build here.";
+                    return "Target area contains protected regions (WorldGuard/ProtectionStones/BentoBox). You must be an OWNER or MEMBER of the region/island to build here.";
                 }
             }
         }
@@ -113,17 +126,17 @@ public final class ProtectionManager {
     }
 
     /**
-     * Validates whether a cuboid area (e.g. for a quarry excavation) is permissible for the player.
-     * Checks key sample points (corners and center) of the excavation volume.
+     * Validates whether a cuboid bounding box is entirely permissible for the player.
+     * Samples the 8 corners plus center point.
      *
      * @return null if allowed, or an error message explaining the protection obstruction.
      */
     public String checkRegionArea(UUID playerUuid, Location min, Location max) {
         if (min == null || max == null || min.getWorld() == null || max.getWorld() == null) {
-            return "Invalid region location.";
+            return "Invalid build region coordinates.";
         }
 
-        if (!isWorldGuardPresent() && !isProtectionStonesPresent()) {
+        if (!isWorldGuardPresent() && !isProtectionStonesPresent() && !isBentoBoxPresent()) {
             return null;
         }
 
@@ -163,14 +176,69 @@ public final class ProtectionManager {
             if (!canBuildAt(playerUuid, loc)) {
                 boolean requireStrictOwner = plugin.getConfigManager().isProtectionStonesRequireOwner();
                 if (requireStrictOwner) {
-                    return "Target area contains protected regions (WorldGuard/ProtectionStones). You must be the OWNER of the region to build here.";
+                    return "Target area contains protected regions (WorldGuard/ProtectionStones/BentoBox). You must be the OWNER of the region/island to build here.";
                 } else {
-                    return "Target area contains protected regions (WorldGuard/ProtectionStones). You must be an OWNER or MEMBER of the region to build here.";
+                    return "Target area contains protected regions (WorldGuard/ProtectionStones/BentoBox). You must be an OWNER or MEMBER of the region/island to build here.";
                 }
             }
         }
 
         return null;
+    }
+
+    private Boolean checkBentoBox(UUID playerUuid, Location loc, boolean requireStrictOwner) {
+        try {
+            Class<?> bbClass = Class.forName("world.bentobox.bentobox.BentoBox");
+            Method getInstanceMethod = bbClass.getMethod("getInstance");
+            Object bbInstance = getInstanceMethod.invoke(null);
+
+            Method getIslandsMethod = bbClass.getMethod("getIslands");
+            Object islandsManager = getIslandsMethod.invoke(bbInstance);
+
+            Method getIslandAtMethod = islandsManager.getClass().getMethod("getIslandAt", Location.class);
+            Object optIsland = getIslandAtMethod.invoke(islandsManager, loc);
+
+            if (optIsland instanceof Optional<?> opt) {
+                if (opt.isEmpty()) {
+                    // Check if the world is a BentoBox managed world (e.g. BSkyBlock or AOneBlock)
+                    try {
+                        Method getIwmMethod = bbClass.getMethod("getIWM");
+                        Object iwm = getIwmMethod.invoke(bbInstance);
+                        Method inWorldMethod = iwm.getClass().getMethod("inWorld", org.bukkit.World.class);
+                        boolean isBbWorld = (boolean) inWorldMethod.invoke(iwm, loc.getWorld());
+                        if (isBbWorld) {
+                            // Outside any island in a Skyblock/Oneblock world: strictly disallowed for non-admins
+                            return false;
+                        }
+                    } catch (Throwable ignored) {}
+                    return null; // Wilderness / not a BentoBox world
+                }
+
+                Object island = opt.get();
+                if (playerUuid == null) {
+                    return false;
+                }
+
+                Method getOwnerMethod = island.getClass().getMethod("getOwner");
+                UUID ownerUuid = (UUID) getOwnerMethod.invoke(island);
+                if (playerUuid.equals(ownerUuid)) {
+                    return true;
+                }
+
+                if (requireStrictOwner) {
+                    return false;
+                }
+
+                Method isMemberMethod = island.getClass().getMethod("isMember", UUID.class);
+                return (boolean) isMemberMethod.invoke(island, playerUuid);
+            }
+            return null;
+        } catch (ClassNotFoundException ignored) {
+            return null;
+        } catch (Throwable t) {
+            plugin.getLogger().log(Level.FINE, "Error checking BentoBox island: " + t.getMessage(), t);
+            return null;
+        }
     }
 
     private Boolean checkProtectionStones(UUID playerUuid, Location loc, boolean requireStrictOwner) {

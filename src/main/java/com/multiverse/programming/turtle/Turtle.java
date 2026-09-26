@@ -718,7 +718,23 @@ public final class Turtle {
             int targetY = buildOrigin.getBlockY() + pb.y();
             int targetZ = buildOrigin.getBlockZ() + pb.z();
 
-            if (targetY >= world.getMinHeight() && targetY < world.getMaxHeight()) {
+            if (targetY < world.getMinHeight() || targetY >= world.getMaxHeight()) {
+                currentBlockIndex.incrementAndGet();
+                return;
+            }
+
+            int chunkX = targetX >> 4;
+            int chunkZ = targetZ >> 4;
+            if (!world.isChunkLoaded(chunkX, chunkZ)) {
+                try {
+                    world.getChunkAtAsync(chunkX, chunkZ);
+                } catch (Throwable ignored) {
+                    world.loadChunk(chunkX, chunkZ, false);
+                }
+                return;
+            }
+
+            if (true) {
                 // Physically relocate the turtle to an adjacent free spot facing the block
                 moveTurtleAdjacentTo(world, targetX, targetY, targetZ);
 

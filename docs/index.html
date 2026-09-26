@@ -226,6 +226,7 @@
           <button class="canvas-btn" onclick="zoomOut()" title="Alejar" id="btnZoomOut">-</button>
           <button class="canvas-btn" onclick="rotateYaw(45)" title="Rotar 45°" id="btnRotate">⟳</button>
           <button class="canvas-btn" onclick="resetCamera()" title="Reiniciar Cámara" id="btnReset">⌂</button>
+          <button class="canvas-btn" onclick="toggleBoundingBox()" title="Mostrar Caja de Límites / Bounding Box" id="btnBBox">📦</button>
         </div>
         <div class="canvas-hints" id="canvasHints" data-i18n="canvasHints">
           🖱 Click Izquierdo: Rotar • Click Derecho: Desplazar • Rueda: Zoom
@@ -543,7 +544,10 @@
         toastNoRenameFeatured: 'No puedes renombrar un plano destacado del servidor',
         promptRename: 'Introduce el nuevo nombre para este plano:',
         confirmDelete: '¿Eliminar este plano de tu biblioteca local?',
-        switchedMsg: '🇪🇸 Idioma cambiado a Español'
+        switchedMsg: '🇪🇸 Idioma cambiado a Español',
+        toastBBoxOn: '📦 Caja de límites 3D activada',
+        toastBBoxOff: '📦 Caja de límites 3D desactivada',
+        toastCloudFallback: 'ℹ Modo local: Código asignado '
       },
       en: {
         brandSubtitle: 'Multiverse Programming // Blueprint Nexus',
@@ -679,6 +683,8 @@
     // Three.js Scene Variables
     let renderer, scene, camera;
     let instancedMesh = null;
+    let bboxHelper = null;
+    let showBBox = false;
     let currentBlueprintBlocks = [];
     let layerBuckets = []; // layerBuckets[y] = [block indices]
 
@@ -807,6 +813,33 @@
     function zoomIn() { camRadius = Math.max(5, camRadius * 0.82); updateCameraPosition(); }
     function zoomOut() { camRadius = Math.min(1200, camRadius * 1.22); updateCameraPosition(); }
     function rotateYaw(deg) { camTheta += (deg * Math.PI) / 180; updateCameraPosition(); }
+    function toggleBoundingBox() {
+      showBBox = !showBBox;
+      const btn = document.getElementById('btnBBox');
+      if (btn) btn.style.borderColor = showBBox ? 'var(--primary)' : 'var(--card-border)';
+      updateBoundingBox();
+      const t = I18N[currentLang] || I18N.es;
+      showToast(showBBox ? t.toastBBoxOn : t.toastBBoxOff);
+    }
+
+    function updateBoundingBox() {
+      if (bboxHelper && scene) {
+        scene.remove(bboxHelper);
+        if (bboxHelper.geometry) bboxHelper.geometry.dispose();
+        if (bboxHelper.material) bboxHelper.material.dispose();
+        bboxHelper = null;
+      }
+      if (!showBBox || !selectedBlueprint || !scene) return;
+      const sx = selectedBlueprint.sizeX || 1;
+      const sy = selectedBlueprint.sizeY || 1;
+      const sz = selectedBlueprint.sizeZ || 1;
+      const geom = new THREE.BoxGeometry(sx, sy, sz);
+      const edges = new THREE.EdgesGeometry(geom);
+      bboxHelper = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x38bdf8, linewidth: 2 }));
+      bboxHelper.position.set(0, sy / 2, 0);
+      scene.add(bboxHelper);
+    }
+
     function resetCamera() {
       if (!selectedBlueprint) return;
       const maxDim = Math.max(selectedBlueprint.sizeX || 1, selectedBlueprint.sizeY || 1, selectedBlueprint.sizeZ || 1);
@@ -1515,6 +1548,15 @@
         instancedMesh.material.dispose();
         instancedMesh = null;
       }
+      if (bboxHelper) {
+        scene.remove(bboxHelper);
+        if (bboxHelper.geometry) bboxHelper.geometry.dispose();
+        if (bboxHelper.material) bboxHelper.material.dispose();
+        bboxHelper = null;
+      }
+      if (renderer) {
+        renderer.renderLists.dispose();
+      }
 
       if (!selectedBlueprint || !selectedBlueprint.blocks || selectedBlueprint.blocks.length === 0) {
         return;
@@ -1573,6 +1615,7 @@
       updateVisibleLayer(curLayer);
 
       scene.add(instancedMesh);
+      updateBoundingBox();
     }
 
     function updateVisibleLayer(maxLayer) {

@@ -6,6 +6,7 @@ import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -17,8 +18,12 @@ import java.util.zip.GZIPInputStream;
 
 /**
  * Fast, pure-Java deserializer for NBT files (GZIP-compressed or uncompressed).
+ * Hardened with decompression bomb and memory exhaustion mitigations.
  */
 public final class NbtReader {
+
+    public static final long MAX_UNCOMPRESSED_BYTES = 64L * 1024 * 1024; // 64 MB maximum decompressed stream
+    public static final int MAX_ARRAY_LENGTH = 16_000_000; // 16 MB maximum per single tag array
 
     private NbtReader() {
     }
@@ -48,7 +53,10 @@ public final class NbtReader {
             streamToUse = new GZIPInputStream(buffered);
         }
 
-        DataInputStream dis = new DataInputStream(streamToUse);
+        // Wrap stream in a size-limiting filter to prevent zip-bombs / memory exhaustion
+        BoundedInputStream boundedStream = new BoundedInputStream(streamToUse, MAX_UNCOMPRESSED_BYTES);
+        DataInputStream dis = new DataInputStream(boundedStream);
+
         byte rootType = dis.readByte();
         if (rootType == 0) {
             return new NbtTag.CompoundTag();
@@ -81,6 +89,7 @@ public final class NbtReader {
             case 6 -> new NbtTag.DoubleTag(dis.readDouble());
             case 7 -> {
                 int len = dis.readInt();
+                validateArrayLength(len);
                 byte[] bytes = new byte[len];
                 dis.readFully(bytes);
                 yield new NbtTag.ByteArrayTag(bytes);
@@ -89,7 +98,8 @@ public final class NbtReader {
             case 9 -> {
                 byte elemType = dis.readByte();
                 int len = dis.readInt();
-                List<NbtTag> list = new ArrayList<>(Math.max(0, len));
+                validateArrayLength(len);
+                List<NbtTag> list = new ArrayList<>(Math.min(len, 100_000));
                 for (int i = 0; i < len; i++) {
                     list.add(readTagPayload(dis, elemType));
                 }
@@ -110,6 +120,7 @@ public final class NbtReader {
             }
             case 11 -> {
                 int len = dis.readInt();
+                validateArrayLength(len);
                 int[] ints = new int[len];
                 for (int i = 0; i < len; i++) {
                     ints[i] = dis.readInt();
@@ -118,14 +129,24 @@ public final class NbtReader {
             }
             case 12 -> {
                 int len = dis.readInt();
+                validateArrayLength(len);
                 long[] longs = new long[len];
                 for (int i = 0; i < len; i++) {
                     longs[i] = dis.readLong();
                 }
                 yield new NbtTag.LongArrayTag(longs);
             }
-            default -> throw new IOException("Unknown NBT tag id: " + id);
+            default -> throw new IOException("Unknown NBT Tag ID: " + id);
         };
+    }
+
+    private static void validateArrayLength(int len) throws IOException {
+        if (len < 0) {
+            throw new IOException("Negative NBT array length: " + len);
+        }
+        if (len > MAX_ARRAY_LENGTH) {
+            throw new IOException("NBT array length exceeds maximum safety limit (" + len + " > " + MAX_ARRAY_LENGTH + ")");
+        }
     }
 
     private static String readString(DataInputStream dis) throws IOException {
@@ -133,5 +154,46 @@ public final class NbtReader {
         byte[] bytes = new byte[len];
         dis.readFully(bytes);
         return new String(bytes, StandardCharsets.UTF_8);
+    }
+
+    /**
+     * Guard stream that counts decompressed bytes and aborts if it exceeds threshold.
+     */
+    private static final class BoundedInputStream extends FilterInputStream {
+        private final long maxBytes;
+        private long bytesRead = 0;
+
+        BoundedInputStream(InputStream in, long maxBytes) {
+            super(in);
+            this.maxBytes = maxBytes;
+        }
+
+        @Override
+        public int read() throws IOException {
+            int b = super.read();
+            if (b != -1) {
+                checkLimit(1);
+            }
+            return b;
+        }
+
+        @Override
+        public int read(byte[] b, int off, int len) throws IOException {
+            int read = super.read(b, off, len);
+            if (read > 0) {
+                checkLimit(read);
+            }
+            return read;
+        }
+
+        private void checkLimit(int count) throws IOException {
+            bytesRead += count;
+            if (bytesRead > maxBytes) {
+                throw new IOException(String.format(
+                        "Decompressed NBT stream exceeded maximum safety limit of %d MB (potential zip-bomb attack)",
+                        maxBytes / (1024 * 1024)
+                ));
+            }
+        }
     }
 }

@@ -14,6 +14,8 @@ import java.util.Set;
  */
 public final class BlueprintSecurityValidator {
 
+    public static final int ABSOLUTE_MAX_BLOCKS = 500_000;
+
     public static final Set<String> DANGEROUS_BLOCKS = Set.of(
             "BEDROCK",
             "BARRIER",
@@ -96,11 +98,12 @@ public final class BlueprintSecurityValidator {
             ));
         }
 
-        if (bp.totalBlocks() > maxBlocks) {
+        int effectiveMaxBlocks = maxBlocks > 0 ? Math.min(maxBlocks, ABSOLUTE_MAX_BLOCKS) : ABSOLUTE_MAX_BLOCKS;
+        if (bp.totalBlocks() > effectiveMaxBlocks) {
             throw new IllegalArgumentException(String.format(
                     Locale.ROOT,
                     "Blueprint block count (%d blocks) exceeds maximum limit of %d blocks.",
-                    bp.totalBlocks(), maxBlocks
+                    bp.totalBlocks(), effectiveMaxBlocks
             ));
         }
 

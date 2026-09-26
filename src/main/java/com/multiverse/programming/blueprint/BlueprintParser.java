@@ -359,6 +359,11 @@ public final class BlueprintParser {
             return 2;
         }
 
+        // Priority 2: Gravity-affected blocks (Must be placed AFTER solid foundation, before attachments)
+        if (s.contains("sand") || s.contains("gravel") || s.contains("concrete_powder") || s.contains("anvil") || s.contains("pointed_dripstone")) {
+            return 2;
+        }
+
         // Priority 1: Structural attachments (Stairs, slabs, walls, fences, trapdoors)
         if (s.contains("stairs") || s.contains("slab") || s.contains("wall")
                 || s.contains("fence") || s.contains("trapdoor") || s.contains("bars")
