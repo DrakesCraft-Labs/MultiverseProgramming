@@ -128,6 +128,142 @@
 
     /* Toast */
     #toast { position: fixed; bottom: 24px; right: 24px; background: #0f172a; color: #fff; padding: 14px 20px; border-radius: 8px; border-left: 4px solid var(--primary); box-shadow: 0 4px 25px rgba(0,0,0,0.6); display: none; z-index: 1000; font-size: 0.88rem; font-weight: 500; }
+
+    /* Status Pulse Dot & Network Badge */
+    .status-pulse-dot {
+      width: 8px;
+      height: 8px;
+      background-color: #22c55e;
+      border-radius: 50%;
+      display: inline-block;
+      box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+      animation: pulse-green 2s infinite;
+    }
+    @keyframes pulse-green {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+    }
+    .network-badge-btn {
+      background: rgba(34, 197, 94, 0.1);
+      border: 1px solid rgba(34, 197, 94, 0.35);
+      color: #4ade80;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: 0.15s;
+    }
+    .network-badge-btn:hover {
+      background: rgba(34, 197, 94, 0.2);
+      border-color: #22c55e;
+      color: #fff;
+    }
+    .server-network-box {
+      background: #070a13;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .server-network-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+    .server-network-badge-btn {
+      background: #1e293b;
+      border: 1px solid var(--card-border);
+      color: #38bdf8;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: 0.15s;
+    }
+    .server-network-badge-btn:hover {
+      border-color: #38bdf8;
+      background: rgba(56, 189, 248, 0.15);
+      color: #fff;
+    }
+    .server-select-dropdown {
+      background: #0f172a;
+      border: 1px solid var(--card-border);
+      color: #fff;
+      padding: 8px 10px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      outline: none;
+      cursor: pointer;
+      width: 100%;
+    }
+    .server-select-dropdown:focus {
+      border-color: var(--primary);
+    }
+    .server-details-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      font-family: monospace;
+    }
+    .server-ping-badge {
+      color: #4ade80;
+      font-weight: 600;
+    }
+    .canvas-tooltip-2d {
+      position: absolute;
+      pointer-events: none;
+      z-index: 25;
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid #38bdf8;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 0.76rem;
+      color: #fff;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(6px);
+      white-space: nowrap;
+    }
+    .server-card-item {
+      background: #0b1120;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: 0.15s;
+    }
+    .server-card-item:hover {
+      border-color: rgba(56, 189, 248, 0.4);
+      background: #0d1527;
+    }
+    .server-card-item.active {
+      border-color: var(--primary);
+      background: rgba(56, 189, 248, 0.05);
+    }
+    .server-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .server-tag {
+      background: #1e293b;
+      color: var(--text-muted);
+      font-size: 0.7rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
   </style>
 </head>
 <body>
@@ -138,6 +274,10 @@
     </div>
     
     <div class="header-controls">
+      <button id="serverNetworkBtn" class="network-badge-btn" onclick="openServerModal()" title="Red de Servidores Activos / Active Servers Network">
+        <span class="status-pulse-dot"></span>
+        <span id="headerServerCount">4 Servidores Activos</span>
+      </button>
       <button id="langToggleBtn" class="lang-btn" onclick="toggleLanguage()" title="Cambiar idioma / Switch language">
         🌐 <span id="langLabel">ES</span>
       </button>
@@ -170,6 +310,28 @@
         </ul>
       </div>
       <button class="btn btn-sm" style="margin-top:8px;" onclick="closeHelpModal()" data-i18n="gotItBtn">¡Entendido!</button>
+    </div>
+  </div>
+  <!-- Server Network Modal -->
+  <div class="modal-overlay" id="serverModal" onclick="closeServerModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()" style="max-width:580px;">
+      <div class="modal-header">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span class="status-pulse-dot"></span>
+          <span class="modal-title" data-i18n="serverNetworkTitle">Red de Servidores Activos (Multiverse)</span>
+        </div>
+        <button class="close-btn" onclick="closeServerModal()">&times;</button>
+      </div>
+      <div style="font-size:0.85rem; color:var(--text-muted); margin-bottom:12px;" data-i18n="serverNetworkSub">
+        Servidores donde el plugin MultiverseProgramming y las Tortugas computacionales están activos y construyendo en tiempo real.
+      </div>
+      <div id="serverModalList" style="display:flex; flex-direction:column; gap:10px; max-height:360px; overflow-y:auto; padding-right:4px;">
+        <!-- Populated dynamically -->
+      </div>
+      <div style="margin-top:14px; display:flex; justify-content:space-between; align-items:center;">
+        <button class="btn btn-sm btn-ghost" onclick="promptAddCustomServer()" data-i18n="addServerBtn">+ Añadir Servidor</button>
+        <button class="btn btn-sm" onclick="closeServerModal()" data-i18n="gotItBtn">¡Entendido!</button>
+      </div>
     </div>
   </div>
 
@@ -221,6 +383,8 @@
       <!-- Interactive Canvas Container -->
       <div class="preview-canvas-container" id="canvasContainer">
         <canvas id="previewCanvas"></canvas>
+        <canvas id="previewCanvas2D" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; cursor:crosshair;"></canvas>
+        <div id="canvasTooltip2D" class="canvas-tooltip-2d" style="display:none;"></div>
         <div class="canvas-overlay-controls">
           <button class="canvas-btn" onclick="zoomIn()" title="Acercar" id="btnZoomIn">+</button>
           <button class="canvas-btn" onclick="zoomOut()" title="Alejar" id="btnZoomOut">-</button>
@@ -261,6 +425,29 @@
     <div class="card">
       <div class="card-title">
         <span data-i18n="inGameTitle">Código de Construcción en el Juego</span>
+      </div>
+
+      <!-- Server Network Selector -->
+      <div class="server-network-box">
+        <div class="server-network-header">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span class="status-pulse-dot"></span>
+            <strong data-i18n="serverSelectorLabel">Servidor Activo</strong>
+          </div>
+          <button class="server-network-badge-btn" onclick="openServerModal()" title="Ver red de servidores">
+            <span id="serverBadgeCount">4 Activos</span> ⚙
+          </button>
+        </div>
+        <select id="serverSelect" class="server-select-dropdown" onchange="onServerSelectChange(this.value)">
+          <option value="drakes-skyblock">🟢 DrakesCraft Skyblock (BentoBox)</option>
+          <option value="drakes-dallas">🟢 DrakesCraft Dallas (Survival Slimefun)</option>
+          <option value="drakes-creative">🟢 DrakesCraft Creativo (Sandbox Schematics)</option>
+          <option value="drakes-dev">🟢 DrakesCraft Dev Lab (Web API Directa)</option>
+        </select>
+        <div id="serverDetailsRow" class="server-details-row">
+          <span id="serverHostDisplay">play.drakescraft.net</span>
+          <span id="serverPingDisplay" class="server-ping-badge">🟢 En Línea</span>
+        </div>
       </div>
 
       <!-- Blueprint Share Code -->
@@ -538,6 +725,21 @@
         toastBlocks: 'bloques',
         toastParseErr: 'Error al procesar: ',
         toastCopied: '📋 ¡Copiado al portapapeles!',
+        serverNetworkTitle: 'Red de Servidores Activos (Multiverse)',
+        serverNetworkSub: 'Servidores donde el plugin MultiverseProgramming y las Tortugas computacionales están activos.',
+        serverSelectorLabel: 'Servidor de Destino:',
+        serverBadgeCount: '4 Activos',
+        serverStatusOnline: 'En Línea',
+        serverCopyIp: 'Copiar IP',
+        serverSelectBtn: 'Seleccionar',
+        serverSelectedBadge: 'Seleccionado',
+        addServerBtn: '+ Añadir Servidor',
+        promptServerName: 'Nombre del Servidor:',
+        promptServerHost: 'Dirección IP o Dominio (ej: mi.servidor.net):',
+        canvas2DHints: '📐 Vista 2D: Capa actual • Desplaza la barra inferior para ver capas • Pasa el ratón sobre un bloque',
+        emptyLayer: 'Capa vacía (sin bloques en Y = ',
+        toastServerSelected: 'Servidor seleccionado: ',
+        toastIpCopied: 'Dirección del servidor copiada: ',
         toastDeleted: '🗑 Plano eliminado: ',
         toastRenamed: '✏ Nombre actualizado a: ',
         toastNoDeleteFeatured: 'No puedes eliminar un plano destacado del servidor',
@@ -623,6 +825,21 @@
         toastDeleted: '🗑 Deleted blueprint: ',
         toastRenamed: '✏ Name updated to: ',
         toastNoDeleteFeatured: 'Cannot delete featured blueprints',
+        serverNetworkTitle: 'Active Server Network (Multiverse)',
+        serverNetworkSub: 'Servers where MultiverseProgramming and computational Turtles are active and building.',
+        serverSelectorLabel: 'Target Server:',
+        serverBadgeCount: '4 Active',
+        serverStatusOnline: 'Online',
+        serverCopyIp: 'Copy IP',
+        serverSelectBtn: 'Select',
+        serverSelectedBadge: 'Selected',
+        addServerBtn: '+ Add Server',
+        promptServerName: 'Server Name:',
+        promptServerHost: 'IP Address or Domain (e.g. mc.server.net):',
+        canvas2DHints: '📐 2D Slice View • Move layer slider below • Hover over blocks for coordinates',
+        emptyLayer: 'Empty layer (no blocks at Y = ',
+        toastServerSelected: 'Server selected: ',
+        toastIpCopied: 'Server address copied: ',
         toastNoRenameFeatured: 'Cannot rename featured blueprints',
         promptRename: 'Enter new name for this blueprint:',
         confirmDelete: 'Delete this blueprint from your local library?',
@@ -678,6 +895,230 @@
     let blueprints = [];
     let selectedBlueprint = null;
     let viewMode = '3D'; // '3D' or '2D'
+    // =========================================================================
+    // MULTIVERSE ACTIVE SERVERS NETWORK STATE
+    // =========================================================================
+    const DEFAULT_SERVERS = [
+      {
+        id: 'drakes-skyblock',
+        name: 'DrakesCraft Skyblock',
+        host: 'play.drakescraft.net',
+        port: 25565,
+        mode: 'Skyblock • BentoBox Safety',
+        description: 'Construcción automática dentro del rango de tu isla respetando permisos de miembros.',
+        tags: ['Skyblock', 'BentoBox', 'Multi-Turtle'],
+        pingText: '🟢 En Línea • Tortugas Activas'
+      },
+      {
+        id: 'drakes-dallas',
+        name: 'DrakesCraft Dallas / Survival',
+        host: 'dallas.drakescraft.net',
+        port: 25565,
+        mode: 'Survival • Slimefun + Networks',
+        description: 'Servidor principal con soporte técnico Slimefun y logging de bloques con CoreProtect.',
+        tags: ['Survival', 'Slimefun', 'CoreProtect'],
+        pingText: '🟢 En Línea • Tortugas Activas'
+      },
+      {
+        id: 'drakes-creative',
+        name: 'DrakesCraft Creativo',
+        host: 'creative.drakescraft.net',
+        port: 25565,
+        mode: 'Creativo • Schematics Sandbox',
+        description: 'Importación instantánea de planos sin costo de materiales para testeo y diseño rápido.',
+        tags: ['Creative', 'FastBuild', 'Sandbox'],
+        pingText: '🟢 En Línea • Instant Build'
+      },
+      {
+        id: 'drakes-dev',
+        name: 'DrakesCraft Dev & Automation Lab',
+        host: 'dev.drakescraft.net',
+        port: 25570,
+        mode: 'Dev Lab • WebPortal HTTP API Directa',
+        description: 'Servidor con API HTTP en puerto 8080. Despacho directo web-to-game con 1-click.',
+        tags: ['WebPortal', 'HTTP API', 'Automations'],
+        pingText: '🟢 API Web Activa (Port 8080)'
+      }
+    ];
+
+    let serverList = [];
+    let selectedServerId = 'drakes-skyblock';
+
+    function initServerNetwork() {
+      try {
+        const saved = localStorage.getItem('mp_server_list');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            serverList = parsed;
+          } else {
+            serverList = [...DEFAULT_SERVERS];
+          }
+        } else {
+          serverList = [...DEFAULT_SERVERS];
+        }
+      } catch (e) {
+        serverList = [...DEFAULT_SERVERS];
+      }
+
+      const savedSel = localStorage.getItem('mp_selected_server');
+      if (savedSel && serverList.some(s => s.id === savedSel)) {
+        selectedServerId = savedSel;
+      } else {
+        selectedServerId = serverList[0].id;
+      }
+
+      populateServerDropdown();
+      updateServerUI();
+      checkServerLivePings();
+    }
+
+    function populateServerDropdown() {
+      const select = document.getElementById('serverSelect');
+      if (!select) return;
+      select.innerHTML = serverList.map(s => `
+        <option value="${escapeHtml(s.id)}" ${s.id === selectedServerId ? 'selected' : ''}>
+          🟢 ${escapeHtml(s.name)} (${escapeHtml(s.host)})
+        </option>
+      `).join('');
+    }
+
+    function getActiveServer() {
+      return serverList.find(s => s.id === selectedServerId) || serverList[0];
+    }
+
+    function updateServerUI() {
+      const s = getActiveServer();
+      const hostEl = document.getElementById('serverHostDisplay');
+      const pingEl = document.getElementById('serverPingDisplay');
+      const selectEl = document.getElementById('serverSelect');
+      const badgeCount = document.getElementById('headerServerCount');
+      const serverBadgeCount = document.getElementById('serverBadgeCount');
+
+      if (hostEl) hostEl.textContent = s.host + (s.port && s.port !== 25565 ? ':' + s.port : '');
+      if (pingEl) pingEl.textContent = s.pingText || '🟢 En Línea';
+      if (selectEl && selectEl.value !== s.id) selectEl.value = s.id;
+      if (badgeCount) badgeCount.textContent = `${serverList.length} Servidores Activos`;
+      if (serverBadgeCount) serverBadgeCount.textContent = `${serverList.length} Activos`;
+    }
+
+    function onServerSelectChange(id) {
+      selectedServerId = id;
+      localStorage.setItem('mp_selected_server', id);
+      updateServerUI();
+      const s = getActiveServer();
+      const t = I18N[currentLang] || I18N.es;
+      showToast((t.toastServerSelected || 'Servidor seleccionado: ') + s.name);
+    }
+
+    function openServerModal() {
+      renderServerListModal();
+      document.getElementById('serverModal').style.display = 'flex';
+    }
+
+    function closeServerModal(e) {
+      if (!e || e.target.id === 'serverModal' || e.target.tagName === 'BUTTON') {
+        document.getElementById('serverModal').style.display = 'none';
+      }
+    }
+
+    function renderServerListModal() {
+      const listEl = document.getElementById('serverModalList');
+      if (!listEl) return;
+      const t = I18N[currentLang] || I18N.es;
+
+      listEl.innerHTML = serverList.map(s => {
+        const isCurrent = s.id === selectedServerId;
+        const hostPort = s.host + (s.port && s.port !== 25565 ? ':' + s.port : '');
+        return `
+          <div class="server-card-item ${isCurrent ? 'active' : ''}">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span class="status-pulse-dot"></span>
+                <strong style="color:#fff; font-size:0.92rem;">${escapeHtml(s.name)}</strong>
+              </div>
+              <span class="server-ping-badge" style="font-size:0.75rem;">${escapeHtml(s.pingText || '🟢 En Línea')}</span>
+            </div>
+            <div style="color:var(--text-muted); font-size:0.8rem; line-height:1.4;">${escapeHtml(s.description || s.mode)}</div>
+            <div class="server-tags">
+              ${(s.tags || []).map(tg => `<span class="server-tag">${escapeHtml(tg)}</span>`).join('')}
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
+              <code style="color:var(--primary); font-size:0.82rem; user-select:all;">${escapeHtml(hostPort)}</code>
+              <div style="display:flex; gap:6px;">
+                <button class="btn btn-sm btn-ghost" onclick="copyServerHost('${escapeHtml(s.host)}')">${t.serverCopyIp || 'Copiar IP'}</button>
+                <button class="btn btn-sm ${isCurrent ? 'btn-ghost' : ''}" style="${isCurrent ? 'border-color:var(--primary); color:var(--primary);' : ''}" onclick="selectServerFromModal('${escapeHtml(s.id)}')">
+                  ${isCurrent ? (t.serverSelectedBadge || '✔ Seleccionado') : (t.serverSelectBtn || 'Seleccionar')}
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function selectServerFromModal(id) {
+      onServerSelectChange(id);
+      renderServerListModal();
+    }
+
+    function copyServerHost(host) {
+      navigator.clipboard.writeText(host).then(() => {
+        const t = I18N[currentLang] || I18N.es;
+        showToast((t.toastIpCopied || 'Dirección copiada: ') + host);
+      });
+    }
+
+    function promptAddCustomServer() {
+      const t = I18N[currentLang] || I18N.es;
+      const name = prompt(t.promptServerName || 'Nombre del Servidor:');
+      if (!name) return;
+      const host = prompt(t.promptServerHost || 'Dirección IP o Dominio:');
+      if (!host) return;
+
+      const newServer = {
+        id: 'custom-' + Date.now(),
+        name: name.trim(),
+        host: host.trim(),
+        port: 25565,
+        mode: 'Servidor Personalizado',
+        description: 'Servidor configurado por el usuario con MultiverseProgramming.',
+        tags: ['Custom', 'Turtle Matrix'],
+        pingText: '🟢 En Línea'
+      };
+
+      serverList.push(newServer);
+      try {
+        localStorage.setItem('mp_server_list', JSON.stringify(serverList));
+      } catch (e) {}
+
+      selectedServerId = newServer.id;
+      populateServerDropdown();
+      updateServerUI();
+      renderServerListModal();
+      showToast('✔ Servidor añadido: ' + newServer.name);
+    }
+
+    async function checkServerLivePings() {
+      // Query public server status API for live players and ping
+      for (const s of serverList) {
+        if (!s.host || s.host === 'localhost' || s.host.startsWith('192.168.')) continue;
+        try {
+          fetch(`https://api.mcsrvstat.us/3/${s.host}`)
+            .then(res => res.json())
+            .then(data => {
+              if (data && data.online) {
+                const count = (data.players && data.players.online !== undefined) ? data.players.online : 0;
+                s.pingText = `🟢 En Línea (${count} jugadores)`;
+                updateServerUI();
+                renderServerListModal();
+              }
+            })
+            .catch(() => {});
+        } catch (e) {}
+      }
+    }
+
     let animInterval = null;
 
     // Three.js Scene Variables
@@ -699,6 +1140,8 @@
 
     window.addEventListener('DOMContentLoaded', async () => {
       initThreeJs();
+      setup2DCanvasInteractions();
+      initServerNetwork();
       loadLocalLibrary();
       await loadCommunityCatalog();
       syncLibrary();
@@ -852,10 +1295,15 @@
 
     function onWindowResize() {
       const container = document.getElementById('canvasContainer');
-      if (!container || !renderer || !camera) return;
-      camera.aspect = container.clientWidth / container.clientHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(container.clientWidth, container.clientHeight);
+      if (!container) return;
+      if (renderer && camera) {
+        camera.aspect = container.clientWidth / container.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(container.clientWidth, container.clientHeight);
+      }
+      if (viewMode === '2D') {
+        render2DSlice();
+      }
     }
 
     // =========================================================================
@@ -1536,6 +1984,9 @@
 
       build3DInstancedMesh();
       resetCamera();
+      if (viewMode === '2D') {
+        render2DSlice();
+      }
     }
 
     // =========================================================================
@@ -1628,16 +2079,31 @@
     // =========================================================================
     // SLIDER & AUTOMATIC ANIMATION CONTROLS (ZERO LAG)
     // =========================================================================
+    let last2DState = null;
+
     function setViewMode(mode) {
       viewMode = mode;
       document.getElementById('tab3D').className = 'tab-btn' + (mode === '3D' ? ' active' : '');
       document.getElementById('tab2D').className = 'tab-btn' + (mode === '2D' ? ' active' : '');
       const hints = document.getElementById('canvasHints');
+      const canvas3D = document.getElementById('previewCanvas');
+      const canvas2D = document.getElementById('previewCanvas2D');
+      const tooltip2D = document.getElementById('canvasTooltip2D');
+      const overlay3D = document.querySelector('.canvas-overlay-controls');
+      const t = I18N[currentLang] || I18N.es;
+
       if (mode === '3D') {
-        hints.textContent = '🖱 Left Click: Rotate • Right Click: Pan • Scroll: Zoom';
+        canvas3D.style.display = 'block';
+        canvas2D.style.display = 'none';
+        if (tooltip2D) tooltip2D.style.display = 'none';
+        if (overlay3D) overlay3D.style.display = 'flex';
+        hints.textContent = t.canvasHints || '🖱 Left Click: Rotate • Right Click: Pan • Scroll: Zoom';
         onWindowResize();
       } else {
-        hints.textContent = '2D Layer Slice View';
+        canvas3D.style.display = 'none';
+        canvas2D.style.display = 'block';
+        if (overlay3D) overlay3D.style.display = 'none';
+        hints.textContent = t.canvas2DHints || '📐 Vista 2D: Capa actual • Desplaza la barra para ver capas • Pasa el ratón sobre un bloque';
         render2DSlice();
       }
     }
@@ -1678,30 +2144,168 @@
     }
 
     function render2DSlice() {
-      // 2D slice fallback rendering on canvas
-      const canvas = document.getElementById('previewCanvas');
-      const ctx = canvas.getContext('2d');
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const container = document.getElementById('canvasContainer');
+      const canvas2D = document.getElementById('previewCanvas2D');
+      if (!container || !canvas2D) return;
 
-      if (!selectedBlueprint || !selectedBlueprint.blocks) return;
+      const rect = container.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      const w = rect.width;
+      const h = rect.height;
+
+      canvas2D.width = w * dpr;
+      canvas2D.height = h * dpr;
+      canvas2D.style.width = w + 'px';
+      canvas2D.style.height = h + 'px';
+
+      const ctx = canvas2D.getContext('2d');
+      if (!ctx) return;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      // Background
+      ctx.fillStyle = '#050814';
+      ctx.fillRect(0, 0, w, h);
+
+      const t = I18N[currentLang] || I18N.es;
+
+      if (!selectedBlueprint || !selectedBlueprint.blocks || selectedBlueprint.blocks.length === 0) {
+        ctx.fillStyle = '#64748b';
+        ctx.font = '14px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(t.visualizerDefaultDims || 'Selecciona un plano para ver el corte 2D', w / 2, h / 2);
+        last2DState = null;
+        return;
+      }
 
       const layerY = parseInt(document.getElementById('layerSlider').value, 10);
       const layerBlocks = selectedBlueprint.blocks.filter(b => b.y === layerY);
 
-      const sx = selectedBlueprint.sizeX || 1;
-      const sz = selectedBlueprint.sizeZ || 1;
+      const sx = Math.max(1, selectedBlueprint.sizeX || 1);
+      const sz = Math.max(1, selectedBlueprint.sizeZ || 1);
 
-      const cellSize = Math.min(Math.floor(canvas.width / sx), Math.floor(canvas.height / sz), 30);
-      const offX = Math.floor((canvas.width - sx * cellSize) / 2);
-      const offY = Math.floor((canvas.height - sz * cellSize) / 2);
+      const padX = 35;
+      const padY = 35;
+      const availW = w - padX * 2;
+      const availH = h - padY * 2;
 
-      ctx.strokeStyle = '#1e293b';
-      ctx.strokeRect(offX, offY, sx * cellSize, sz * cellSize);
+      const cellSize = Math.max(3, Math.min(Math.floor(availW / sx), Math.floor(availH / sz), 32));
+      const gridW = sx * cellSize;
+      const gridH = sz * cellSize;
+      const offX = Math.floor((w - gridW) / 2);
+      const offY = Math.floor((h - gridH) / 2);
 
+      last2DState = { offX, offY, cellSize, sx, sz, layerY, layerBlocks };
+
+      // Draw grid lines
+      ctx.strokeStyle = '#0e172a';
+      ctx.lineWidth = 1;
+      for (let x = 0; x <= sx; x++) {
+        ctx.beginPath();
+        ctx.moveTo(offX + x * cellSize, offY);
+        ctx.lineTo(offX + x * cellSize, offY + gridH);
+        ctx.stroke();
+      }
+      for (let z = 0; z <= sz; z++) {
+        ctx.beginPath();
+        ctx.moveTo(offX, offY + z * cellSize);
+        ctx.lineTo(offX + gridW, offY + z * cellSize);
+        ctx.stroke();
+      }
+
+      // Draw outer boundary
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(offX, offY, gridW, gridH);
+
+      // Ruler axis labels
+      ctx.fillStyle = '#64748b';
+      ctx.font = '10px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('X →', offX + gridW + 16, offY + Math.max(12, gridH / 2));
+      ctx.fillText('Z ↓', offX + gridW / 2, offY + gridH + 16);
+
+      // Draw Blocks on this layer
       layerBlocks.forEach(b => {
         const hex = '#' + getMinecraftColorHex(b.material).toString(16).padStart(6, '0');
+        const bx = offX + b.x * cellSize;
+        const bz = offY + b.z * cellSize;
+
         ctx.fillStyle = hex;
-        ctx.fillRect(offX + b.x * cellSize, offY + b.z * cellSize, Math.max(1, cellSize - 1), Math.max(1, cellSize - 1));
+        ctx.fillRect(bx, bz, cellSize, cellSize);
+
+        if (cellSize >= 8) {
+          ctx.strokeStyle = 'rgba(0, 0, 0, 0.35)';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(bx, bz, cellSize, cellSize);
+        }
+      });
+
+      // Layer info badge on top-left of canvas
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+      ctx.fillRect(10, 10, 240, 30);
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.3)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(10, 10, 240, 30);
+
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = 'bold 11px monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText(`CAPA Y = ${layerY} (${layerBlocks.length} bloques)`, 18, 29);
+
+      if (layerBlocks.length === 0) {
+        ctx.fillStyle = 'rgba(148, 163, 184, 0.75)';
+        ctx.font = 'italic 12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText((t.emptyLayer || 'Capa vacía (sin bloques en Y = ') + layerY + ')', w / 2, h / 2);
+      }
+    }
+
+    function setup2DCanvasInteractions() {
+      const canvas2D = document.getElementById('previewCanvas2D');
+      const tooltip = document.getElementById('canvasTooltip2D');
+      if (!canvas2D || !tooltip) return;
+
+      canvas2D.addEventListener('mousemove', (e) => {
+        if (viewMode !== '2D' || !last2DState || !selectedBlueprint) {
+          tooltip.style.display = 'none';
+          return;
+        }
+        const rect = canvas2D.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+
+        const { offX, offY, cellSize, sx, sz, layerY, layerBlocks } = last2DState;
+        if (mx < offX || mx >= offX + sx * cellSize || my < offY || my >= offY + sz * cellSize) {
+          tooltip.style.display = 'none';
+          return;
+        }
+
+        const bx = Math.floor((mx - offX) / cellSize);
+        const bz = Math.floor((my - offY) / cellSize);
+
+        const block = layerBlocks.find(b => b.x === bx && b.z === bz);
+        if (block) {
+          tooltip.style.display = 'block';
+          tooltip.style.left = (mx + 15) + 'px';
+          tooltip.style.top = (my + 10) + 'px';
+          const hex = '#' + getMinecraftColorHex(block.material).toString(16).padStart(6, '0');
+          tooltip.innerHTML = `
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span style="display:inline-block; width:9px; height:9px; background:${hex}; border-radius:2px; border:1px solid #fff;"></span>
+              <strong style="color:var(--primary); font-family:monospace;">${escapeHtml(block.material)}</strong>
+            </div>
+            <div style="color:var(--text-muted); margin-top:2px; font-family:monospace;">X: ${bx} • Y: ${layerY} • Z: ${bz}</div>
+          `;
+        } else {
+          tooltip.style.display = 'block';
+          tooltip.style.left = (mx + 15) + 'px';
+          tooltip.style.top = (my + 10) + 'px';
+          tooltip.innerHTML = `<span style="color:#64748b; font-family:monospace;">(X: ${bx}, Y: ${layerY}, Z: ${bz}) - Aire</span>`;
+        }
+      });
+
+      canvas2D.addEventListener('mouseleave', () => {
+        tooltip.style.display = 'none';
       });
     }
 
