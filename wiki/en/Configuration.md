@@ -104,7 +104,7 @@ blueprint-player-quota-mb: 15.0
 
 ## Commands
 
-All commands are prefixed with `/mvprog` (aliases `/pc`, `/computador`, `/computadora`, `/disco`).
+All commands are prefixed with `/mvprog`.
 
 ### Player Commands
 | Command | Permission | Description |

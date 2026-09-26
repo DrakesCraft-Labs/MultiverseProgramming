@@ -35,7 +35,7 @@ Este documento detalla el diseño interno, el modelo de hilos (threading), el en
    - [`TurtleManager`](file:///c:/Users/danie/OneDrive/Documentos/Github/Personal/MultiverseProgramming/src/main/java/com/multiverse/programming/turtle/TurtleManager.java): Inicializa el mapa espacial thread-safe (`ConcurrentHashMap<Location, Turtle>`).
    - [`WebServerManager`](file:///c:/Users/danie/OneDrive/Documentos/Github/Personal/MultiverseProgramming/src/main/java/com/multiverse/programming/web/WebServerManager.java): Vincula el servidor HTTP embebido y comienza la escucha de peticiones web.
 4. **Comandos y Listeners**:
-   - Registra el comando `/mvprog` (alias `/pc`, `/computador`, `/computadora`, `/disco`) mediante `ComputerCommand`.
+   - Registra el comando `/mvprog` mediante `ComputerCommand`.
    - Registra los escuchadores de eventos: `ComputerListener`, `TurtleListener` e `ItemSecurityListener`.
    - Registra recetas de crafteo personalizadas en `RecipeManager`.
 

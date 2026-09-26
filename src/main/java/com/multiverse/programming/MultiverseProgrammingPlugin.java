@@ -58,11 +58,6 @@ public class MultiverseProgrammingPlugin extends JavaPlugin {
             mvprogCommand.setExecutor(commandHandler);
             mvprogCommand.setTabCompleter(commandHandler);
         }
-        PluginCommand pcCommand = getCommand("pc");
-        if (pcCommand != null && pcCommand != mvprogCommand) {
-            pcCommand.setExecutor(commandHandler);
-            pcCommand.setTabCompleter(commandHandler);
-        }
 
         getLogger().info("MultiverseProgramming enabled (computer: " + configManager.getComputerBlock().name()
                 + ", advanced: " + configManager.getAdvancedComputerBlock().name()

@@ -8,7 +8,6 @@ softdepend: [WorldGuard, ProtectionStones]
 commands:
   mvprog:
     description: Main MultiverseProgramming command for computers, turtles, and blueprints.
-    aliases: [pc, mvp, computador, computadora, disco]
     usage: /mvprog <help|web|get|getbypass|quota|bp|build|give|reload>
     permission: multiverseprogramming.use
 

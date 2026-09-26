@@ -104,7 +104,7 @@ blueprint-player-quota-mb: 15.0
 
 ## Comandos
 
-Todos los comandos usan el prefijo `/mvprog` (con alias `/pc`, `/computador`, `/computadora`, `/disco`).
+Todos los comandos usan el prefijo `/mvprog`.
 
 ### Comandos de Jugador
 | Comando | Permiso | Descripción |

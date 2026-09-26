@@ -58,88 +58,88 @@ class ComputerCommandTest {
     }
 
     @Test
-    @DisplayName("Admin player can run /pc give and receives item")
+    @DisplayName("Admin player can run /mvprog give and receives item")
     void testAdminGiveCommand() {
         Player player = mock(Player.class);
         PlayerInventory inv = mock(PlayerInventory.class);
         when(player.getInventory()).thenReturn(inv);
         when(player.hasPermission("multiverseprogramming.admin")).thenReturn(true);
 
-        assertTrue(command.onCommand(player, mockCmd, "pc", new String[]{"give", "floppydisk"}));
+        assertTrue(command.onCommand(player, mockCmd, "mvprog", new String[]{"give", "floppydisk"}));
         verify(inv).addItem(any());
         verify(player).sendMessage(contains("You received a"));
 
-        assertTrue(command.onCommand(player, mockCmd, "pc", new String[]{"give", "computer"}));
+        assertTrue(command.onCommand(player, mockCmd, "mvprog", new String[]{"give", "computer"}));
         verify(inv, times(2)).addItem(any());
 
-        assertTrue(command.onCommand(player, mockCmd, "pc", new String[]{"give", "advancedcomputer"}));
+        assertTrue(command.onCommand(player, mockCmd, "mvprog", new String[]{"give", "advancedcomputer"}));
         verify(inv, times(3)).addItem(any());
 
-        assertTrue(command.onCommand(player, mockCmd, "pc", new String[]{"give", "monitor"}));
+        assertTrue(command.onCommand(player, mockCmd, "mvprog", new String[]{"give", "monitor"}));
         verify(inv, times(4)).addItem(any());
 
-        assertTrue(command.onCommand(player, mockCmd, "pc", new String[]{"give", "crafter"}));
+        assertTrue(command.onCommand(player, mockCmd, "mvprog", new String[]{"give", "crafter"}));
         verify(inv, times(5)).addItem(any());
 
-        assertTrue(command.onCommand(player, mockCmd, "pc", new String[]{"give", "transposer"}));
+        assertTrue(command.onCommand(player, mockCmd, "mvprog", new String[]{"give", "transposer"}));
         verify(inv, times(6)).addItem(any());
 
-        assertTrue(command.onCommand(player, mockCmd, "pc", new String[]{"give", "speaker"}));
+        assertTrue(command.onCommand(player, mockCmd, "mvprog", new String[]{"give", "speaker"}));
         verify(inv, times(7)).addItem(any());
 
-        assertTrue(command.onCommand(player, mockCmd, "pc", new String[]{"give", "turtle"}));
+        assertTrue(command.onCommand(player, mockCmd, "mvprog", new String[]{"give", "turtle"}));
         verify(inv, times(8)).addItem(any());
 
-        assertTrue(command.onCommand(player, mockCmd, "pc", new String[]{"give", "scanner"}));
+        assertTrue(command.onCommand(player, mockCmd, "mvprog", new String[]{"give", "scanner"}));
         verify(inv, times(9)).addItem(any());
 
-        assertTrue(command.onCommand(player, mockCmd, "pc", new String[]{"give", "cartographer"}));
+        assertTrue(command.onCommand(player, mockCmd, "mvprog", new String[]{"give", "cartographer"}));
         verify(inv, times(10)).addItem(any());
 
-        assertTrue(command.onCommand(player, mockCmd, "pc", new String[]{"give", "alchemist"}));
+        assertTrue(command.onCommand(player, mockCmd, "mvprog", new String[]{"give", "alchemist"}));
         verify(inv, times(11)).addItem(any());
 
-        assertTrue(command.onCommand(player, mockCmd, "pc", new String[]{"give", "farmer"}));
+        assertTrue(command.onCommand(player, mockCmd, "mvprog", new String[]{"give", "farmer"}));
         verify(inv, times(12)).addItem(any());
 
-        assertTrue(command.onCommand(player, mockCmd, "pc", new String[]{"give", "quarry"}));
+        assertTrue(command.onCommand(player, mockCmd, "mvprog", new String[]{"give", "quarry"}));
         verify(inv, times(13)).addItem(any());
 
-        assertTrue(command.onCommand(player, mockCmd, "pc", new String[]{"give", "npc"}));
+        assertTrue(command.onCommand(player, mockCmd, "mvprog", new String[]{"give", "npc"}));
         verify(inv, times(14)).addItem(any());
     }
 
     @Test
-    @DisplayName("Non-admin player is denied /pc give")
+    @DisplayName("Non-admin player is denied /mvprog give")
     void testNonAdminGiveDenied() {
         Player player = mock(Player.class);
         PlayerInventory inv = mock(PlayerInventory.class);
         when(player.getInventory()).thenReturn(inv);
         when(player.hasPermission("multiverseprogramming.admin")).thenReturn(false);
 
-        assertTrue(command.onCommand(player, mockCmd, "pc", new String[]{"give", "floppydisk"}));
+        assertTrue(command.onCommand(player, mockCmd, "mvprog", new String[]{"give", "floppydisk"}));
         verify(inv, never()).addItem(any());
         verify(player).sendMessage(contains("permission"));
     }
 
     @Test
-    @DisplayName("Admin can run /pc reload to reload configuration and recipes")
+    @DisplayName("Admin can run /mvprog reload to reload configuration and recipes")
     void testAdminReload() {
         CommandSender sender = mock(CommandSender.class);
         when(sender.hasPermission("multiverseprogramming.admin")).thenReturn(true);
 
-        assertTrue(command.onCommand(sender, mockCmd, "pc", new String[]{"reload"}));
+        assertTrue(command.onCommand(sender, mockCmd, "mvprog", new String[]{"reload"}));
         verify(plugin).reloadPluginConfig();
         verify(sender).sendMessage(contains("reloaded"));
     }
 
     @Test
-    @DisplayName("Non-admin is denied /pc reload")
+    @DisplayName("Non-admin is denied /mvprog reload")
     void testNonAdminReloadDenied() {
         CommandSender sender = mock(CommandSender.class);
         when(sender.hasPermission("multiverseprogramming.admin")).thenReturn(false);
 
-        assertTrue(command.onCommand(sender, mockCmd, "pc", new String[]{"reload"}));
+        assertTrue(command.onCommand(sender, mockCmd, "mvprog", new String[]{"reload"}));
         verify(plugin, never()).reloadPluginConfig();
         verify(sender).sendMessage(contains("permission"));
     }
@@ -153,13 +153,13 @@ class ComputerCommandTest {
         CommandSender user = mock(CommandSender.class);
         when(user.hasPermission("multiverseprogramming.admin")).thenReturn(false);
 
-        List<String> adminSuggestions = command.onTabComplete(admin, mockCmd, "pc", new String[]{""});
+        List<String> adminSuggestions = command.onTabComplete(admin, mockCmd, "mvprog", new String[]{""});
         assertTrue(adminSuggestions.contains("give"));
         assertTrue(adminSuggestions.contains("reload"));
         assertTrue(adminSuggestions.contains("help"));
         assertTrue(adminSuggestions.contains("build"));
 
-        List<String> userSuggestions = command.onTabComplete(user, mockCmd, "pc", new String[]{""});
+        List<String> userSuggestions = command.onTabComplete(user, mockCmd, "mvprog", new String[]{""});
         assertFalse(userSuggestions.contains("give"));
         assertFalse(userSuggestions.contains("reload"));
         assertFalse(userSuggestions.contains("build"));

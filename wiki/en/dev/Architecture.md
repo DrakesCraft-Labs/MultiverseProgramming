@@ -35,7 +35,7 @@ This document details the internal design, threading model, security sandbox, an
    - [`TurtleManager`](file:///c:/Users/danie/OneDrive/Documentos/Github/Personal/MultiverseProgramming/src/main/java/com/multiverse/programming/turtle/TurtleManager.java): Initializes thread-safe spatial map (`ConcurrentHashMap<Location, Turtle>`).
    - [`WebServerManager`](file:///c:/Users/danie/OneDrive/Documentos/Github/Personal/MultiverseProgramming/src/main/java/com/multiverse/programming/web/WebServerManager.java): Binds embedded HTTP server and begins listening for web traffic.
 4. **Command & Listener Registration**:
-   - Registers `/mvprog` (aliases `/pc`, `/computador`, `/computadora`, `/disco`) with `ComputerCommand`.
+   - Registers the `/mvprog` command with `ComputerCommand`.
    - Registers event listeners: `ComputerListener`, `TurtleListener`, and `ItemSecurityListener`.
    - Registers custom shaped/shapeless crafting recipes via `RecipeManager`.
 

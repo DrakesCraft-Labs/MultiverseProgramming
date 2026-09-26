@@ -97,7 +97,7 @@ end
 
 ## Commands
 
-All commands use the `/mvprog` prefix (aliases: `/pc`, `/computador`, `/computadora`, `/disco`):
+All commands use the `/mvprog` prefix:
 
 ```text
 /mvprog help                                                     - Shows help menu
