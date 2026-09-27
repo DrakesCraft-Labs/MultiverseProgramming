@@ -652,6 +652,8 @@
         serverNetworkTitle: 'Servidores que usan el Plugin',
         serverNetworkSub: 'Servidores y redes donde el plugin MultiverseProgramming y las Tortugas computacionales están activos.',
         serverCopyIp: 'Copiar IP',
+        modalitiesTitle: 'Modalidades que usan el plugin',
+        singleModalityTitle: 'Modalidad que usa el plugin',
         canvas2DHints: '📐 Vista 2D: Capa actual • Desplaza la barra inferior para ver capas • Pasa el ratón sobre un bloque',
         emptyLayer: 'Capa vacía (sin bloques en Y = ',
         toastServerUploaded: '✔ Sincronizado con el servidor: ',
@@ -747,6 +749,8 @@
         serverNetworkTitle: 'Servers using the Plugin',
         serverNetworkSub: 'Servers and networks where the MultiverseProgramming plugin and computational turtles are active.',
         serverCopyIp: 'Copy IP',
+        modalitiesTitle: 'Modes using the plugin',
+        singleModalityTitle: 'Mode using the plugin',
         canvas2DHints: '📐 2D Slice View • Move layer slider below • Hover over blocks for coordinates',
         emptyLayer: 'Empty layer (no blocks at Y = ',
         toastServerUploaded: '✔ Synced with Minecraft server: ',
@@ -810,42 +814,104 @@
     let selectedBlueprint = null;
     let viewMode = '3D'; // '3D' or '2D'
     // =========================================================================
-    // SERVERS USING THE PLUGIN
+    // SERVERS USING THE PLUGIN (GENERALIZED BY NETWORK / SERVER)
     // =========================================================================
     const DEFAULT_SERVERS = [
       {
-        name: 'DrakesCraft Skyblock',
+        name: 'DrakesCraft Network',
         host: 'play.drakescraft.net',
         port: 25565,
-        mode: 'Skyblock • BentoBox',
-        description: 'Construcción automática dentro del rango de tu isla respetando permisos de miembros.',
-        tags: ['Skyblock', 'BentoBox', 'Tortugas'],
-        pingText: '🟢 En Línea'
-      },
-      {
-        name: 'DrakesCraft Survival',
-        host: 'dallas.drakescraft.net',
-        port: 25565,
-        mode: 'Survival • Slimefun + Networks',
-        description: 'Servidor principal con soporte técnico Slimefun y logging con CoreProtect.',
-        tags: ['Survival', 'Slimefun', 'Tortugas'],
-        pingText: '🟢 En Línea'
-      },
-      {
-        name: 'DrakesCraft Creativo',
-        host: 'creative.drakescraft.net',
-        port: 25565,
-        mode: 'Creativo • Schematics Sandbox',
-        description: 'Importación instantánea de planos sin costo de materiales para testeo y diseño rápido.',
-        tags: ['Creativo', 'Sandbox', 'Tortugas'],
+        description: 'Red multiserver con integración completa de MultiverseProgramming y Tortugas automáticas.',
+        modalities: [
+          {
+            name: 'Skyblock',
+            detail: 'Construcción automática dentro del rango de tu isla respetando permisos de miembros (BentoBox).'
+          },
+          {
+            name: 'Survival',
+            detail: 'Servidor principal con soporte técnico Slimefun y logging con CoreProtect.'
+          },
+          {
+            name: 'Creativo',
+            detail: 'Importación instantánea de planos sin costo de materiales para testeo y diseño rápido (Sandbox).'
+          }
+        ],
+        tags: ['Skyblock', 'Survival', 'Creativo', 'BentoBox', 'Slimefun', 'Tortugas'],
         pingText: '🟢 En Línea'
       }
     ];
 
     let serverList = [];
 
+    function getRootDomain(host) {
+      if (!host) return '';
+      const clean = host.toLowerCase().split(':')[0].trim();
+      const parts = clean.split('.');
+      if (parts.length >= 2) {
+        return parts.slice(-2).join('.');
+      }
+      return clean;
+    }
+
+    function consolidateServers(list) {
+      const serverMap = new Map();
+
+      for (const item of list) {
+        if (!item || !item.host) continue;
+        const rootDomain = getRootDomain(item.host);
+        const isIpOrLocal = item.host === 'localhost' || item.host === '127.0.0.1' || /^(\d{1,3}\.){3}\d{1,3}$/.test(item.host);
+        const groupKey = isIpOrLocal ? `${item.host}:${item.port || 25565}` : rootDomain;
+
+        if (!serverMap.has(groupKey)) {
+          const s = {
+            name: item.name,
+            host: item.host,
+            port: item.port || 25565,
+            description: item.description || '',
+            modalities: item.modalities ? [...item.modalities] : [],
+            tags: item.tags ? [...item.tags] : [],
+            pingText: item.pingText || '🟢 En Línea'
+          };
+          if (item.mode && !s.modalities.some(m => m.name === item.mode)) {
+            s.modalities.push({
+              name: item.mode.split('•')[0].trim(),
+              detail: item.description || item.mode
+            });
+          }
+          if (rootDomain === 'drakescraft.net') {
+            s.name = 'DrakesCraft Network';
+            s.host = 'play.drakescraft.net';
+            s.description = 'Red multiserver con integración completa de MultiverseProgramming y Tortugas automáticas.';
+          }
+          serverMap.set(groupKey, s);
+        } else {
+          // Generalize server and merge modalities into the single server
+          const existing = serverMap.get(groupKey);
+          const incomingMods = item.modalities ? item.modalities : (item.mode ? [{
+            name: item.mode.split('•')[0].trim(),
+            detail: item.description || item.mode
+          }] : [{
+            name: item.name,
+            detail: item.description || ''
+          }]);
+
+          for (const mod of incomingMods) {
+            if (!existing.modalities.some(m => m.name === mod.name)) {
+              existing.modalities.push(mod);
+            }
+          }
+
+          if (item.tags) {
+            existing.tags = Array.from(new Set([...existing.tags, ...item.tags]));
+          }
+        }
+      }
+
+      return Array.from(serverMap.values());
+    }
+
     function initServerNetwork() {
-      serverList = [...DEFAULT_SERVERS];
+      serverList = consolidateServers(DEFAULT_SERVERS);
 
       // Auto-detect if loaded directly from an embedded plugin HTTP server instance
       const isEmbedded = window.location.protocol.startsWith('http') && 
@@ -859,8 +925,13 @@
             name: 'Tu Servidor Local (' + currentHost + (window.location.port ? ':' + window.location.port : '') + ')',
             host: currentHost,
             port: currentPort,
-            mode: 'Servidor Conectado',
-            description: 'Servidor activo ejecutando MultiverseProgramming con API web.',
+            description: 'Servidor activo ejecutando MultiverseProgramming con API web directa.',
+            modalities: [
+              {
+                name: 'Servidor Local',
+                detail: 'Instancia activa con API HTTP y ejecución de comandos en tiempo real.'
+              }
+            ],
             tags: ['Conectado', 'Local', 'API Activa'],
             pingText: '🟢 Conectado'
           };
@@ -898,16 +969,38 @@
 
       listEl.innerHTML = serverList.map(s => {
         const hostPort = s.host + (s.port && s.port !== 25565 ? ':' + s.port : '');
+        const hasMultipleMods = s.modalities && s.modalities.length > 1;
+        const modTitle = hasMultipleMods
+          ? `${t.modalitiesTitle || 'Modalidades que usan el plugin'} (${s.modalities.length}):`
+          : (t.singleModalityTitle || 'Modalidad que usa el plugin') + ':';
+
+        const modalitiesHtml = s.modalities && s.modalities.length > 0 ? `
+          <div style="background:#070a13; border:1px solid rgba(56, 189, 248, 0.2); border-radius:6px; padding:10px 12px; margin-top:4px;">
+            <div style="font-size:0.75rem; font-weight:700; color:var(--primary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">
+              ${escapeHtml(modTitle)}
+            </div>
+            <div style="display:flex; flex-direction:column; gap:6px;">
+              ${s.modalities.map(m => `
+                <div style="font-size:0.81rem; line-height:1.4;">
+                  <span style="color:#38bdf8; font-weight:700;">• ${escapeHtml(m.name)}:</span>
+                  <span style="color:var(--text-muted);"> ${escapeHtml(m.detail || '')}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        ` : '';
+
         return `
           <div class="server-card-item">
             <div style="display:flex; justify-content:space-between; align-items:center;">
               <div style="display:flex; align-items:center; gap:8px;">
                 <span class="status-pulse-dot"></span>
-                <strong style="color:#fff; font-size:0.92rem;">${escapeHtml(s.name)}</strong>
+                <strong style="color:#fff; font-size:0.95rem;">${escapeHtml(s.name)}</strong>
               </div>
               <span class="server-ping-badge" style="font-size:0.75rem;">${escapeHtml(s.pingText || '🟢 En Línea')}</span>
             </div>
-            <div style="color:var(--text-muted); font-size:0.8rem; line-height:1.4;">${escapeHtml(s.description || s.mode)}</div>
+            <div style="color:var(--text-muted); font-size:0.82rem; line-height:1.4;">${escapeHtml(s.description || '')}</div>
+            ${modalitiesHtml}
             <div class="server-tags">
               ${(s.tags || []).map(tg => `<span class="server-tag">${escapeHtml(tg)}</span>`).join('')}
             </div>
