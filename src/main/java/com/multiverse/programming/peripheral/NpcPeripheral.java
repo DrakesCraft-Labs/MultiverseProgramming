@@ -160,17 +160,34 @@ public final class NpcPeripheral implements Peripheral {
         cleanupEntitiesAt(location);
     }
 
+    public static String colorize(String text) {
+        if (text == null) return "";
+        return org.bukkit.ChatColor.translateAlternateColorCodes('&', text);
+    }
+
     public synchronized void updateHologram(String text) {
         clearHologram();
         World world = location.getWorld();
-        if (world == null) return;
+        if (world == null || text == null || text.isBlank()) return;
 
-        double yOffset = (npcEntity != null && npcEntity.isValid()) ? 2.25 : 1.3;
+        double yOffset;
+        if (npcEntity != null && npcEntity.isValid()) {
+            double h = npcEntity.getHeight();
+            if (h <= 0.1) h = 1.95;
+            yOffset = 1.0 + h + 0.35;
+            try {
+                npcEntity.setCustomNameVisible(false);
+            } catch (Throwable ignored) {}
+        } else {
+            yOffset = 1.35;
+        }
+
         Location holoLoc = location.clone().add(0.5, yOffset, 0.5);
+        String formatted = colorize(text);
         try {
             this.hologramEntity = world.spawn(holoLoc, TextDisplay.class, display -> {
                 display.addScoreboardTag(HOLOGRAM_TAG);
-                display.setText(text);
+                display.setText(formatted);
                 display.setBillboard(Display.Billboard.CENTER);
                 display.setDefaultBackground(false);
                 display.setSeeThrough(true);
@@ -179,7 +196,7 @@ public final class NpcPeripheral implements Peripheral {
             try {
                 this.hologramEntity = world.spawn(holoLoc.clone().subtract(0, 1.0, 0), ArmorStand.class, as -> {
                     as.addScoreboardTag(HOLOGRAM_TAG);
-                    as.setCustomName(text);
+                    as.setCustomName(formatted);
                     as.setCustomNameVisible(true);
                     as.setVisible(false);
                     as.setGravity(false);
@@ -196,7 +213,51 @@ public final class NpcPeripheral implements Peripheral {
             } catch (Throwable ignored) {}
             hologramEntity = null;
         }
+        if (npcEntity != null && npcEntity.isValid()) {
+            try {
+                npcEntity.setCustomNameVisible(true);
+            } catch (Throwable ignored) {}
+        }
         cleanupHologramsAt(location);
+    }
+
+    public Player resolvePlayer(String pName) {
+        if (pName != null && !pName.isBlank() && !pName.equalsIgnoreCase("nearest")) {
+            Player p = Bukkit.getPlayerExact(pName);
+            if (p != null && p.isOnline()) return p;
+            p = Bukkit.getPlayer(pName);
+            if (p != null && p.isOnline()) return p;
+        }
+        return getNearestPlayer(16.0);
+    }
+
+    public Player getNearestPlayer(double maxDistance) {
+        World world = location != null ? location.getWorld() : null;
+        if (world == null) return null;
+        Player closest = null;
+        double minDistSq = maxDistance * maxDistance;
+        for (Player p : world.getPlayers()) {
+            if (p.isOnline() && p.getWorld() != null && p.getWorld().equals(world)) {
+                double distSq = p.getLocation().distanceSquared(location);
+                if (distSq <= minDistSq) {
+                    minDistSq = distSq;
+                    closest = p;
+                }
+            }
+        }
+        return closest;
+    }
+
+    public String getMostRecentResponse() {
+        String latestPlayer = null;
+        long latestTime = 0;
+        for (Map.Entry<String, Long> entry : lastInteractionTimes.entrySet()) {
+            if (entry.getValue() > latestTime) {
+                latestTime = entry.getValue();
+                latestPlayer = entry.getKey();
+            }
+        }
+        return latestPlayer != null ? playerResponses.get(latestPlayer) : null;
     }
 
     public synchronized void removeAll() {
@@ -244,16 +305,15 @@ public final class NpcPeripheral implements Peripheral {
         table.set("setName", new VarArgFunction() {
             @Override
             public Varargs invoke(Varargs args) {
-                npcName = args.checkjstring(1);
+                npcName = colorize(args.checkjstring(1));
                 boolean spawn = args.narg() < 2 || args.checkboolean(2);
                 SyncDispatcher.sync(plugin, () -> {
                     if (npcEntity != null && npcEntity.isValid()) {
                         npcEntity.setCustomName(npcName);
-                        npcEntity.setCustomNameVisible(true);
+                        npcEntity.setCustomNameVisible(hologramEntity == null || !hologramEntity.isValid());
                     } else if (spawn) {
                         spawnNpc("VILLAGER");
                     }
-                    updateHologram(npcName);
                     return null;
                 });
                 return LuaBoolean.TRUE;
@@ -274,9 +334,7 @@ public final class NpcPeripheral implements Peripheral {
             public Varargs invoke(Varargs args) {
                 String type = args.narg() >= 1 ? args.checkjstring(1) : "VILLAGER";
                 boolean ok = SyncDispatcher.sync(plugin, () -> {
-                    boolean spawned = spawnNpc(type);
-                    updateHologram(npcName);
-                    return spawned;
+                    return spawnNpc(type);
                 });
                 return LuaBoolean.valueOf(ok);
             }
@@ -287,13 +345,11 @@ public final class NpcPeripheral implements Peripheral {
             @Override
             public Varargs invoke(Varargs args) {
                 if (args.narg() >= 1) {
-                    npcName = args.checkjstring(1);
+                    npcName = colorize(args.checkjstring(1));
                 }
                 String type = args.narg() >= 2 ? args.checkjstring(2) : "VILLAGER";
                 boolean ok = SyncDispatcher.sync(plugin, () -> {
-                    boolean spawned = spawnNpc(type);
-                    updateHologram(npcName);
-                    return spawned;
+                    return spawnNpc(type);
                 });
                 return LuaBoolean.valueOf(ok);
             }
@@ -322,16 +378,34 @@ public final class NpcPeripheral implements Peripheral {
         });
         table.set("hasSpawned", table.get("isSpawned"));
 
-        // npc.say(playerName, message)
-        table.set("say", new TwoArgFunction() {
+        // npc.getNearestPlayer([radius]) -> string or nil
+        table.set("getNearestPlayer", new VarArgFunction() {
             @Override
-            public LuaValue call(LuaValue arg1, LuaValue arg2) {
-                String pName = arg1.checkjstring();
-                String msg = arg2.checkjstring();
+            public Varargs invoke(Varargs args) {
+                double radius = args.narg() >= 1 ? args.checkdouble(1) : 16.0;
+                Player p = getNearestPlayer(radius);
+                return p != null ? LuaString.valueOf(p.getName()) : LuaValue.NIL;
+            }
+        });
+
+        // npc.say([playerName], message)
+        table.set("say", new VarArgFunction() {
+            @Override
+            public Varargs invoke(Varargs args) {
+                String pName;
+                String msg;
+                if (args.narg() >= 2) {
+                    pName = args.checkjstring(1);
+                    msg = args.checkjstring(2);
+                } else {
+                    pName = null;
+                    msg = args.checkjstring(1);
+                }
+                final String finalMsg = colorize(msg);
                 SyncDispatcher.sync(plugin, () -> {
-                    Player p = Bukkit.getPlayerExact(pName);
+                    Player p = resolvePlayer(pName);
                     if (p != null && p.isOnline()) {
-                        p.sendMessage(npcName + " §f" + msg);
+                        p.sendMessage(npcName + " §f" + finalMsg);
                     }
                     return null;
                 });
@@ -343,7 +417,7 @@ public final class NpcPeripheral implements Peripheral {
         table.set("broadcast", new VarArgFunction() {
             @Override
             public Varargs invoke(Varargs args) {
-                String msg = args.checkjstring(1);
+                String msg = colorize(args.checkjstring(1));
                 int radius = args.narg() >= 2 ? args.checkint(2) : 16;
 
                 SyncDispatcher.sync(plugin, () -> {
@@ -361,21 +435,30 @@ public final class NpcPeripheral implements Peripheral {
             }
         });
 
-        // npc.ask(playerName, question, optionsTable)
+        // npc.ask([playerName], question, optionsTable)
         table.set("ask", new VarArgFunction() {
             @Override
             public Varargs invoke(Varargs args) {
-                String pName = args.checkjstring(1);
-                String question = args.checkjstring(2);
-                LuaTable options = args.checktable(3);
-
+                String pName;
+                String question;
+                LuaTable options;
+                if (args.narg() >= 3) {
+                    pName = args.checkjstring(1);
+                    question = args.checkjstring(2);
+                    options = args.checktable(3);
+                } else {
+                    pName = null;
+                    question = args.checkjstring(1);
+                    options = args.checktable(2);
+                }
+                final String finalQ = colorize(question);
                 SyncDispatcher.sync(plugin, () -> {
-                    Player p = Bukkit.getPlayerExact(pName);
+                    Player p = resolvePlayer(pName);
                     if (p != null && p.isOnline()) {
-                        p.sendMessage(npcName + " §e" + question);
+                        p.sendMessage(npcName + " §e" + finalQ);
                         int len = options.length();
                         for (int i = 1; i <= len; i++) {
-                            String opt = options.get(i).tojstring();
+                            String opt = colorize(options.get(i).tojstring());
                             p.sendMessage(" §8[§6" + i + "§8] §a" + opt);
                         }
                         p.sendMessage(" §7(Type the option number or text in chat to respond)");
@@ -386,21 +469,32 @@ public final class NpcPeripheral implements Peripheral {
             }
         });
 
-        // npc.getLastResponse(playerName) -> string or nil
-        table.set("getLastResponse", new OneArgFunction() {
+        // npc.getLastResponse([playerName]) -> string or nil
+        table.set("getLastResponse", new VarArgFunction() {
             @Override
-            public LuaValue call(LuaValue arg) {
-                String pName = arg.checkjstring().toLowerCase(Locale.ROOT);
-                String resp = playerResponses.get(pName);
-                return resp != null ? LuaString.valueOf(resp) : LuaValue.NIL;
+            public Varargs invoke(Varargs args) {
+                if (args.narg() >= 1 && !args.arg1().isnil()) {
+                    String pName = args.checkjstring(1).toLowerCase(Locale.ROOT);
+                    String resp = playerResponses.get(pName);
+                    return resp != null ? LuaString.valueOf(resp) : LuaValue.NIL;
+                }
+                String mostRecent = getMostRecentResponse();
+                return mostRecent != null ? LuaString.valueOf(mostRecent) : LuaValue.NIL;
             }
         });
 
-        // npc.clearResponse(playerName)
-        table.set("clearResponse", new OneArgFunction() {
+        // npc.clearResponse([playerName])
+        table.set("clearResponse", new VarArgFunction() {
             @Override
-            public LuaValue call(LuaValue arg) {
-                playerResponses.remove(arg.checkjstring().toLowerCase(Locale.ROOT));
+            public Varargs invoke(Varargs args) {
+                if (args.narg() >= 1 && !args.arg1().isnil()) {
+                    String pName = args.checkjstring(1).toLowerCase(Locale.ROOT);
+                    playerResponses.remove(pName);
+                    lastInteractionTimes.remove(pName);
+                } else {
+                    playerResponses.clear();
+                    lastInteractionTimes.clear();
+                }
                 return LuaBoolean.TRUE;
             }
         });

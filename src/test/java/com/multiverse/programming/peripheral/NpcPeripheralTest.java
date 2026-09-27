@@ -88,4 +88,30 @@ class NpcPeripheralTest {
         assertTrue(table.get("remove").call().toboolean());
         assertTrue(table.get("destroy").call().toboolean());
     }
+
+    @Test
+    @DisplayName("Npc say, ask, and getLastResponse support flexible arguments and colorize")
+    void testFlexibleSayAskAndResponses() {
+        LuaTable table = npc.toLuaTable().checktable();
+
+        // Colorize helper
+        assertEquals("§6Title", NpcPeripheral.colorize("&6Title"));
+
+        // say with 1 arg (implicit nearest player)
+        assertTrue(table.get("say").call(LuaValue.valueOf("&aHello adventurer!")).toboolean());
+
+        // ask with 2 args (question + options)
+        LuaTable opts = new LuaTable();
+        opts.set(1, LuaValue.valueOf("Option A"));
+        opts.set(2, LuaValue.valueOf("Option B"));
+        assertTrue(table.get("ask").call(LuaValue.valueOf("&eChoose wisely:"), opts).toboolean());
+
+        // record and get without playerName
+        npc.recordPlayerResponse("Steve", "1");
+        assertEquals("1", table.get("getLastResponse").call().tojstring());
+
+        // clear all
+        table.get("clearResponse").call();
+        assertTrue(table.get("getLastResponse").call().isnil());
+    }
 }
