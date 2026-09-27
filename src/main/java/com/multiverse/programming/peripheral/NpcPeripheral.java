@@ -109,7 +109,14 @@ public final class NpcPeripheral implements Peripheral {
                     living.setRemoveWhenFarAway(false);
                 }
                 if (entity instanceof Villager villager) {
-                    villager.setProfession(Villager.Profession.LIBRARIAN);
+                    villager.setProfession(Villager.Profession.NITWIT);
+                    try {
+                        villager.setRecipes(java.util.Collections.emptyList());
+                        villager.setVillagerExperience(0);
+                        villager.setVillagerLevel(1);
+                        villager.setBreed(false);
+                        villager.setAgeLock(true);
+                    } catch (Throwable ignored) {}
                 }
                 this.npcEntity = entity;
                 return true;
@@ -126,7 +133,14 @@ public final class NpcPeripheral implements Peripheral {
                     v.setSilent(true);
                     v.setCollidable(false);
                     v.setRemoveWhenFarAway(false);
-                    v.setProfession(Villager.Profession.LIBRARIAN);
+                    v.setProfession(Villager.Profession.NITWIT);
+                    try {
+                        v.setRecipes(java.util.Collections.emptyList());
+                        v.setVillagerExperience(0);
+                        v.setVillagerLevel(1);
+                        v.setBreed(false);
+                        v.setAgeLock(true);
+                    } catch (Throwable ignored) {}
                 });
                 this.npcEntity = entity;
                 return entity != null;

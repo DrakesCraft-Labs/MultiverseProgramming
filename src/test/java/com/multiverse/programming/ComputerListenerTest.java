@@ -156,4 +156,49 @@ class ComputerListenerTest {
         listener.onInventoryClick(event);
         assertTrue(event.isCancelled());
     }
+
+    @Test
+    @DisplayName("Vanilla interactions with NPC entity are cancelled")
+    void testNpcVanillaInteractionsCancelled() {
+        org.bukkit.entity.Entity npcEntity = mock(org.bukkit.entity.Entity.class);
+        when(npcEntity.getScoreboardTags()).thenReturn(java.util.Set.of(com.multiverse.programming.peripheral.NpcPeripheral.NPC_TAG));
+
+        org.bukkit.event.player.PlayerInteractEntityEvent interactEvent = mock(org.bukkit.event.player.PlayerInteractEntityEvent.class);
+        when(interactEvent.getRightClicked()).thenReturn(npcEntity);
+        listener.onPlayerInteractNpc(interactEvent);
+        verify(interactEvent).setCancelled(true);
+
+        org.bukkit.event.player.PlayerInteractAtEntityEvent interactAtEvent = mock(org.bukkit.event.player.PlayerInteractAtEntityEvent.class);
+        when(interactAtEvent.getRightClicked()).thenReturn(npcEntity);
+        listener.onPlayerInteractAtNpc(interactAtEvent);
+        verify(interactAtEvent).setCancelled(true);
+
+        org.bukkit.event.entity.EntityDamageEvent dmgEvent = mock(org.bukkit.event.entity.EntityDamageEvent.class);
+        when(dmgEvent.getEntity()).thenReturn(npcEntity);
+        listener.onNpcDamage(dmgEvent);
+        verify(dmgEvent).setCancelled(true);
+
+        org.bukkit.event.entity.EntityTransformEvent transEvent = mock(org.bukkit.event.entity.EntityTransformEvent.class);
+        when(transEvent.getEntity()).thenReturn(npcEntity);
+        listener.onNpcTransform(transEvent);
+        verify(transEvent).setCancelled(true);
+    }
+
+    @Test
+    @DisplayName("Sculk bloom is cancelled on NPC block adjacent to computer")
+    void testSculkBloomCancelledOnNpcBlock() {
+        when(configManager.getNpcBlock()).thenReturn(Material.SCULK_CATALYST);
+
+        Block catalystBlock = mock(Block.class);
+        when(catalystBlock.getType()).thenReturn(Material.SCULK_CATALYST);
+
+        Block computer = mock(Block.class);
+        when(computer.getType()).thenReturn(Material.LECTERN);
+        when(catalystBlock.getRelative(org.bukkit.block.BlockFace.NORTH)).thenReturn(computer);
+
+        org.bukkit.event.block.SculkBloomEvent bloomEvent = mock(org.bukkit.event.block.SculkBloomEvent.class);
+        when(bloomEvent.getBlock()).thenReturn(catalystBlock);
+        listener.onSculkBloom(bloomEvent);
+        verify(bloomEvent).setCancelled(true);
+    }
 }

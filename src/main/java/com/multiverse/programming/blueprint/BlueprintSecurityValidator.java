@@ -30,7 +30,13 @@ public final class BlueprintSecurityValidator {
             "END_PORTAL_FRAME",
             "END_GATEWAY",
             "NETHER_PORTAL",
-            "REINFORCED_DEEPSLATE"
+            "REINFORCED_DEEPSLATE",
+            "BUDDING_AMETHYST",
+            "VAULT",
+            "DRAGON_EGG",
+            "TRIAL_SPAWNER",
+            "SPAWNER",
+            "MONSTER_SPAWNER"
     );
 
     public static boolean isDangerousBlock(String material) {

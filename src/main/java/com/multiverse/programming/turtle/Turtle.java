@@ -2459,7 +2459,8 @@ public final class Turtle {
             case BEDROCK, BARRIER, STRUCTURE_BLOCK, STRUCTURE_VOID, JIGSAW,
                  COMMAND_BLOCK, CHAIN_COMMAND_BLOCK, REPEATING_COMMAND_BLOCK,
                  LIGHT, END_PORTAL, END_PORTAL_FRAME, END_GATEWAY,
-                 NETHER_PORTAL, REINFORCED_DEEPSLATE -> true;
+                 NETHER_PORTAL, REINFORCED_DEEPSLATE,
+                 BUDDING_AMETHYST, VAULT, DRAGON_EGG, TRIAL_SPAWNER, SPAWNER -> true;
             default -> false;
         };
     }

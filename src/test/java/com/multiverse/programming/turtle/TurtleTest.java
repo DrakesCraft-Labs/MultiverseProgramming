@@ -315,6 +315,11 @@ class TurtleTest {
         assertTrue(Turtle.isIllegalBlock(Material.STRUCTURE_BLOCK));
         assertTrue(Turtle.isIllegalBlock(Material.END_PORTAL));
         assertTrue(Turtle.isIllegalBlock(Material.NETHER_PORTAL));
+        assertTrue(Turtle.isIllegalBlock(Material.BUDDING_AMETHYST));
+        assertTrue(Turtle.isIllegalBlock(Material.VAULT));
+        assertTrue(Turtle.isIllegalBlock(Material.DRAGON_EGG));
+        assertTrue(Turtle.isIllegalBlock(Material.TRIAL_SPAWNER));
+        assertTrue(Turtle.isIllegalBlock(Material.SPAWNER));
         assertFalse(Turtle.isIllegalBlock(Material.STONE));
         assertFalse(Turtle.isIllegalBlock(Material.OAK_PLANKS));
     }

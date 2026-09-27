@@ -266,6 +266,13 @@ class BlueprintParserTest {
         assertTrue(BlueprintSecurityValidator.isDangerousBlock("minecraft:structure_block"));
         assertTrue(BlueprintSecurityValidator.isDangerousBlock("minecraft:nether_portal"));
         assertTrue(BlueprintSecurityValidator.isDangerousBlock("NETHER_PORTAL"));
+        assertTrue(BlueprintSecurityValidator.isDangerousBlock("BUDDING_AMETHYST"));
+        assertTrue(BlueprintSecurityValidator.isDangerousBlock("minecraft:budding_amethyst"));
+        assertTrue(BlueprintSecurityValidator.isDangerousBlock("minecraft:vault"));
+        assertTrue(BlueprintSecurityValidator.isDangerousBlock("minecraft:dragon_egg"));
+        assertTrue(BlueprintSecurityValidator.isDangerousBlock("minecraft:trial_spawner"));
+        assertTrue(BlueprintSecurityValidator.isDangerousBlock("minecraft:spawner"));
+        assertTrue(BlueprintSecurityValidator.isDangerousBlock("minecraft:monster_spawner"));
         assertFalse(BlueprintSecurityValidator.isDangerousBlock("minecraft:stone"));
         assertFalse(BlueprintSecurityValidator.isDangerousBlock("minecraft:oak_planks"));
     }

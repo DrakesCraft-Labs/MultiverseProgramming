@@ -598,4 +598,91 @@ public final class ComputerListener implements Listener {
             }
         }
     }
+
+    // =========================================================================
+    // NPC Chatbot & Quest Interposer - Disable Vanilla Functionality
+    // =========================================================================
+
+    public boolean isNpcBlock(Block block) {
+        if (block == null) return false;
+        Material npcMat = plugin.getConfigManager() != null ? plugin.getConfigManager().getNpcBlock() : Material.SCULK_CATALYST;
+        if (block.getType() != npcMat) return false;
+        for (com.multiverse.programming.peripheral.NpcPeripheral npc : com.multiverse.programming.peripheral.NpcPeripheral.getActiveNpcs()) {
+            Location nLoc = npc.getLocation();
+            if (nLoc != null && nLoc.getWorld() != null && nLoc.getWorld().equals(block.getWorld())
+                    && nLoc.getBlockX() == block.getX() && nLoc.getBlockY() == block.getY() && nLoc.getBlockZ() == block.getZ()) {
+                return true;
+            }
+        }
+        for (BlockFace face : new BlockFace[]{BlockFace.UP, BlockFace.DOWN, BlockFace.NORTH, BlockFace.SOUTH, BlockFace.WEST, BlockFace.EAST}) {
+            Block adj = block.getRelative(face);
+            if (adj != null && isComputerBlock(adj.getType())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @EventHandler(priority = org.bukkit.event.EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onPlayerInteractNpc(org.bukkit.event.player.PlayerInteractEntityEvent event) {
+        org.bukkit.entity.Entity entity = event.getRightClicked();
+        if (entity != null && entity.getScoreboardTags().contains(com.multiverse.programming.peripheral.NpcPeripheral.NPC_TAG)) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = org.bukkit.event.EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onPlayerInteractAtNpc(org.bukkit.event.player.PlayerInteractAtEntityEvent event) {
+        org.bukkit.entity.Entity entity = event.getRightClicked();
+        if (entity != null && entity.getScoreboardTags().contains(com.multiverse.programming.peripheral.NpcPeripheral.NPC_TAG)) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = org.bukkit.event.EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onNpcDamage(org.bukkit.event.entity.EntityDamageEvent event) {
+        org.bukkit.entity.Entity entity = event.getEntity();
+        if (entity != null && entity.getScoreboardTags().contains(com.multiverse.programming.peripheral.NpcPeripheral.NPC_TAG)) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = org.bukkit.event.EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onNpcTransform(org.bukkit.event.entity.EntityTransformEvent event) {
+        org.bukkit.entity.Entity entity = event.getEntity();
+        if (entity != null && entity.getScoreboardTags().contains(com.multiverse.programming.peripheral.NpcPeripheral.NPC_TAG)) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = org.bukkit.event.EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onNpcTarget(org.bukkit.event.entity.EntityTargetLivingEntityEvent event) {
+        if (event.getTarget() != null && event.getTarget().getScoreboardTags().contains(com.multiverse.programming.peripheral.NpcPeripheral.NPC_TAG)) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = org.bukkit.event.EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onVillagerAcquireTrade(org.bukkit.event.entity.VillagerAcquireTradeEvent event) {
+        org.bukkit.entity.Entity entity = event.getEntity();
+        if (entity != null && entity.getScoreboardTags().contains(com.multiverse.programming.peripheral.NpcPeripheral.NPC_TAG)) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = org.bukkit.event.EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onVillagerCareerChange(org.bukkit.event.entity.VillagerCareerChangeEvent event) {
+        org.bukkit.entity.Entity entity = event.getEntity();
+        if (entity != null && entity.getScoreboardTags().contains(com.multiverse.programming.peripheral.NpcPeripheral.NPC_TAG)) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = org.bukkit.event.EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onSculkBloom(org.bukkit.event.block.SculkBloomEvent event) {
+        Block block = event.getBlock();
+        if (isNpcBlock(block)) {
+            event.setCancelled(true);
+        }
+    }
 }
