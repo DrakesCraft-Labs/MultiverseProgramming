@@ -8,6 +8,7 @@ import com.multiverse.programming.peripheral.PeripheralManager;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -17,7 +18,9 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockExplodeEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
@@ -351,6 +354,24 @@ public final class TurtleListener implements Listener {
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onBlockBreak(BlockBreakEvent event) {
         Block block = event.getBlock();
+
+        // Check if block is protected by an active turtle task (building, mining, active chests, or working turtle)
+        Turtle.BlockProtectionCheck protCheck = (plugin.getTurtleManager() != null)
+                ? plugin.getTurtleManager().checkBlockProtection(block.getLocation())
+                : null;
+        if (protCheck != null && protCheck.isProtected()) {
+            Player player = event.getPlayer();
+            if (!player.isSneaking()) {
+                event.setCancelled(true);
+                player.sendMessage(plugin.getPrefix() + " §cNo puedes destruir este bloque porque " + protCheck.reason()
+                        + " §ePara forzar la destrucción, debes agacharte (Shift) y romperlo.");
+                try {
+                    player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 1.0f, 0.5f);
+                } catch (Throwable ignored) {}
+                return;
+            }
+        }
+
         if (block.getType() != getTurtleBlock()) {
             return;
         }
@@ -402,5 +423,23 @@ public final class TurtleListener implements Listener {
         }
 
         event.getPlayer().sendMessage(plugin.getPrefix() + " §eTurtle " + turtle.getId() + " disassembled.");
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onEntityExplode(EntityExplodeEvent event) {
+        if (plugin.getTurtleManager() == null) return;
+        event.blockList().removeIf(b -> {
+            Turtle.BlockProtectionCheck check = plugin.getTurtleManager().checkBlockProtection(b.getLocation());
+            return check != null && check.isProtected();
+        });
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onBlockExplode(BlockExplodeEvent event) {
+        if (plugin.getTurtleManager() == null) return;
+        event.blockList().removeIf(b -> {
+            Turtle.BlockProtectionCheck check = plugin.getTurtleManager().checkBlockProtection(b.getLocation());
+            return check != null && check.isProtected();
+        });
     }
 }

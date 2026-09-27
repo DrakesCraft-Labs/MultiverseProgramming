@@ -25,9 +25,11 @@ import org.bukkit.scheduler.BukkitTask;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -72,18 +74,26 @@ public final class Turtle {
     private int totalBlocks = 0;
     private BukkitTask buildTask;
 
+    public record BlockProtectionCheck(boolean isProtected, String reason) {}
+    public record BlockPos(int x, int y, int z) {}
+
     private Location constructionChestLoc;
+    private Location constructionChestLoc2;
     private org.bukkit.entity.Entity constructionHologram;
     private Location fuelChestLoc;
+    private Location fuelChestLoc2;
     private org.bukkit.entity.Entity fuelHologram;
+    private final Set<BlockPos> activeBuildPositions = new HashSet<>();
 
     // Active Quarry Engine Upgrade fields
     private BukkitTask quarryTask;
     private LateralSide quarryLateralSide;
     private Location quarryStartLocation;
     private Location quarryStorageChestLoc;
+    private Location quarryStorageChestLoc2;
     private org.bukkit.entity.Entity quarryStorageHologram;
     private Location quarryFuelChestLoc;
+    private Location quarryFuelChestLoc2;
     private org.bukkit.entity.Entity quarryFuelHologram;
     private int quarryBlocksMined = 0;
     private int quarryTotalBlocks = 0;
@@ -95,6 +105,13 @@ public final class Turtle {
     private int quarryStepZ = 0;
     private boolean quarryHandleLiquids = true;
     private int quarryFuelPoints = 0;
+    private World quarryWorld;
+    private int quarryMinX = 0;
+    private int quarryMaxX = 0;
+    private int quarryMinY = 0;
+    private int quarryMaxY = 0;
+    private int quarryMinZ = 0;
+    private int quarryMaxZ = 0;
 
     public Turtle(org.bukkit.plugin.java.JavaPlugin plugin, String id, Location location, BlockFace facing, UUID owner) {
         this.plugin = Objects.requireNonNull(plugin, "plugin cannot be null");
@@ -242,6 +259,22 @@ public final class Turtle {
     public double getProgressPercentage() {
         if (totalBlocks <= 0) return 0.0;
         return Math.min(100.0, ((double) currentBlockIndex.get() / totalBlocks) * 100.0);
+    }
+
+    public synchronized Location getConstructionChestLoc() {
+        return constructionChestLoc != null ? constructionChestLoc.clone() : null;
+    }
+
+    public synchronized Location getConstructionChestLoc2() {
+        return constructionChestLoc2 != null ? constructionChestLoc2.clone() : null;
+    }
+
+    public synchronized Location getFuelChestLoc() {
+        return fuelChestLoc != null ? fuelChestLoc.clone() : null;
+    }
+
+    public synchronized Location getFuelChestLoc2() {
+        return fuelChestLoc2 != null ? fuelChestLoc2.clone() : null;
     }
 
     // =========================================================================
@@ -547,31 +580,40 @@ public final class Turtle {
             return true;
         }
 
-        // Fallback: check adjacent fuel chest
-        if (fuelChestLoc != null && fuelChestLoc.getWorld() != null) {
-            Block block = fuelChestLoc.getBlock();
-            if (block.getState() instanceof org.bukkit.block.Container container) {
-                Inventory chestInv = container.getInventory();
-                for (int slot = 0; slot < chestInv.getSize(); slot++) {
-                    ItemStack cItem = chestInv.getItem(slot);
-                    int fVal = getFuelValue(cItem != null ? cItem.getType() : null);
-                    if (fVal > 0 && cItem != null && cItem.getAmount() > 0) {
-                        int consume = (count <= 0) ? cItem.getAmount() : Math.min(count, cItem.getAmount());
-                        this.fuel += consume * fVal;
-                        if (cItem.getType() == Material.LAVA_BUCKET) {
-                            chestInv.setItem(slot, new ItemStack(Material.BUCKET, consume));
-                        } else {
-                            cItem.setAmount(cItem.getAmount() - consume);
-                            if (cItem.getAmount() <= 0) {
-                                chestInv.setItem(slot, null);
-                            }
+        // Fallback: check fuel chests
+        if (refuelFromChest(fuelChestLoc, count)) {
+            return true;
+        }
+        if (refuelFromChest(fuelChestLoc2, count)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private boolean refuelFromChest(Location chestLoc, int count) {
+        if (chestLoc == null || chestLoc.getWorld() == null) return false;
+        Block block = chestLoc.getBlock();
+        if (block.getState() instanceof org.bukkit.block.Container container) {
+            Inventory chestInv = container.getInventory();
+            for (int slot = 0; slot < chestInv.getSize(); slot++) {
+                ItemStack cItem = chestInv.getItem(slot);
+                int fVal = getFuelValue(cItem != null ? cItem.getType() : null);
+                if (fVal > 0 && cItem != null && cItem.getAmount() > 0) {
+                    int consume = (count <= 0) ? cItem.getAmount() : Math.min(count, cItem.getAmount());
+                    this.fuel += consume * fVal;
+                    if (cItem.getType() == Material.LAVA_BUCKET) {
+                        chestInv.setItem(slot, new ItemStack(Material.BUCKET, consume));
+                    } else {
+                        cItem.setAmount(cItem.getAmount() - consume);
+                        if (cItem.getAmount() <= 0) {
+                            chestInv.setItem(slot, null);
                         }
-                        return true;
                     }
+                    return true;
                 }
             }
         }
-
         return false;
     }
 
@@ -657,6 +699,16 @@ public final class Turtle {
 
         if (requireMaterials) {
             setupConstructionChests(origin);
+        }
+
+        this.activeBuildPositions.clear();
+        if (blueprint != null && blueprint.blocks() != null) {
+            for (PlacementBlock pb : blueprint.blocks()) {
+                Material targetMat = parseMaterialFromBlockState(pb.material());
+                if (targetMat != null && !targetMat.isAir()) {
+                    this.activeBuildPositions.add(new BlockPos(pb.x(), pb.y(), pb.z()));
+                }
+            }
         }
 
         this.activeBlueprint = blueprint;
@@ -1065,29 +1117,159 @@ public final class Turtle {
             }
         }
 
-        // 2. Check construction supply chest
-        if (constructionChestLoc != null && constructionChestLoc.getWorld() != null) {
-            Block chestBlock = constructionChestLoc.getBlock();
-            if (chestBlock.getState() instanceof org.bukkit.block.Container container) {
-                Inventory chestInv = container.getInventory();
-                for (int slot = 0; slot < chestInv.getSize(); slot++) {
-                    ItemStack item = chestInv.getItem(slot);
-                    if (item != null && item.getAmount() > 0) {
-                        if (item.getType() == mat ||
-                                (mat == Material.WATER && item.getType() == Material.WATER_BUCKET) ||
-                                (mat == Material.LAVA && item.getType() == Material.LAVA_BUCKET)) {
-                            item.setAmount(item.getAmount() - 1);
-                            if (item.getAmount() <= 0) {
-                                chestInv.setItem(slot, null);
-                            }
-                            return true;
+        // 2. Check construction supply chests (both halves)
+        if (consumeFromChest(constructionChestLoc, mat)) {
+            return true;
+        }
+        if (consumeFromChest(constructionChestLoc2, mat)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private boolean consumeFromChest(Location chestLoc, Material mat) {
+        if (chestLoc == null || chestLoc.getWorld() == null) return false;
+        Block chestBlock = chestLoc.getBlock();
+        if (chestBlock.getState() instanceof org.bukkit.block.Container container) {
+            Inventory chestInv = container.getInventory();
+            for (int slot = 0; slot < chestInv.getSize(); slot++) {
+                ItemStack item = chestInv.getItem(slot);
+                if (item != null && item.getAmount() > 0) {
+                    if (item.getType() == mat ||
+                            (mat == Material.WATER && item.getType() == Material.WATER_BUCKET) ||
+                            (mat == Material.LAVA && item.getType() == Material.LAVA_BUCKET)) {
+                        item.setAmount(item.getAmount() - 1);
+                        if (item.getAmount() <= 0) {
+                            chestInv.setItem(slot, null);
                         }
+                        return true;
                     }
                 }
             }
         }
-
         return false;
+    }
+
+    private record DoubleChestPair(Block s1, Block s2, Block f1, Block f2) {}
+
+    private static boolean isPlaceableOrChest(Block b) {
+        if (b == null) return false;
+        Material mat = b.getType();
+        return mat.isAir() || b.isEmpty() || b.isPassable() || mat == Material.CHEST || mat == Material.TRAPPED_CHEST || mat == Material.BARREL;
+    }
+
+    public static void placeDoubleChest(Block b1, Block b2, BlockFace chestFacing) {
+        if (b1 == null || b2 == null) return;
+        b1.setType(Material.CHEST, false);
+        b2.setType(Material.CHEST, false);
+
+        int dx = b2.getX() - b1.getX();
+        int dz = b2.getZ() - b1.getZ();
+
+        // Facing must be perpendicular to the axis connecting b1 and b2
+        if (dx != 0 && (chestFacing == BlockFace.EAST || chestFacing == BlockFace.WEST)) {
+            chestFacing = BlockFace.NORTH;
+        } else if (dz != 0 && (chestFacing == BlockFace.NORTH || chestFacing == BlockFace.SOUTH)) {
+            chestFacing = BlockFace.EAST;
+        }
+
+        BlockFace clockwise = getRightFace(chestFacing);
+        boolean b2IsClockwise = (dx == clockwise.getModX() && dz == clockwise.getModZ());
+
+        Block bLeft = b2IsClockwise ? b2 : b1;
+        Block bRight = b2IsClockwise ? b1 : b2;
+
+        try {
+            if (bLeft.getBlockData() instanceof org.bukkit.block.data.type.Chest chestLeft) {
+                chestLeft.setFacing(chestFacing);
+                chestLeft.setType(org.bukkit.block.data.type.Chest.Type.LEFT);
+                bLeft.setBlockData(chestLeft, false);
+            }
+            if (bRight.getBlockData() instanceof org.bukkit.block.data.type.Chest chestRight) {
+                chestRight.setFacing(chestFacing);
+                chestRight.setType(org.bukkit.block.data.type.Chest.Type.RIGHT);
+                bRight.setBlockData(chestRight, false);
+            }
+        } catch (Throwable ignored) {}
+    }
+
+    private DoubleChestPair setupSeparatedDoubleChests(Location startLoc) {
+        World world = startLoc.getWorld();
+        if (world == null) return null;
+
+        Block startBlock = world.getBlockAt(startLoc.getBlockX(), startLoc.getBlockY(), startLoc.getBlockZ());
+        if (startBlock == null) return null;
+        BlockFace back = this.facing.getOppositeFace();
+        BlockFace left = getLeftFace(this.facing);
+        BlockFace right = getRightFace(this.facing);
+
+        // Candidate 1: Lateral left (Chests at back 1, Storage at center & right, Fuel at left-2 & left-3, 1 block gap at left-1)
+        Block c1_s1 = startBlock.getRelative(back);
+        Block c1_s2 = c1_s1.getRelative(right);
+        Block c1_f1 = c1_s1.getRelative(left, 2);
+        Block c1_f2 = c1_s1.getRelative(left, 3);
+        if (isPlaceableOrChest(c1_s1) && isPlaceableOrChest(c1_s2) && isPlaceableOrChest(c1_f1) && isPlaceableOrChest(c1_f2)) {
+            return new DoubleChestPair(c1_s1, c1_s2, c1_f1, c1_f2);
+        }
+
+        // Candidate 2: Lateral right (Chests at back 1, Storage at center & left, Fuel at right-2 & right-3, 1 block gap at right-1)
+        Block c2_s1 = startBlock.getRelative(back);
+        Block c2_s2 = c2_s1.getRelative(left);
+        Block c2_f1 = c2_s1.getRelative(right, 2);
+        Block c2_f2 = c2_s1.getRelative(right, 3);
+        if (isPlaceableOrChest(c2_s1) && isPlaceableOrChest(c2_s2) && isPlaceableOrChest(c2_f1) && isPlaceableOrChest(c2_f2)) {
+            return new DoubleChestPair(c2_s1, c2_s2, c2_f1, c2_f2);
+        }
+
+        // Candidate 3: Row layout (Storage at back 1 & back 1 + right, Gap at back 2, Fuel at back 3 & back 3 + right)
+        Block c3_s1 = startBlock.getRelative(back, 1);
+        Block c3_s2 = c3_s1.getRelative(right);
+        Block c3_f1 = startBlock.getRelative(back, 3);
+        Block c3_f2 = c3_f1.getRelative(right);
+        if (isPlaceableOrChest(c3_s1) && isPlaceableOrChest(c3_s2) && isPlaceableOrChest(c3_f1) && isPlaceableOrChest(c3_f2)) {
+            return new DoubleChestPair(c3_s1, c3_s2, c3_f1, c3_f2);
+        }
+
+        // Candidate 4: Row layout left (Storage at back 1 & back 1 + left, Gap at back 2, Fuel at back 3 & back 3 + left)
+        Block c4_s1 = startBlock.getRelative(back, 1);
+        Block c4_s2 = c4_s1.getRelative(left);
+        Block c4_f1 = startBlock.getRelative(back, 3);
+        Block c4_f2 = c4_f1.getRelative(left);
+        if (isPlaceableOrChest(c4_s1) && isPlaceableOrChest(c4_s2) && isPlaceableOrChest(c4_f1) && isPlaceableOrChest(c4_f2)) {
+            return new DoubleChestPair(c4_s1, c4_s2, c4_f1, c4_f2);
+        }
+
+        // Candidate 5: Linear corridor layout (Storage at back 1 & back 2, Gap at back 3, Fuel at back 4 & back 5)
+        Block c5_s1 = startBlock.getRelative(back, 1);
+        Block c5_s2 = startBlock.getRelative(back, 2);
+        Block c5_f1 = startBlock.getRelative(back, 4);
+        Block c5_f2 = startBlock.getRelative(back, 5);
+        return new DoubleChestPair(c5_s1, c5_s2, c5_f1, c5_f2);
+    }
+
+    private org.bukkit.entity.Entity spawnHologram(World world, Location loc, String text) {
+        if (world == null || loc == null) return null;
+        try {
+            return world.spawn(loc, org.bukkit.entity.TextDisplay.class, display -> {
+                display.setText(text);
+                display.setBillboard(org.bukkit.entity.Display.Billboard.CENTER);
+                display.setDefaultBackground(false);
+                display.setSeeThrough(true);
+            });
+        } catch (Throwable fallback) {
+            try {
+                return world.spawn(loc.clone().subtract(0, 1.0, 0), org.bukkit.entity.ArmorStand.class, as -> {
+                    as.setCustomName(text);
+                    as.setCustomNameVisible(true);
+                    as.setVisible(false);
+                    as.setGravity(false);
+                    as.setMarker(true);
+                });
+            } catch (Throwable ignored) {
+                return null;
+            }
+        }
     }
 
     private void setupConstructionChests(Location origin) {
@@ -1095,95 +1277,34 @@ public final class Turtle {
         if (world == null) return;
 
         Location startLoc = (this.location != null) ? this.location : origin;
-        BlockFace[] sides = {BlockFace.EAST, BlockFace.WEST, BlockFace.NORTH, BlockFace.SOUTH};
-        Location chosenChest = null;
-        Location chosenFuel = null;
+        DoubleChestPair pair = setupSeparatedDoubleChests(startLoc);
+        if (pair == null) return;
 
-        for (BlockFace face : sides) {
-            Block adj = startLoc.getBlock().getRelative(face);
-            if (adj.getType() == Material.CHEST || adj.getType() == Material.TRAPPED_CHEST || adj.getType() == Material.BARREL) {
-                if (chosenChest == null) {
-                    chosenChest = adj.getLocation();
-                    continue;
-                } else if (chosenFuel == null) {
-                    chosenFuel = adj.getLocation();
-                    break;
-                }
-            }
-            if (adj.isEmpty() || adj.isPassable()) {
-                if (chosenChest == null) {
-                    chosenChest = adj.getLocation();
-                } else if (chosenFuel == null) {
-                    chosenFuel = adj.getLocation();
-                }
-            }
-        }
+        placeDoubleChest(pair.s1(), pair.s2(), this.facing);
+        this.constructionChestLoc = pair.s1().getLocation();
+        this.constructionChestLoc2 = pair.s2().getLocation();
 
-        if (chosenChest == null) {
-            chosenChest = startLoc.clone().add(1, 0, 0);
-        }
+        placeDoubleChest(pair.f1(), pair.f2(), this.facing);
+        this.fuelChestLoc = pair.f1().getLocation();
+        this.fuelChestLoc2 = pair.f2().getLocation();
 
-        Block chestBlock = chosenChest.getBlock();
-        if (chestBlock.getType() != Material.CHEST && chestBlock.getType() != Material.BARREL) {
-            chestBlock.setType(Material.CHEST, false);
-        }
-        this.constructionChestLoc = chosenChest;
+        cleanupHolograms();
 
-        Location holoLoc = chosenChest.clone().add(0.5, 1.25, 0.5);
-        try {
-            cleanupHolograms();
-            try {
-                org.bukkit.entity.TextDisplay td = world.spawn(holoLoc, org.bukkit.entity.TextDisplay.class, display -> {
-                    display.setText("§e📦 Place construction blocks here");
-                    display.setBillboard(org.bukkit.entity.Display.Billboard.CENTER);
-                    display.setDefaultBackground(false);
-                    display.setSeeThrough(true);
-                });
-                this.constructionHologram = td;
-            } catch (Throwable fallback) {
-                org.bukkit.entity.ArmorStand stand = world.spawn(holoLoc.clone().subtract(0, 1.0, 0), org.bukkit.entity.ArmorStand.class, as -> {
-                    as.setCustomName("§e📦 Place construction blocks here");
-                    as.setCustomNameVisible(true);
-                    as.setVisible(false);
-                    as.setGravity(false);
-                    as.setMarker(true);
-                });
-                this.constructionHologram = stand;
-            }
-        } catch (Throwable ignored) {}
+        Location sHoloLoc = new Location(
+                world,
+                (pair.s1().getX() + pair.s2().getX()) / 2.0 + 0.5,
+                Math.max(pair.s1().getY(), pair.s2().getY()) + 1.25,
+                (pair.s1().getZ() + pair.s2().getZ()) / 2.0 + 0.5
+        );
+        this.constructionHologram = spawnHologram(world, sHoloLoc, "§e📦 Place construction blocks here");
 
-        boolean fuelRequired = false;
-        if (plugin instanceof MultiverseProgrammingPlugin mvp) {
-            fuelRequired = mvp.getConfigManager().isTurtleFuelRequired();
-        }
-        if (fuelRequired && chosenFuel != null) {
-            Block fuelBlock = chosenFuel.getBlock();
-            if (fuelBlock.getType() != Material.CHEST && fuelBlock.getType() != Material.BARREL) {
-                fuelBlock.setType(Material.BARREL, false);
-            }
-            this.fuelChestLoc = chosenFuel;
-            Location fuelHoloLoc = chosenFuel.clone().add(0.5, 1.25, 0.5);
-            try {
-                try {
-                    org.bukkit.entity.TextDisplay td = world.spawn(fuelHoloLoc, org.bukkit.entity.TextDisplay.class, display -> {
-                        display.setText("§6⚡ Place fuel here");
-                        display.setBillboard(org.bukkit.entity.Display.Billboard.CENTER);
-                        display.setDefaultBackground(false);
-                        display.setSeeThrough(true);
-                    });
-                    this.fuelHologram = td;
-                } catch (Throwable fallback) {
-                    org.bukkit.entity.ArmorStand stand = world.spawn(fuelHoloLoc.clone().subtract(0, 1.0, 0), org.bukkit.entity.ArmorStand.class, as -> {
-                        as.setCustomName("§6⚡ Place fuel here");
-                        as.setCustomNameVisible(true);
-                        as.setVisible(false);
-                        as.setGravity(false);
-                        as.setMarker(true);
-                    });
-                    this.fuelHologram = stand;
-                }
-            } catch (Throwable ignored) {}
-        }
+        Location fHoloLoc = new Location(
+                world,
+                (pair.f1().getX() + pair.f2().getX()) / 2.0 + 0.5,
+                Math.max(pair.f1().getY(), pair.f2().getY()) + 1.25,
+                (pair.f1().getZ() + pair.f2().getZ()) / 2.0 + 0.5
+        );
+        this.fuelHologram = spawnHologram(world, fHoloLoc, "§6⚡ Place fuel here");
     }
 
     private void cleanupHolograms() {
@@ -1204,6 +1325,11 @@ public final class Turtle {
     private void finishBuild(Runnable onDone) {
         cleanupHolograms();
         cancelTask();
+        activeBuildPositions.clear();
+        this.constructionChestLoc = null;
+        this.constructionChestLoc2 = null;
+        this.fuelChestLoc = null;
+        this.fuelChestLoc2 = null;
         this.status = Status.IDLE;
         this.statusMessage = "Build completed (" + totalBlocks + " blocks)";
         if (buildOrigin != null && buildOrigin.getWorld() != null) {
@@ -1217,6 +1343,11 @@ public final class Turtle {
     private void failBuild(String message, Consumer<String> onError) {
         cleanupHolograms();
         cancelTask();
+        activeBuildPositions.clear();
+        this.constructionChestLoc = null;
+        this.constructionChestLoc2 = null;
+        this.fuelChestLoc = null;
+        this.fuelChestLoc2 = null;
         this.status = Status.ERROR;
         this.statusMessage = "Error: " + message;
         if (onError != null) {
@@ -1241,6 +1372,11 @@ public final class Turtle {
     public synchronized void cancelBuild() {
         cleanupHolograms();
         cancelTask();
+        activeBuildPositions.clear();
+        this.constructionChestLoc = null;
+        this.constructionChestLoc2 = null;
+        this.fuelChestLoc = null;
+        this.fuelChestLoc2 = null;
         this.status = Status.IDLE;
         this.statusMessage = "Idle";
         this.activeBlueprint = null;
@@ -1320,7 +1456,13 @@ public final class Turtle {
     public LateralSide findLateralQuarrySide() {
         if (location == null || location.getWorld() == null) return null;
         Material qMat = getQuarryBlockMaterial();
-        Block b = location.getBlock();
+        Block b = null;
+        try {
+            b = location.getBlock();
+        } catch (Throwable ignored) {}
+        if (b == null) {
+            b = location.getWorld().getBlockAt(location.getBlockX(), location.getBlockY(), location.getBlockZ());
+        }
         if (b == null) return null;
         BlockFace left = getLeftFace(this.facing);
         Block leftBlock = b.getRelative(left);
@@ -1347,81 +1489,56 @@ public final class Turtle {
         this.quarryLateralSide = side;
     }
 
-    public Location getQuarryStorageChestLoc() {
-        return quarryStorageChestLoc;
+    public synchronized Location getQuarryStorageChestLoc() {
+        return quarryStorageChestLoc != null ? quarryStorageChestLoc.clone() : null;
     }
 
-    public Location getQuarryFuelChestLoc() {
-        return quarryFuelChestLoc;
+    public synchronized Location getQuarryStorageChestLoc2() {
+        return quarryStorageChestLoc2 != null ? quarryStorageChestLoc2.clone() : null;
+    }
+
+    public synchronized Location getQuarryFuelChestLoc() {
+        return quarryFuelChestLoc != null ? quarryFuelChestLoc.clone() : null;
+    }
+
+    public synchronized Location getQuarryFuelChestLoc2() {
+        return quarryFuelChestLoc2 != null ? quarryFuelChestLoc2.clone() : null;
     }
 
     private void setupQuarryChests(Location startLoc) {
         World world = startLoc.getWorld();
         if (world == null) return;
 
-        BlockFace back = this.facing.getOppositeFace();
-        BlockFace left = getLeftFace(this.facing);
-        BlockFace right = getRightFace(this.facing);
+        DoubleChestPair pair = setupSeparatedDoubleChests(startLoc);
+        if (pair == null) return;
 
-        // Position 1 (Output / Mined Blocks): directly behind turtle
-        Block chest1 = startLoc.getBlock().getRelative(back);
-        // Position 2 (Fuel Chest): adjacent to chest1
-        Block chest2 = chest1.getRelative(left);
-        if (!chest2.isEmpty() && !chest2.isPassable() && chest2.getType() != Material.CHEST && chest2.getType() != Material.BARREL) {
-            chest2 = chest1.getRelative(right);
-        }
-        if (!chest2.isEmpty() && !chest2.isPassable() && chest2.getType() != Material.CHEST && chest2.getType() != Material.BARREL) {
-            chest2 = startLoc.getBlock().getRelative(back, 2);
-        }
+        placeDoubleChest(pair.s1(), pair.s2(), this.facing);
+        this.quarryStorageChestLoc = pair.s1().getLocation();
+        this.quarryStorageChestLoc2 = pair.s2().getLocation();
 
-        if (chest1.getType() != Material.CHEST && chest1.getType() != Material.BARREL) {
-            chest1.setType(Material.CHEST, false);
-        }
-        if (chest2.getType() != Material.CHEST && chest2.getType() != Material.BARREL) {
-            chest2.setType(Material.CHEST, false);
-        }
-
-        this.quarryStorageChestLoc = chest1.getLocation();
-        this.quarryFuelChestLoc = chest2.getLocation();
-        this.fuelChestLoc = chest2.getLocation();
+        placeDoubleChest(pair.f1(), pair.f2(), this.facing);
+        this.quarryFuelChestLoc = pair.f1().getLocation();
+        this.quarryFuelChestLoc2 = pair.f2().getLocation();
+        this.fuelChestLoc = pair.f1().getLocation();
+        this.fuelChestLoc2 = pair.f2().getLocation();
 
         cleanupQuarryHolograms();
-        spawnQuarryHologram(quarryStorageChestLoc, "§e📦 Mined Blocks Storage", true);
-        spawnQuarryHologram(quarryFuelChestLoc, "§6⚡ Place fuel here", false);
-    }
 
-    private void spawnQuarryHologram(Location chestLoc, String text, boolean isStorage) {
-        World world = chestLoc.getWorld();
-        if (world == null) return;
-        Location holoLoc = chestLoc.clone().add(0.5, 1.25, 0.5);
-        try {
-            org.bukkit.entity.TextDisplay td = world.spawn(holoLoc, org.bukkit.entity.TextDisplay.class, display -> {
-                display.setText(text);
-                display.setBillboard(org.bukkit.entity.Display.Billboard.CENTER);
-                display.setDefaultBackground(false);
-                display.setSeeThrough(true);
-            });
-            if (isStorage) {
-                this.quarryStorageHologram = td;
-            } else {
-                this.quarryFuelHologram = td;
-            }
-        } catch (Throwable fallback) {
-            try {
-                org.bukkit.entity.ArmorStand stand = world.spawn(holoLoc.clone().subtract(0, 1.0, 0), org.bukkit.entity.ArmorStand.class, as -> {
-                    as.setCustomName(text);
-                    as.setCustomNameVisible(true);
-                    as.setVisible(false);
-                    as.setGravity(false);
-                    as.setMarker(true);
-                });
-                if (isStorage) {
-                    this.quarryStorageHologram = stand;
-                } else {
-                    this.quarryFuelHologram = stand;
-                }
-            } catch (Throwable ignored) {}
-        }
+        Location sHoloLoc = new Location(
+                world,
+                (pair.s1().getX() + pair.s2().getX()) / 2.0 + 0.5,
+                Math.max(pair.s1().getY(), pair.s2().getY()) + 1.25,
+                (pair.s1().getZ() + pair.s2().getZ()) / 2.0 + 0.5
+        );
+        this.quarryStorageHologram = spawnHologram(world, sHoloLoc, "§e📦 Mined Blocks Storage");
+
+        Location fHoloLoc = new Location(
+                world,
+                (pair.f1().getX() + pair.f2().getX()) / 2.0 + 0.5,
+                Math.max(pair.f1().getY(), pair.f2().getY()) + 1.25,
+                (pair.f1().getZ() + pair.f2().getZ()) / 2.0 + 0.5
+        );
+        this.quarryFuelHologram = spawnHologram(world, fHoloLoc, "§6⚡ Place fuel here");
     }
 
     private void cleanupQuarryHolograms() {
@@ -1436,10 +1553,14 @@ public final class Turtle {
     }
 
     public synchronized boolean isQuarryStorageFull() {
-        if (quarryStorageChestLoc == null || quarryStorageChestLoc.getWorld() == null) {
-            return false;
-        }
-        Block block = quarryStorageChestLoc.getBlock();
+        boolean full1 = isChestFull(quarryStorageChestLoc);
+        boolean full2 = (quarryStorageChestLoc2 != null) ? isChestFull(quarryStorageChestLoc2) : full1;
+        return full1 && full2;
+    }
+
+    private boolean isChestFull(Location loc) {
+        if (loc == null || loc.getWorld() == null) return false;
+        Block block = loc.getBlock();
         if (block != null && block.getState() instanceof org.bukkit.block.Container container) {
             Inventory inv = container.getInventory();
             if (inv.firstEmpty() != -1) {
@@ -1457,23 +1578,33 @@ public final class Turtle {
 
     public synchronized boolean depositToQuarryStorage(ItemStack drop) {
         if (drop == null || drop.getType().isAir()) return true;
-        if (quarryStorageChestLoc == null || quarryStorageChestLoc.getWorld() == null) {
-            return false;
+
+        ItemStack remaining = depositToChest(quarryStorageChestLoc, drop);
+        if (remaining != null && remaining.getAmount() > 0 && quarryStorageChestLoc2 != null) {
+            remaining = depositToChest(quarryStorageChestLoc2, remaining);
         }
 
-        Block block = quarryStorageChestLoc.getBlock();
+        if (remaining != null && remaining.getAmount() > 0) {
+            addToInventory(remaining);
+            return false;
+        }
+        return true;
+    }
+
+    private ItemStack depositToChest(Location loc, ItemStack drop) {
+        if (loc == null || loc.getWorld() == null || drop == null || drop.getAmount() <= 0) return drop;
+        Block block = loc.getBlock();
         if (block != null && block.getState() instanceof org.bukkit.block.Container container) {
             Inventory inv = container.getInventory();
             java.util.HashMap<Integer, ItemStack> remaining = inv.addItem(drop);
-            if (!remaining.isEmpty()) {
-                for (ItemStack rem : remaining.values()) {
-                    addToInventory(rem);
-                }
-                return false;
+            if (remaining.isEmpty()) {
+                return null;
             }
-            return true;
+            for (ItemStack rem : remaining.values()) {
+                return rem;
+            }
         }
-        return false;
+        return drop;
     }
 
     public synchronized boolean consumeQuarryFuel() {
@@ -1618,23 +1749,28 @@ public final class Turtle {
             return false;
         }
 
+        BlockFace forward = this.facing;
+        BlockFace lateral = getRightFace(this.facing);
+
+        int c1X = location.getBlockX() + (forward.getModX() * 1) + (lateral.getModX() * 0);
+        int c1Z = location.getBlockZ() + (forward.getModZ() * 1) + (lateral.getModZ() * 0);
+
+        int c2X = location.getBlockX() + (forward.getModX() * length) + (lateral.getModX() * (width - 1));
+        int c2Z = location.getBlockZ() + (forward.getModZ() * length) + (lateral.getModZ() * (width - 1));
+
+        this.quarryWorld = world;
+        this.quarryMinX = Math.min(c1X, c2X);
+        this.quarryMaxX = Math.max(c1X, c2X);
+        this.quarryMinY = minY;
+        this.quarryMaxY = startY;
+        this.quarryMinZ = Math.min(c1Z, c2Z);
+        this.quarryMaxZ = Math.max(c1Z, c2Z);
+
         if (plugin instanceof MultiverseProgrammingPlugin mvp) {
             com.multiverse.programming.protection.ProtectionManager pm = mvp.getProtectionManager();
             if (pm != null) {
-                BlockFace forward = this.facing;
-                BlockFace lateral = getRightFace(this.facing);
-
-                // Quarry area extends from:
-                // forward: 1 to length
-                // lateral: 0 to (width - 1)
-                int c1X = location.getBlockX() + (forward.getModX() * 1) + (lateral.getModX() * 0);
-                int c1Z = location.getBlockZ() + (forward.getModZ() * 1) + (lateral.getModZ() * 0);
-
-                int c2X = location.getBlockX() + (forward.getModX() * length) + (lateral.getModX() * (width - 1));
-                int c2Z = location.getBlockZ() + (forward.getModZ() * length) + (lateral.getModZ() * (width - 1));
-
-                Location minLoc = new Location(world, Math.min(c1X, c2X), minY, Math.min(c1Z, c2Z));
-                Location maxLoc = new Location(world, Math.max(c1X, c2X), startY, Math.max(c1Z, c2Z));
+                Location minLoc = new Location(world, quarryMinX, quarryMinY, quarryMinZ);
+                Location maxLoc = new Location(world, quarryMaxX, quarryMaxY, quarryMaxZ);
 
                 String protErr = pm.checkRegionArea(this.owner, minLoc, maxLoc);
                 if (protErr != null) {
@@ -1744,7 +1880,9 @@ public final class Turtle {
     }
 
     private void finishQuarry(Runnable onDone) {
+        cleanupQuarryHolograms();
         cancelQuarryTask();
+        clearQuarryBounds();
         this.status = Status.IDLE;
         this.statusMessage = "Quarry completed (" + quarryBlocksMined + " blocks mined)";
         if (quarryStartLocation != null && quarryStartLocation.getWorld() != null) {
@@ -1759,6 +1897,7 @@ public final class Turtle {
     private void failQuarry(String error, Consumer<String> onError) {
         cleanupQuarryHolograms();
         cancelQuarryTask();
+        clearQuarryBounds();
         this.status = Status.ERROR;
         this.statusMessage = "Error: " + error;
         if (onError != null) {
@@ -1790,10 +1929,25 @@ public final class Turtle {
     public synchronized void cancelQuarry() {
         cleanupQuarryHolograms();
         cancelQuarryTask();
+        clearQuarryBounds();
         if (status == Status.MINING || status == Status.PAUSED) {
             this.status = Status.IDLE;
             this.statusMessage = "Idle";
         }
+    }
+
+    private void clearQuarryBounds() {
+        this.quarryWorld = null;
+        this.quarryMinX = 0;
+        this.quarryMaxX = 0;
+        this.quarryMinY = 0;
+        this.quarryMaxY = 0;
+        this.quarryMinZ = 0;
+        this.quarryMaxZ = 0;
+        this.quarryStorageChestLoc = null;
+        this.quarryStorageChestLoc2 = null;
+        this.quarryFuelChestLoc = null;
+        this.quarryFuelChestLoc2 = null;
     }
 
     private void cancelQuarryTask() {
@@ -1931,5 +2085,73 @@ public final class Turtle {
                  NETHER_PORTAL, REINFORCED_DEEPSLATE -> true;
             default -> false;
         };
+    }
+
+    public synchronized BlockProtectionCheck isBlockProtected(Location loc) {
+        if (loc == null || loc.getWorld() == null) {
+            return new BlockProtectionCheck(false, null);
+        }
+
+        World world = loc.getWorld();
+        int bx = loc.getBlockX();
+        int by = loc.getBlockY();
+        int bz = loc.getBlockZ();
+
+        // 1. Turtle block itself while working
+        if (this.location != null && this.location.getWorld() != null && this.location.getWorld().equals(world)) {
+            if (this.location.getBlockX() == bx && this.location.getBlockY() == by && this.location.getBlockZ() == bz) {
+                if (isWorking()) {
+                    return new BlockProtectionCheck(true, "la Turtle " + id + " está actualmente en funcionamiento.");
+                }
+            }
+        }
+
+        // 2. Active Blueprint Construction
+        if (isBuilding()) {
+            if (isAtLocation(constructionChestLoc, world, bx, by, bz) || isAtLocation(constructionChestLoc2, world, bx, by, bz)) {
+                return new BlockProtectionCheck(true, "es el cofre de materiales de la construcción activa de la Turtle " + id + ".");
+            }
+            if (isAtLocation(fuelChestLoc, world, bx, by, bz) || isAtLocation(fuelChestLoc2, world, bx, by, bz)) {
+                return new BlockProtectionCheck(true, "es el cofre de combustible de la Turtle " + id + ".");
+            }
+            if (buildOrigin != null && buildOrigin.getWorld() != null && buildOrigin.getWorld().equals(world)) {
+                int rx = bx - buildOrigin.getBlockX();
+                int ry = by - buildOrigin.getBlockY();
+                int rz = bz - buildOrigin.getBlockZ();
+                if (activeBuildPositions.contains(new BlockPos(rx, ry, rz))) {
+                    return new BlockProtectionCheck(true, "forma parte de la construcción activa de la Turtle " + id + ".");
+                }
+            }
+        }
+
+        // 3. Active Quarry Excavation
+        if (isQuarryActive()) {
+            if (isAtLocation(quarryStorageChestLoc, world, bx, by, bz) || isAtLocation(quarryStorageChestLoc2, world, bx, by, bz)) {
+                return new BlockProtectionCheck(true, "es el cofre de almacenamiento de la excavación activa de la Turtle " + id + ".");
+            }
+            if (isAtLocation(quarryFuelChestLoc, world, bx, by, bz) || isAtLocation(quarryFuelChestLoc2, world, bx, by, bz)) {
+                return new BlockProtectionCheck(true, "es el cofre de combustible de la excavación de la Turtle " + id + ".");
+            }
+            if (quarryLateralSide != null && this.location != null && this.location.getWorld() != null && this.location.getWorld().equals(world)) {
+                Block engBlock = this.location.getBlock().getRelative(getLateralFace(this.facing, quarryLateralSide));
+                if (engBlock.getX() == bx && engBlock.getY() == by && engBlock.getZ() == bz) {
+                    return new BlockProtectionCheck(true, "es el motor de excavación (Quarry Engine) de la Turtle " + id + ".");
+                }
+            }
+            if (quarryWorld != null && quarryWorld.equals(world)) {
+                if (bx >= quarryMinX && bx <= quarryMaxX
+                        && by >= quarryMinY && by <= quarryMaxY
+                        && bz >= quarryMinZ && bz <= quarryMaxZ) {
+                    return new BlockProtectionCheck(true, "está dentro del área de excavación definida de la Turtle " + id + ".");
+                }
+            }
+        }
+
+        return new BlockProtectionCheck(false, null);
+    }
+
+    private static boolean isAtLocation(Location target, World world, int bx, int by, int bz) {
+        if (target == null || target.getWorld() == null) return false;
+        return target.getWorld().equals(world) && target.getBlockX() == bx && target.getBlockY() == by && target.getBlockZ() == bz;
     }
 }

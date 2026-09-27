@@ -149,6 +149,17 @@ public final class TurtleManager {
         return Collections.unmodifiableCollection(new ArrayList<>(turtlesById.values()));
     }
 
+    public Turtle.BlockProtectionCheck checkBlockProtection(Location loc) {
+        if (loc == null || loc.getWorld() == null) return null;
+        for (Turtle turtle : turtlesById.values()) {
+            Turtle.BlockProtectionCheck check = turtle.isBlockProtected(loc);
+            if (check != null && check.isProtected()) {
+                return check;
+            }
+        }
+        return null;
+    }
+
     public List<Turtle> getTurtlesByOwner(UUID owner) {
         if (owner == null) return Collections.emptyList();
         List<Turtle> list = new ArrayList<>();

@@ -139,10 +139,10 @@ turtle-build-delay-ticks: 2
 
 # If true, the turtle must have the required blocks in its 16 inventory slots.
 # If false, the turtle builds freely without consuming inventory items.
-turtle-require-materials: false
+turtle-require-materials: true
 
 # If true, moving and digging requires fuel (coal, blaze rods, lava).
-turtle-fuel-required: false
+turtle-fuel-required: true
 
 # ===================================================================== #
 #                   Web Portal & Blueprint Dashboard                    #

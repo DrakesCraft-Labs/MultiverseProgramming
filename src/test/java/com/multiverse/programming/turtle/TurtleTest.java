@@ -578,4 +578,206 @@ class TurtleTest {
 
         assertNull(pm.checkRegionArea(UUID.randomUUID(), loc1, loc2));
     }
+
+    @Test
+    @DisplayName("placeDoubleChest properly sets double chest block data and facing")
+    void testPlaceDoubleChest() {
+        Block b1 = mock(Block.class);
+        Block b2 = mock(Block.class);
+        when(b1.getX()).thenReturn(10);
+        when(b1.getY()).thenReturn(64);
+        when(b1.getZ()).thenReturn(20);
+
+        when(b2.getX()).thenReturn(11);
+        when(b2.getY()).thenReturn(64);
+        when(b2.getZ()).thenReturn(20);
+
+        org.bukkit.block.data.type.Chest data1 = mock(org.bukkit.block.data.type.Chest.class);
+        org.bukkit.block.data.type.Chest data2 = mock(org.bukkit.block.data.type.Chest.class);
+        when(b1.getBlockData()).thenReturn(data1);
+        when(b2.getBlockData()).thenReturn(data2);
+
+        Turtle.placeDoubleChest(b1, b2, BlockFace.NORTH);
+
+        verify(b1).setType(Material.CHEST, false);
+        verify(b2).setType(Material.CHEST, false);
+        verify(data1).setFacing(BlockFace.NORTH);
+        verify(data2).setFacing(BlockFace.NORTH);
+    }
+
+    @Test
+    @DisplayName("Double chests are separated by at least 1 block distance and protected during building")
+    void testSeparatedDoubleChestsAndBuildProtection() {
+        MultiverseProgrammingPlugin mvp = mock(MultiverseProgrammingPlugin.class);
+        when(mvp.isEnabled()).thenReturn(true);
+        com.multiverse.programming.ConfigManager cfg = mock(com.multiverse.programming.ConfigManager.class);
+        when(cfg.isTurtleFuelRequired()).thenReturn(true);
+        when(cfg.getTurtleBlock()).thenReturn(Material.DISPENSER);
+        when(mvp.getConfigManager()).thenReturn(cfg);
+
+        when(mockWorld.getBlockAt(anyInt(), anyInt(), anyInt())).thenAnswer(inv -> {
+            int x = inv.getArgument(0);
+            int y = inv.getArgument(1);
+            int z = inv.getArgument(2);
+            Block b = mock(Block.class);
+            when(b.getX()).thenReturn(x);
+            when(b.getY()).thenReturn(y);
+            when(b.getZ()).thenReturn(z);
+            when(b.getWorld()).thenReturn(mockWorld);
+            when(b.getLocation()).thenReturn(new Location(mockWorld, x, y, z));
+            when(b.getType()).thenReturn(Material.AIR);
+            when(b.isEmpty()).thenReturn(true);
+            when(b.isPassable()).thenReturn(true);
+            when(b.getRelative(any(BlockFace.class))).thenAnswer(inv2 -> {
+                BlockFace f = inv2.getArgument(0);
+                return mockWorld.getBlockAt(x + f.getModX(), y + f.getModY(), z + f.getModZ());
+            });
+            when(b.getRelative(any(BlockFace.class), anyInt())).thenAnswer(inv2 -> {
+                BlockFace f = inv2.getArgument(0);
+                int dist = inv2.getArgument(1);
+                return mockWorld.getBlockAt(x + f.getModX() * dist, y + f.getModY() * dist, z + f.getModZ() * dist);
+            });
+            return b;
+        });
+        when(mockWorld.getBlockAt(any(Location.class))).thenAnswer(inv -> {
+            Location l = inv.getArgument(0);
+            return mockWorld.getBlockAt(l.getBlockX(), l.getBlockY(), l.getBlockZ());
+        });
+
+        Turtle turtle = new Turtle(mvp, "T-CHEST", startLoc, BlockFace.NORTH, UUID.randomUUID());
+
+        Blueprint bp = new Blueprint(
+                "house", "House", "Builder", "nbt",
+                5, 5, 5, 2,
+                java.util.Map.of("STONE", 2),
+                java.util.List.of(
+                        new PlacementBlock(0, 0, 0, "stone"),
+                        new PlacementBlock(1, 0, 0, "stone")
+                ),
+                System.currentTimeMillis()
+        );
+
+        boolean started = turtle.startBuild(bp, startLoc, 2, true, null, null);
+        assertTrue(started);
+
+        Location mat1 = turtle.getConstructionChestLoc();
+        Location mat2 = turtle.getConstructionChestLoc2();
+        Location fuel1 = turtle.getFuelChestLoc();
+        Location fuel2 = turtle.getFuelChestLoc2();
+
+        assertNotNull(mat1);
+        assertNotNull(mat2);
+        assertNotNull(fuel1);
+        assertNotNull(fuel2);
+
+        // Verify separation: distance between material and fuel chests is >= 2 (at least 1 block gap)
+        int dist1 = Math.abs(mat1.getBlockX() - fuel1.getBlockX()) + Math.abs(mat1.getBlockZ() - fuel1.getBlockZ());
+        assertTrue(dist1 >= 2, "Material and fuel double chests must have at least 1 empty block between them");
+
+        // Verify protection while building
+        assertTrue(turtle.isBlockProtected(mat1).isProtected());
+        assertTrue(turtle.isBlockProtected(mat2).isProtected());
+        assertTrue(turtle.isBlockProtected(fuel1).isProtected());
+        assertTrue(turtle.isBlockProtected(fuel2).isProtected());
+
+        // Placed blueprint positions are protected
+        assertTrue(turtle.isBlockProtected(startLoc).isProtected());
+        assertTrue(turtle.isBlockProtected(startLoc.clone().add(1, 0, 0)).isProtected());
+
+        // Random external position is not protected
+        assertFalse(turtle.isBlockProtected(startLoc.clone().add(50, 0, 50)).isProtected());
+
+        // When build is cancelled or finished, protection is lifted completely
+        turtle.cancelBuild();
+        assertFalse(turtle.isBuilding());
+        assertFalse(turtle.isBlockProtected(mat1).isProtected());
+        assertFalse(turtle.isBlockProtected(startLoc).isProtected());
+    }
+
+    @Test
+    @DisplayName("Quarry area and double chests are protected during excavation and lifted upon completion")
+    void testQuarryBlockProtectionAndLift() {
+        MultiverseProgrammingPlugin mvp = mock(MultiverseProgrammingPlugin.class);
+        when(mvp.isEnabled()).thenReturn(true);
+        com.multiverse.programming.ConfigManager cfg = mock(com.multiverse.programming.ConfigManager.class);
+        when(cfg.isTurtleFuelRequired()).thenReturn(true);
+        when(cfg.getTurtleBlock()).thenReturn(Material.DISPENSER);
+        when(cfg.getQuarryBlock()).thenReturn(Material.BLAST_FURNACE);
+        when(mvp.getConfigManager()).thenReturn(cfg);
+
+        when(mockWorld.getMinHeight()).thenReturn(-64);
+        when(mockWorld.getMaxHeight()).thenReturn(320);
+
+        when(mockWorld.getBlockAt(anyInt(), anyInt(), anyInt())).thenAnswer(inv -> {
+            int x = inv.getArgument(0);
+            int y = inv.getArgument(1);
+            int z = inv.getArgument(2);
+            Block b = mock(Block.class);
+            when(b.getX()).thenReturn(x);
+            when(b.getY()).thenReturn(y);
+            when(b.getZ()).thenReturn(z);
+            when(b.getWorld()).thenReturn(mockWorld);
+            when(b.getLocation()).thenReturn(new Location(mockWorld, x, y, z));
+            boolean isEngine = (x == 9 && y == 64 && z == 20);
+            Material mat = isEngine ? Material.BLAST_FURNACE : Material.AIR;
+            boolean isAir = (mat == Material.AIR);
+            when(b.getType()).thenReturn(mat);
+            when(b.isEmpty()).thenReturn(isAir);
+            when(b.isPassable()).thenReturn(isAir);
+            when(b.getRelative(any(BlockFace.class))).thenAnswer(inv2 -> {
+                BlockFace f = inv2.getArgument(0);
+                return mockWorld.getBlockAt(x + f.getModX(), y + f.getModY(), z + f.getModZ());
+            });
+            when(b.getRelative(any(BlockFace.class), anyInt())).thenAnswer(inv2 -> {
+                BlockFace f = inv2.getArgument(0);
+                int dist = inv2.getArgument(1);
+                return mockWorld.getBlockAt(x + f.getModX() * dist, y + f.getModY() * dist, z + f.getModZ() * dist);
+            });
+            return b;
+        });
+        when(mockWorld.getBlockAt(any(Location.class))).thenAnswer(inv -> {
+            Location l = inv.getArgument(0);
+            return mockWorld.getBlockAt(l.getBlockX(), l.getBlockY(), l.getBlockZ());
+        });
+
+        Turtle turtle = new Turtle(mvp, "T-QUARRY", startLoc, BlockFace.NORTH, UUID.randomUUID());
+        boolean started = turtle.startQuarry(3, 3, 50, true, null, null);
+        assertTrue(started);
+
+        Location storage1 = turtle.getQuarryStorageChestLoc();
+        Location storage2 = turtle.getQuarryStorageChestLoc2();
+        Location fuel1 = turtle.getQuarryFuelChestLoc();
+        Location fuel2 = turtle.getQuarryFuelChestLoc2();
+
+        assertNotNull(storage1);
+        assertNotNull(storage2);
+        assertNotNull(fuel1);
+        assertNotNull(fuel2);
+
+        // Verify separation: distance >= 2 (at least 1 block gap)
+        int dist = Math.abs(storage1.getBlockX() - fuel1.getBlockX()) + Math.abs(storage1.getBlockZ() - fuel1.getBlockZ());
+        assertTrue(dist >= 2, "Quarry storage and fuel double chests must have at least 1 empty block between them");
+
+        // Verify protection while quarrying
+        assertTrue(turtle.isBlockProtected(storage1).isProtected());
+        assertTrue(turtle.isBlockProtected(storage2).isProtected());
+        assertTrue(turtle.isBlockProtected(fuel1).isProtected());
+        assertTrue(turtle.isBlockProtected(fuel2).isProtected());
+
+        // Blocks inside excavation volume:
+        // Facing NORTH (forward is -Z). length=3 -> z from 19 down to 17. width=3 (lateral is +X) -> x from 10 to 12. y from 63 down to 50.
+        Location insideLoc = new Location(mockWorld, 11, 55, 18);
+        assertTrue(turtle.isBlockProtected(insideLoc).isProtected());
+        assertTrue(turtle.isBlockProtected(insideLoc).reason().contains("área de excavación"));
+
+        // Blocks outside excavation volume
+        Location outsideLoc = new Location(mockWorld, 11, 55, 25);
+        assertFalse(turtle.isBlockProtected(outsideLoc).isProtected());
+
+        // Cancel/finish quarry lifts protection completely
+        turtle.cancelQuarry();
+        assertFalse(turtle.isQuarryActive());
+        assertFalse(turtle.isBlockProtected(insideLoc).isProtected());
+        assertFalse(turtle.isBlockProtected(storage1).isProtected());
+    }
 }
