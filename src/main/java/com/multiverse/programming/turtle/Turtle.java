@@ -1284,8 +1284,8 @@ public final class Turtle {
         BlockFace clockwise = getRightFace(chestFacing);
         boolean b2IsClockwise = (dx == clockwise.getModX() && dz == clockwise.getModZ());
 
-        Block bLeft = b2IsClockwise ? b2 : b1;
-        Block bRight = b2IsClockwise ? b1 : b2;
+        Block bRight = b2IsClockwise ? b2 : b1;
+        Block bLeft = b2IsClockwise ? b1 : b2;
 
         try {
             if (bLeft.getBlockData() instanceof org.bukkit.block.data.type.Chest chestLeft) {
@@ -1311,53 +1311,48 @@ public final class Turtle {
         BlockFace left = getLeftFace(this.facing);
         BlockFace right = getRightFace(this.facing);
 
-        // Candidate 1: Lateral left (Chests at back 1, Storage at center & right, Fuel at left-2 & left-3, 1 block gap at left-1)
-        Block c1_s1 = startBlock.getRelative(back);
-        Block c1_s2 = c1_s1.getRelative(right);
-        Block c1_term = c1_s1.getRelative(left, 1);
-        Block c1_f1 = c1_s1.getRelative(left, 2);
-        Block c1_f2 = c1_s1.getRelative(left, 3);
-        if (isPlaceableOrChest(c1_s1) && isPlaceableOrChest(c1_s2) && isPlaceableOrChest(c1_f1) && isPlaceableOrChest(c1_f2) && isPlaceableOrTerminal(c1_term)) {
-            return new DoubleChestPair(c1_s1, c1_s2, c1_f1, c1_f2, c1_term);
+        // Terminal monitor placed directly behind the turtle
+        Block term = startBlock.getRelative(back, 1);
+
+        // Candidate 1: Standard lateral 5-block separation (Construction 5 blocks to right, Fuel 5 blocks to left)
+        Block c1_s1 = term.getRelative(right, 5);
+        Block c1_s2 = term.getRelative(right, 6);
+        Block c1_f1 = term.getRelative(left, 5);
+        Block c1_f2 = term.getRelative(left, 6);
+        if (isPlaceableOrChest(c1_s1) && isPlaceableOrChest(c1_s2) && isPlaceableOrChest(c1_f1) && isPlaceableOrChest(c1_f2) && isPlaceableOrTerminal(term)) {
+            return new DoubleChestPair(c1_s1, c1_s2, c1_f1, c1_f2, term);
         }
 
-        // Candidate 2: Lateral right (Chests at back 1, Storage at center & left, Fuel at right-2 & right-3, 1 block gap at right-1)
-        Block c2_s1 = startBlock.getRelative(back);
-        Block c2_s2 = c2_s1.getRelative(left);
-        Block c2_term = c2_s1.getRelative(right, 1);
-        Block c2_f1 = c2_s1.getRelative(right, 2);
-        Block c2_f2 = c2_s1.getRelative(right, 3);
-        if (isPlaceableOrChest(c2_s1) && isPlaceableOrChest(c2_s2) && isPlaceableOrChest(c2_f1) && isPlaceableOrChest(c2_f2) && isPlaceableOrTerminal(c2_term)) {
-            return new DoubleChestPair(c2_s1, c2_s2, c2_f1, c2_f2, c2_term);
+        // Candidate 2: Inverted lateral 5-block separation (Fuel 5 blocks to right, Construction 5 blocks to left)
+        Block c2_s1 = term.getRelative(left, 5);
+        Block c2_s2 = term.getRelative(left, 6);
+        Block c2_f1 = term.getRelative(right, 5);
+        Block c2_f2 = term.getRelative(right, 6);
+        if (isPlaceableOrChest(c2_s1) && isPlaceableOrChest(c2_s2) && isPlaceableOrChest(c2_f1) && isPlaceableOrChest(c2_f2) && isPlaceableOrTerminal(term)) {
+            return new DoubleChestPair(c2_s1, c2_s2, c2_f1, c2_f2, term);
         }
 
-        // Candidate 3: Row layout (Storage at back 1 & back 1 + right, Gap at back 2, Fuel at back 3 & back 3 + right)
-        Block c3_s1 = startBlock.getRelative(back, 1);
-        Block c3_s2 = c3_s1.getRelative(right);
-        Block c3_term = startBlock.getRelative(back, 2);
-        Block c3_f1 = startBlock.getRelative(back, 3);
-        Block c3_f2 = c3_f1.getRelative(right);
-        if (isPlaceableOrChest(c3_s1) && isPlaceableOrChest(c3_s2) && isPlaceableOrChest(c3_f1) && isPlaceableOrChest(c3_f2) && isPlaceableOrTerminal(c3_term)) {
-            return new DoubleChestPair(c3_s1, c3_s2, c3_f1, c3_f2, c3_term);
+        // Candidate 3: Backward layout (Chests placed 5 blocks behind the terminal monitor)
+        Block back5 = term.getRelative(back, 5);
+        Block c3_s1 = back5.getRelative(right, 2);
+        Block c3_s2 = back5.getRelative(right, 3);
+        Block c3_f1 = back5.getRelative(left, 2);
+        Block c3_f2 = back5.getRelative(left, 3);
+        if (isPlaceableOrChest(c3_s1) && isPlaceableOrChest(c3_s2) && isPlaceableOrChest(c3_f1) && isPlaceableOrChest(c3_f2) && isPlaceableOrTerminal(term)) {
+            return new DoubleChestPair(c3_s1, c3_s2, c3_f1, c3_f2, term);
         }
 
-        // Candidate 4: Row layout left (Storage at back 1 & back 1 + left, Gap at back 2, Fuel at back 3 & back 3 + left)
-        Block c4_s1 = startBlock.getRelative(back, 1);
-        Block c4_s2 = c4_s1.getRelative(left);
-        Block c4_term = startBlock.getRelative(back, 2);
-        Block c4_f1 = startBlock.getRelative(back, 3);
-        Block c4_f2 = c4_f1.getRelative(left);
-        if (isPlaceableOrChest(c4_s1) && isPlaceableOrChest(c4_s2) && isPlaceableOrChest(c4_f1) && isPlaceableOrChest(c4_f2) && isPlaceableOrTerminal(c4_term)) {
-            return new DoubleChestPair(c4_s1, c4_s2, c4_f1, c4_f2, c4_term);
+        // Candidate 4: Linear corridor layout (Storage 5 blocks behind terminal, Fuel 10 blocks behind terminal)
+        Block c4_s1 = term.getRelative(back, 5);
+        Block c4_s2 = term.getRelative(back, 6);
+        Block c4_f1 = term.getRelative(back, 10);
+        Block c4_f2 = term.getRelative(back, 11);
+        if (isPlaceableOrChest(c4_s1) && isPlaceableOrChest(c4_s2) && isPlaceableOrChest(c4_f1) && isPlaceableOrChest(c4_f2) && isPlaceableOrTerminal(term)) {
+            return new DoubleChestPair(c4_s1, c4_s2, c4_f1, c4_f2, term);
         }
 
-        // Candidate 5: Linear corridor layout (Storage at back 1 & back 2, Gap at back 3, Fuel at back 4 & back 5)
-        Block c5_s1 = startBlock.getRelative(back, 1);
-        Block c5_s2 = startBlock.getRelative(back, 2);
-        Block c5_term = startBlock.getRelative(back, 3);
-        Block c5_f1 = startBlock.getRelative(back, 4);
-        Block c5_f2 = startBlock.getRelative(back, 5);
-        return new DoubleChestPair(c5_s1, c5_s2, c5_f1, c5_f2, c5_term);
+        // Default fallback: Candidate 1 positions
+        return new DoubleChestPair(c1_s1, c1_s2, c1_f1, c1_f2, term);
     }
 
     private org.bukkit.entity.Entity spawnHologram(World world, Location loc, String text) {
@@ -1451,7 +1446,7 @@ public final class Turtle {
         Location sHoloLoc = new Location(
                 world,
                 (pair.s1().getX() + pair.s2().getX()) / 2.0 + 0.5,
-                Math.max(pair.s1().getY(), pair.s2().getY()) + 1.25,
+                Math.max(pair.s1().getY(), pair.s2().getY()) + 1.35,
                 (pair.s1().getZ() + pair.s2().getZ()) / 2.0 + 0.5
         );
         Material firstNeeded = null;
@@ -1472,13 +1467,13 @@ public final class Turtle {
         Location fHoloLoc = new Location(
                 world,
                 (pair.f1().getX() + pair.f2().getX()) / 2.0 + 0.5,
-                Math.max(pair.f1().getY(), pair.f2().getY()) + 1.25,
+                Math.max(pair.f1().getY(), pair.f2().getY()) + 1.35,
                 (pair.f1().getZ() + pair.f2().getZ()) / 2.0 + 0.5
         );
         this.fuelHologram = spawnHologram(world, fHoloLoc, "§6⚡ Place fuel here");
 
         if (this.terminalBlockLoc != null) {
-            Location termHoloLoc = this.terminalBlockLoc.clone().add(0.5, 1.25, 0.5);
+            Location termHoloLoc = this.terminalBlockLoc.clone().add(0.5, 1.35, 0.5);
             this.terminalHologram = spawnHologram(world, termHoloLoc, "§b🖥️ Supply Station Terminal\n§7Right-click to control Turtle");
         }
     }
@@ -1503,7 +1498,9 @@ public final class Turtle {
             terminalHologram = null;
         }
         if (constructionChestLoc != null) cleanupHologramsAt(constructionChestLoc);
+        if (constructionChestLoc2 != null) cleanupHologramsAt(constructionChestLoc2);
         if (fuelChestLoc != null) cleanupHologramsAt(fuelChestLoc);
+        if (fuelChestLoc2 != null) cleanupHologramsAt(fuelChestLoc2);
         if (terminalBlockLoc != null) cleanupHologramsAt(terminalBlockLoc);
     }
 
@@ -1839,7 +1836,7 @@ public final class Turtle {
         Location sHoloLoc = new Location(
                 world,
                 (pair.s1().getX() + pair.s2().getX()) / 2.0 + 0.5,
-                Math.max(pair.s1().getY(), pair.s2().getY()) + 1.25,
+                Math.max(pair.s1().getY(), pair.s2().getY()) + 1.35,
                 (pair.s1().getZ() + pair.s2().getZ()) / 2.0 + 0.5
         );
         this.quarryStorageHologram = spawnHologram(world, sHoloLoc, "§e📦 Mined Blocks Storage");
@@ -1847,13 +1844,13 @@ public final class Turtle {
         Location fHoloLoc = new Location(
                 world,
                 (pair.f1().getX() + pair.f2().getX()) / 2.0 + 0.5,
-                Math.max(pair.f1().getY(), pair.f2().getY()) + 1.25,
+                Math.max(pair.f1().getY(), pair.f2().getY()) + 1.35,
                 (pair.f1().getZ() + pair.f2().getZ()) / 2.0 + 0.5
         );
         this.quarryFuelHologram = spawnHologram(world, fHoloLoc, "§6⚡ Place fuel here");
 
         if (this.terminalBlockLoc != null) {
-            Location termHoloLoc = this.terminalBlockLoc.clone().add(0.5, 1.25, 0.5);
+            Location termHoloLoc = this.terminalBlockLoc.clone().add(0.5, 1.35, 0.5);
             this.quarryTerminalHologram = spawnHologram(world, termHoloLoc, "§b🖥️ Supply Station Terminal\n§7Right-click to control Turtle");
         }
     }
@@ -1872,7 +1869,9 @@ public final class Turtle {
             quarryTerminalHologram = null;
         }
         if (quarryStorageChestLoc != null) cleanupHologramsAt(quarryStorageChestLoc);
+        if (quarryStorageChestLoc2 != null) cleanupHologramsAt(quarryStorageChestLoc2);
         if (quarryFuelChestLoc != null) cleanupHologramsAt(quarryFuelChestLoc);
+        if (quarryFuelChestLoc2 != null) cleanupHologramsAt(quarryFuelChestLoc2);
         if (terminalBlockLoc != null) cleanupHologramsAt(terminalBlockLoc);
     }
 

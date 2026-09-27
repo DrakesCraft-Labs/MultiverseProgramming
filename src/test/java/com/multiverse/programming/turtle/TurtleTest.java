@@ -603,6 +603,8 @@ class TurtleTest {
         verify(b2).setType(Material.CHEST, false);
         verify(data1).setFacing(BlockFace.NORTH);
         verify(data2).setFacing(BlockFace.NORTH);
+        verify(data1).setType(org.bukkit.block.data.type.Chest.Type.LEFT);
+        verify(data2).setType(org.bukkit.block.data.type.Chest.Type.RIGHT);
     }
 
     @Test
@@ -664,21 +666,30 @@ class TurtleTest {
         Location mat2 = turtle.getConstructionChestLoc2();
         Location fuel1 = turtle.getFuelChestLoc();
         Location fuel2 = turtle.getFuelChestLoc2();
+        Location term = turtle.getTerminalBlockLoc();
 
         assertNotNull(mat1);
         assertNotNull(mat2);
         assertNotNull(fuel1);
         assertNotNull(fuel2);
+        assertNotNull(term);
 
         // Verify separation: distance between material and fuel chests is >= 2 (at least 1 block gap)
         int dist1 = Math.abs(mat1.getBlockX() - fuel1.getBlockX()) + Math.abs(mat1.getBlockZ() - fuel1.getBlockZ());
         assertTrue(dist1 >= 2, "Material and fuel double chests must have at least 1 empty block between them");
+
+        // Verify separation from terminal monitor block (~5 blocks)
+        int distTermMat = Math.abs(mat1.getBlockX() - term.getBlockX()) + Math.abs(mat1.getBlockZ() - term.getBlockZ());
+        int distTermFuel = Math.abs(fuel1.getBlockX() - term.getBlockX()) + Math.abs(fuel1.getBlockZ() - term.getBlockZ());
+        assertTrue(distTermMat >= 4, "Material chest must be separated by approximately 5 blocks from the terminal monitor");
+        assertTrue(distTermFuel >= 4, "Fuel chest must be separated by approximately 5 blocks from the terminal monitor");
 
         // Verify protection while building
         assertTrue(turtle.isBlockProtected(mat1).isProtected());
         assertTrue(turtle.isBlockProtected(mat2).isProtected());
         assertTrue(turtle.isBlockProtected(fuel1).isProtected());
         assertTrue(turtle.isBlockProtected(fuel2).isProtected());
+        assertTrue(turtle.isBlockProtected(term).isProtected());
 
         // Placed blueprint positions are protected
         assertTrue(turtle.isBlockProtected(startLoc).isProtected());
