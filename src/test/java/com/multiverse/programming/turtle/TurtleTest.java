@@ -768,7 +768,7 @@ class TurtleTest {
         // Facing NORTH (forward is -Z). length=3 -> z from 19 down to 17. width=3 (lateral is +X) -> x from 10 to 12. y from 63 down to 50.
         Location insideLoc = new Location(mockWorld, 11, 55, 18);
         assertTrue(turtle.isBlockProtected(insideLoc).isProtected());
-        assertTrue(turtle.isBlockProtected(insideLoc).reason().contains("área de excavación"));
+        assertTrue(turtle.isBlockProtected(insideLoc).reason().contains("active quarry zone"));
 
         // Blocks outside excavation volume
         Location outsideLoc = new Location(mockWorld, 11, 55, 25);

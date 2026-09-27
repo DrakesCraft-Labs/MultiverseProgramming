@@ -407,6 +407,22 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
 
         String target = args[1];
 
+        // Subcommand: /mvprog stop computer / computers
+        if (target.equalsIgnoreCase("computer") || target.equalsIgnoreCase("computers")) {
+            int stoppedScripts;
+            if (isAdmin && playerSender == null) {
+                stoppedScripts = ComputerListener.stopAllPrograms();
+                sender.sendMessage(plugin.getPrefix() + " §aSuccessfully stopped " + stoppedScripts + " running computer script(s) across the server.");
+            } else if (isAdmin) {
+                stoppedScripts = ComputerListener.stopAllPrograms();
+                sender.sendMessage(plugin.getPrefix() + " §aSuccessfully stopped " + stoppedScripts + " running computer script(s) across the server.");
+            } else {
+                stoppedScripts = ComputerListener.stopProgramsByPlayer(playerSender.getUniqueId());
+                sender.sendMessage(plugin.getPrefix() + " §aSuccessfully stopped " + stoppedScripts + " of your running computer script(s).");
+            }
+            return;
+        }
+
         // Subcommand: /mvprog stop all
         if (target.equalsIgnoreCase("all")) {
             if (isAdmin) {
@@ -416,10 +432,11 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
                         stopped++;
                     }
                 }
-                if (stopped > 0) {
-                    sender.sendMessage(plugin.getPrefix() + " §aSuccessfully stopped " + stopped + " active turtle(s) across the server.");
+                int stoppedScripts = ComputerListener.stopAllPrograms();
+                if (stopped > 0 || stoppedScripts > 0) {
+                    sender.sendMessage(plugin.getPrefix() + " §aSuccessfully stopped " + stopped + " active turtle(s) and " + stoppedScripts + " computer script(s) across the server.");
                 } else {
-                    sender.sendMessage(plugin.getPrefix() + " §eNo active turtles were currently working on the server.");
+                    sender.sendMessage(plugin.getPrefix() + " §eNo active turtles or computer scripts were currently running on the server.");
                 }
             } else {
                 int stopped = 0;
@@ -428,10 +445,11 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
                         stopped++;
                     }
                 }
-                if (stopped > 0) {
-                    sender.sendMessage(plugin.getPrefix() + " §aSuccessfully stopped " + stopped + " of your active turtle(s).");
+                int stoppedScripts = ComputerListener.stopProgramsByPlayer(playerSender.getUniqueId());
+                if (stopped > 0 || stoppedScripts > 0) {
+                    sender.sendMessage(plugin.getPrefix() + " §aSuccessfully stopped " + stopped + " of your active turtle(s) and " + stoppedScripts + " computer script(s).");
                 } else {
-                    sender.sendMessage(plugin.getPrefix() + " §eNone of your turtles were actively working.");
+                    sender.sendMessage(plugin.getPrefix() + " §eNone of your turtles or computer scripts were actively working.");
                 }
             }
             return;
@@ -671,6 +689,7 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
         if (args.length == 2 && (args[0].equalsIgnoreCase("stop") || args[0].equalsIgnoreCase("cancel"))) {
             List<String> options = new ArrayList<>();
             options.add("all");
+            options.add("computer");
             options.add("list");
             if (plugin.getTurtleManager() != null) {
                 if (sender.hasPermission("multiverseprogramming.admin")) {

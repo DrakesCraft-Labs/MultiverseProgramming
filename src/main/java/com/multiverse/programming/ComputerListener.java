@@ -133,6 +133,43 @@ public final class ComputerListener implements Listener {
         lastClickTime.clear();
     }
 
+    public static boolean stopProgramAt(Location loc) {
+        Location blockLoc = toBlockLocation(loc);
+        RunningEntry entry = runningPrograms.remove(blockLoc);
+        if (entry != null) {
+            entry.program().cancel();
+            entry.cleanup().cancel();
+            return true;
+        }
+        return false;
+    }
+
+    public static int stopProgramsByPlayer(UUID player) {
+        if (player == null) return 0;
+        List<Location> toStop = new ArrayList<>();
+        for (Map.Entry<Location, RunningEntry> e : runningPrograms.entrySet()) {
+            if (player.equals(e.getValue().player())) {
+                toStop.add(e.getKey());
+            }
+        }
+        int count = 0;
+        for (Location loc : toStop) {
+            RunningEntry entry = runningPrograms.remove(loc);
+            if (entry != null) {
+                entry.program().cancel();
+                entry.cleanup().cancel();
+                count++;
+            }
+        }
+        return count;
+    }
+
+    public static int stopAllPrograms() {
+        int count = runningPrograms.size();
+        cancelAll();
+        return count;
+    }
+
     public static Map<Location, ItemStack> getAdvancedDisks() {
         return advancedDisks;
     }
@@ -179,6 +216,12 @@ public final class ComputerListener implements Listener {
         }
 
         Location blockLoc = toBlockLocation(block.getLocation());
+        if (advanced && player.isSneaking() && isProgramRunning(blockLoc)) {
+            stopProgramAt(blockLoc);
+            player.sendMessage(plugin.getPrefix() + " §cForce-stopped running script on Advanced Computer at [" + blockLoc.getBlockX() + ", " + blockLoc.getBlockY() + ", " + blockLoc.getBlockZ() + "].");
+            return;
+        }
+
         openByPlayer.put(player.getUniqueId(), new BlockRef(advanced, blockLoc));
 
         if (!advanced) {

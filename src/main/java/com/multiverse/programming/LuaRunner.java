@@ -198,6 +198,19 @@ public final class LuaRunner {
             int maxLines,
             Consumer<String> onLine
     ) {
+        return runStreaming(plugin, computerLoc, isAdvanced, code, timeoutMs, maxLines, onLine, null);
+    }
+
+    public static LuaProgram runStreaming(
+            MultiverseProgrammingPlugin plugin,
+            Location computerLoc,
+            boolean isAdvanced,
+            String code,
+            long timeoutMs,
+            int maxLines,
+            Consumer<String> onLine,
+            Consumer<Globals> globalsConfigurator
+    ) {
         if (code != null && (code.startsWith("\033") || code.startsWith("\u001b"))) {
             onLine.accept("Binary bytecode is not allowed.");
             return new LuaProgram(null, null, null, new AtomicBoolean(true));
@@ -210,6 +223,10 @@ public final class LuaRunner {
 
         if (plugin != null) {
             PeripheralManager.bindAll(globals, plugin, computerLoc, isAdvanced);
+        }
+
+        if (globalsConfigurator != null) {
+            globalsConfigurator.accept(globals);
         }
 
         AtomicBoolean done = new AtomicBoolean(false);

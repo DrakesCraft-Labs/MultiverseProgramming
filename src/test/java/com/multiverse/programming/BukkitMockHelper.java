@@ -66,6 +66,8 @@ public final class BukkitMockHelper {
             return bd;
         });
 
+        when(server.createInventory(any(), anyInt(), anyString())).thenAnswer(inv -> mock(org.bukkit.inventory.Inventory.class));
+
         try {
             Field serverField = Bukkit.class.getDeclaredField("server");
             serverField.setAccessible(true);

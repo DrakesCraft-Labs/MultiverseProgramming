@@ -104,6 +104,16 @@ public final class TurtleManager {
         return turtlesById.get(id);
     }
 
+    public synchronized Turtle getTurtleByTerminal(Location location) {
+        if (location == null) return null;
+        for (Turtle turtle : turtlesById.values()) {
+            if (turtle.isTerminalBlock(location)) {
+                return turtle;
+            }
+        }
+        return null;
+    }
+
     public synchronized Turtle removeTurtle(Location location) {
         if (location == null) return null;
         Location blockLoc = normalizeLocation(location);

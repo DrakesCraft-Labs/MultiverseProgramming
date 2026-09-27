@@ -322,12 +322,14 @@ public final class TurtlePeripheral implements Peripheral {
 
                 final boolean finalClear = clearBlocks;
                 final int finalRotation = rotationDegrees;
+                final String[] buildError = new String[1];
                 boolean started = SyncDispatcher.sync(plugin, () ->
-                        turtle.startBuild(bp, origin, delay, requireMaterials, finalClear, finalRotation, null, null)
+                        turtle.startBuild(bp, origin, delay, requireMaterials, finalClear, finalRotation, null, err -> buildError[0] = err)
                 );
 
                 if (!started) {
-                    return varargsOf(LuaBoolean.FALSE, LuaString.valueOf(turtle.getStatusMessage()));
+                    String err = buildError[0] != null ? buildError[0] : turtle.getStatusMessage();
+                    return varargsOf(LuaBoolean.FALSE, LuaString.valueOf(err));
                 }
                 return varargsOf(LuaBoolean.TRUE, LuaString.valueOf("Build started for " + bp.name()));
             }
@@ -393,12 +395,14 @@ public final class TurtlePeripheral implements Peripheral {
                 int targetY = args.checkint(3);
                 boolean handleLiquids = args.narg() < 4 || args.checkboolean(4);
 
+                final String[] quarryError = new String[1];
                 boolean started = SyncDispatcher.sync(plugin, () ->
-                        turtle.startQuarry(width, length, targetY, handleLiquids, null, null)
+                        turtle.startQuarry(width, length, targetY, handleLiquids, null, err -> quarryError[0] = err)
                 );
 
                 if (!started) {
-                    return varargsOf(LuaBoolean.FALSE, LuaString.valueOf(turtle.getStatusMessage()));
+                    String err = quarryError[0] != null ? quarryError[0] : turtle.getStatusMessage();
+                    return varargsOf(LuaBoolean.FALSE, LuaString.valueOf(err));
                 }
                 return varargsOf(LuaBoolean.TRUE, LuaString.valueOf("Quarry excavation started"));
             }

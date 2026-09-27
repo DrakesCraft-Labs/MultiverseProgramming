@@ -33,6 +33,7 @@ import org.luaj.vm2.LuaError;
 import org.luaj.vm2.LuaValue;
 
 import java.util.Objects;
+import java.util.function.Consumer;
 
 /**
  * Handles Bukkit events for Turtle placement, interaction, inventory GUI, and breaking.
@@ -110,7 +111,22 @@ public final class TurtleListener implements Listener {
             return;
         }
         Block block = event.getClickedBlock();
-        if (block == null || block.getType() != getTurtleBlock()) {
+        if (block == null) {
+            return;
+        }
+
+        if (block.getType() == Material.LODESTONE) {
+            if (plugin.getTurtleManager() != null) {
+                Turtle turtle = plugin.getTurtleManager().getTurtleByTerminal(block.getLocation());
+                if (turtle != null) {
+                    event.setCancelled(true);
+                    SupplyStationGUI.open(event.getPlayer(), turtle);
+                    return;
+                }
+            }
+        }
+
+        if (block.getType() != getTurtleBlock()) {
             return;
         }
 
@@ -167,6 +183,50 @@ public final class TurtleListener implements Listener {
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
         Inventory top = event.getView().getTopInventory();
+        String title = event.getView().getTitle();
+
+        if (title.startsWith(SupplyStationGUI.TITLE_PREFIX)) {
+            event.setCancelled(true);
+            int rawSlot = event.getRawSlot();
+            if (rawSlot < 0 || rawSlot >= SupplyStationGUI.SIZE) {
+                return;
+            }
+            String turtleId = title.substring(SupplyStationGUI.TITLE_PREFIX.length()).trim();
+            Turtle turtle = (plugin.getTurtleManager() != null) ? plugin.getTurtleManager().getTurtleById(turtleId) : null;
+            if (turtle == null) return;
+            Player player = (Player) event.getWhoClicked();
+
+            if (rawSlot == SupplyStationGUI.SLOT_RESUME) {
+                boolean resumed = turtle.revalidateAndResume();
+                if (resumed) {
+                    player.sendMessage(plugin.getPrefix() + " §aTurtle " + turtle.getId() + " re-validated inventories and resumed operation!");
+                } else {
+                    player.sendMessage(plugin.getPrefix() + " §eTurtle " + turtle.getId() + " cannot resume: " + turtle.getStatusMessage());
+                }
+                SupplyStationGUI.refresh(top, turtle);
+            } else if (rawSlot == SupplyStationGUI.SLOT_PAUSE) {
+                if (turtle.getStatus() == Turtle.Status.BUILDING) {
+                    turtle.pauseBuild();
+                    player.sendMessage(plugin.getPrefix() + " §eConstruction paused.");
+                } else if (turtle.getStatus() == Turtle.Status.MINING) {
+                    turtle.pauseQuarry();
+                    player.sendMessage(plugin.getPrefix() + " §eQuarry excavation paused.");
+                } else {
+                    player.sendMessage(plugin.getPrefix() + " §eTurtle is not currently active.");
+                }
+                SupplyStationGUI.refresh(top, turtle);
+            } else if (rawSlot == SupplyStationGUI.SLOT_STOP) {
+                boolean stopped = turtle.stopAnyWork();
+                if (stopped) {
+                    player.sendMessage(plugin.getPrefix() + " §cStopped active task for Turtle " + turtle.getId() + ".");
+                } else {
+                    player.sendMessage(plugin.getPrefix() + " §eTurtle is already idle.");
+                }
+                SupplyStationGUI.refresh(top, turtle);
+            }
+            return;
+        }
+
         if (!(top.getHolder() instanceof TurtleGUI gui)) {
             return;
         }
@@ -282,38 +342,29 @@ public final class TurtleListener implements Listener {
 
         player.sendMessage(plugin.getPrefix() + " §7Executing Turtle script…");
 
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
-            Globals globals = LuaRunner.sandbox(1_000_000, true);
+        turtle.cancelScript();
 
-            // Bind Turtle peripheral as global 'turtle'
-            TurtlePeripheral turtlePeripheral = new TurtlePeripheral(plugin, turtle);
-            globals.set("turtle", turtlePeripheral.toLuaTable());
-
-            // Bind other standard peripherals if adjacent
-            PeripheralManager.bindAll(globals, plugin, turtle.getLocation(), true);
-
-            try {
-                LuaValue chunk = globals.load(code);
-                chunk.call();
-                Bukkit.getScheduler().runTask(plugin, () -> {
-                    if (player.isOnline()) {
-                        player.sendMessage(plugin.getPrefix() + " §aTurtle script executed successfully.");
-                    }
-                });
-            } catch (LuaError e) {
-                Bukkit.getScheduler().runTask(plugin, () -> {
-                    if (player.isOnline()) {
-                        player.sendMessage(plugin.getPrefix() + " §cTurtle execution error: " + e.getMessage());
-                    }
-                });
-            } catch (Throwable t) {
-                Bukkit.getScheduler().runTask(plugin, () -> {
-                    if (player.isOnline()) {
-                        player.sendMessage(plugin.getPrefix() + " §cUnexpected error: " + t.getMessage());
-                    }
-                });
+        Consumer<String> onLine = line -> Bukkit.getScheduler().runTask(plugin, () -> {
+            if (player.isOnline()) {
+                player.sendMessage("§f" + line);
             }
         });
+
+        int maxLines = plugin.getConfigManager().getMaxStreamLines();
+        LuaRunner.LuaProgram program = LuaRunner.runStreaming(
+                plugin,
+                turtle.getLocation(),
+                true,
+                code,
+                plugin.getAdvancedTimeoutMs(),
+                maxLines,
+                onLine,
+                g -> {
+                    TurtlePeripheral tp = new TurtlePeripheral(plugin, turtle);
+                    g.set("turtle", tp.toLuaTable());
+                }
+        );
+        turtle.setRunningScript(program);
     }
 
     private void handleWebButton(Player player, Turtle turtle) {
@@ -332,6 +383,15 @@ public final class TurtleListener implements Listener {
 
     @EventHandler
     public void onInventoryDrag(InventoryDragEvent event) {
+        if (event.getView().getTitle().startsWith(SupplyStationGUI.TITLE_PREFIX)) {
+            for (int slot : event.getRawSlots()) {
+                if (slot < SupplyStationGUI.SIZE) {
+                    event.setCancelled(true);
+                    return;
+                }
+            }
+            return;
+        }
         if (event.getView().getTopInventory().getHolder() instanceof TurtleGUI) {
             for (int slot : event.getRawSlots()) {
                 if (slot < TurtleGUI.INVENTORY_SIZE) {
@@ -363,8 +423,8 @@ public final class TurtleListener implements Listener {
             Player player = event.getPlayer();
             if (!player.isSneaking()) {
                 event.setCancelled(true);
-                player.sendMessage(plugin.getPrefix() + " §cNo puedes destruir este bloque porque " + protCheck.reason()
-                        + " §ePara forzar la destrucción, debes agacharte (Shift) y romperlo.");
+                player.sendMessage(plugin.getPrefix() + " §cYou cannot break this block because " + protCheck.reason()
+                        + " §eTo force break it, you must sneak (crouch) while breaking.");
                 try {
                     player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 1.0f, 0.5f);
                 } catch (Throwable ignored) {}

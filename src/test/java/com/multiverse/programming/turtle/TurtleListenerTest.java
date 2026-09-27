@@ -12,6 +12,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockExplodeEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.inventory.Inventory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -68,14 +69,14 @@ class TurtleListenerTest {
         when(player.getLocation()).thenReturn(loc);
 
         when(mockTurtleManager.checkBlockProtection(loc))
-                .thenReturn(new Turtle.BlockProtectionCheck(true, "forma parte de la construcción activa de la Turtle T-001."));
+                .thenReturn(new Turtle.BlockProtectionCheck(true, "it is part of an active construction by Turtle T-001."));
 
         BlockBreakEvent event = new BlockBreakEvent(block, player);
         listener.onBlockBreak(event);
 
         assertTrue(event.isCancelled(), "Event must be cancelled when non-sneaking player breaks a protected block");
-        verify(player).sendMessage(contains("No puedes destruir este bloque porque forma parte de la construcción activa"));
-        verify(player).sendMessage(contains("Shift"));
+        verify(player).sendMessage(contains("You cannot break this block because it is part of an active construction"));
+        verify(player).sendMessage(contains("sneak (crouch)"));
     }
 
     @Test
@@ -91,13 +92,13 @@ class TurtleListenerTest {
         when(player.getLocation()).thenReturn(loc);
 
         when(mockTurtleManager.checkBlockProtection(loc))
-                .thenReturn(new Turtle.BlockProtectionCheck(true, "forma parte de la construcción activa de la Turtle T-001."));
+                .thenReturn(new Turtle.BlockProtectionCheck(true, "it is part of an active construction by Turtle T-001."));
 
         BlockBreakEvent event = new BlockBreakEvent(block, player);
         listener.onBlockBreak(event);
 
         assertFalse(event.isCancelled(), "Event must NOT be cancelled when sneaking player forces destruction");
-        verify(player, never()).sendMessage(contains("No puedes destruir"));
+        verify(player, never()).sendMessage(contains("You cannot break this block"));
     }
 
     @Test
@@ -153,5 +154,93 @@ class TurtleListenerTest {
 
         assertEquals(1, blockBlocks.size());
         assertEquals(freeBlock, blockBlocks.get(0));
+    }
+
+    @Test
+    @DisplayName("Right clicking Lodestone terminal opens SupplyStationGUI")
+    void testInteractLodestoneOpensSupplyStationGUI() {
+        Location loc = new Location(mockWorld, 15, 64, 15);
+        Block block = mock(Block.class);
+        when(block.getLocation()).thenReturn(loc);
+        when(block.getType()).thenReturn(Material.LODESTONE);
+
+        Turtle mockTurtle = mock(Turtle.class);
+        when(mockTurtle.getId()).thenReturn("T-001");
+        when(mockTurtleManager.getTurtleByTerminal(loc)).thenReturn(mockTurtle);
+
+        Player player = mock(Player.class);
+        when(player.getLocation()).thenReturn(loc);
+
+        org.bukkit.event.player.PlayerInteractEvent event = new org.bukkit.event.player.PlayerInteractEvent(
+                player,
+                org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK,
+                null,
+                block,
+                org.bukkit.block.BlockFace.UP
+        );
+        listener.onTurtleInteract(event);
+
+        assertTrue(event.isCancelled());
+        verify(player).openInventory(any(Inventory.class));
+    }
+
+    @Test
+    @DisplayName("Clicking Re-validate & Resume button in SupplyStationGUI calls revalidateAndResume")
+    void testSupplyStationGUIResumeClick() {
+        Turtle mockTurtle = mock(Turtle.class);
+        when(mockTurtle.getId()).thenReturn("T-001");
+        when(mockTurtle.revalidateAndResume()).thenReturn(true);
+        when(mockTurtleManager.getTurtleById("T-001")).thenReturn(mockTurtle);
+
+        Player player = mock(Player.class);
+        org.bukkit.inventory.InventoryView view = mock(org.bukkit.inventory.InventoryView.class);
+        when(view.getTitle()).thenReturn(SupplyStationGUI.TITLE_PREFIX + "T-001");
+        Inventory mockInv = mock(Inventory.class);
+        when(view.getTopInventory()).thenReturn(mockInv);
+        when(view.getPlayer()).thenReturn(player);
+
+        org.bukkit.event.inventory.InventoryClickEvent event = new org.bukkit.event.inventory.InventoryClickEvent(
+                view,
+                org.bukkit.event.inventory.InventoryType.SlotType.CONTAINER,
+                SupplyStationGUI.SLOT_RESUME,
+                org.bukkit.event.inventory.ClickType.LEFT,
+                org.bukkit.event.inventory.InventoryAction.PICKUP_ALL
+        );
+
+        listener.onInventoryClick(event);
+
+        assertTrue(event.isCancelled());
+        verify(mockTurtle).revalidateAndResume();
+        verify(player).sendMessage(contains("re-validated inventories and resumed"));
+    }
+
+    @Test
+    @DisplayName("Clicking Stop button in SupplyStationGUI calls stopAnyWork")
+    void testSupplyStationGUIStopClick() {
+        Turtle mockTurtle = mock(Turtle.class);
+        when(mockTurtle.getId()).thenReturn("T-001");
+        when(mockTurtle.stopAnyWork()).thenReturn(true);
+        when(mockTurtleManager.getTurtleById("T-001")).thenReturn(mockTurtle);
+
+        Player player = mock(Player.class);
+        org.bukkit.inventory.InventoryView view = mock(org.bukkit.inventory.InventoryView.class);
+        when(view.getTitle()).thenReturn(SupplyStationGUI.TITLE_PREFIX + "T-001");
+        Inventory mockInv = mock(Inventory.class);
+        when(view.getTopInventory()).thenReturn(mockInv);
+        when(view.getPlayer()).thenReturn(player);
+
+        org.bukkit.event.inventory.InventoryClickEvent event = new org.bukkit.event.inventory.InventoryClickEvent(
+                view,
+                org.bukkit.event.inventory.InventoryType.SlotType.CONTAINER,
+                SupplyStationGUI.SLOT_STOP,
+                org.bukkit.event.inventory.ClickType.LEFT,
+                org.bukkit.event.inventory.InventoryAction.PICKUP_ALL
+        );
+
+        listener.onInventoryClick(event);
+
+        assertTrue(event.isCancelled());
+        verify(mockTurtle).stopAnyWork();
+        verify(player).sendMessage(contains("Stopped active task for Turtle T-001"));
     }
 }
