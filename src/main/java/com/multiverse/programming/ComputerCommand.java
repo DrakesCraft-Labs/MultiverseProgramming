@@ -155,6 +155,14 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
                 int cleaned = manager.cleanOldBlueprints(days);
                 sender.sendMessage(plugin.getPrefix() + " §aPurged §e" + cleaned + " §aold unpinned blueprint(s) older than §e" + days + " §adays.");
             }
+            case "reload" -> {
+                if (!sender.hasPermission("multiverseprogramming.admin")) {
+                    sender.sendMessage(plugin.getPrefix() + " §cYou don't have permission to reload blueprints.");
+                    return;
+                }
+                manager.loadAll();
+                sender.sendMessage(plugin.getPrefix() + " §aBlueprints reloaded from disk! Total: §e" + manager.getAllBlueprints().size());
+            }
             default -> {
                 var all = manager.getAllBlueprints();
                 if (all.isEmpty()) {
@@ -630,6 +638,7 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage(" §6/mvprog build <bp|code> <x> <y> <z> [turtle] [clear] [orientation] §8- §7order turtle to build");
             sender.sendMessage(" §6/mvprog stop [id|all] §8- §7stop any turtle (or all turtles) across the server");
             sender.sendMessage(" §6/mvprog bp clean [days] §8- §7purge old unpinned blueprints");
+            sender.sendMessage(" §6/mvprog bp reload §8- §7reload blueprints from disk");
             sender.sendMessage(" §6/mvprog give <item> §8- §7give custom programming item");
             sender.sendMessage(" §6/mvprog reload §8- §7reload configuration and recipes");
         } else {
@@ -696,6 +705,7 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
             List<String> subs = new ArrayList<>(List.of("list", "quota", "delete"));
             if (sender.hasPermission("multiverseprogramming.admin")) {
                 subs.add("clean");
+                subs.add("reload");
             }
             return StringUtil.copyPartialMatches(args[1], subs, completions);
         }

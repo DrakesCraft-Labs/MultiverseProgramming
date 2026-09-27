@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Manages saving, loading, caching, querying, and quota enforcement for 3D construction blueprints.
@@ -44,6 +45,7 @@ public final class BlueprintManager {
     private final Map<String, String> blueprintOwners = new HashMap<>(); // ID -> Player Name/UUID
     private final Map<String, Long> blueprintSizes = new HashMap<>();  // ID -> Bytes on disk
     private final Map<String, String> fileHashes = new HashMap<>();     // SHA-256 -> ID
+    private final Map<String, String> nameAliases = new ConcurrentHashMap<>(); // Alias/Filename -> ID
     private final SecureRandom random = new SecureRandom();
 
     public BlueprintManager(MultiverseProgrammingPlugin plugin) {
@@ -60,6 +62,7 @@ public final class BlueprintManager {
         blueprintOwners.clear();
         blueprintSizes.clear();
         fileHashes.clear();
+        nameAliases.clear();
 
         loadMetadata();
 
@@ -67,6 +70,20 @@ public final class BlueprintManager {
             String lower = name.toLowerCase(Locale.ROOT);
             return lower.endsWith(".litematic") || lower.endsWith(".nbt");
         });
+        if (files == null || files.length == 0) {
+            try (InputStream in = plugin.getResource("blueprints/nether_portal.litematic")) {
+                if (in != null) {
+                    File sampleFile = new File(storageDir, "BP-NETHER-PORTAL_nether_portal.litematic");
+                    java.nio.file.Files.copy(in, sampleFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                    files = storageDir.listFiles((dir, name) -> {
+                        String lower = name.toLowerCase(Locale.ROOT);
+                        return lower.endsWith(".litematic") || lower.endsWith(".nbt");
+                    });
+                }
+            } catch (Exception e) {
+                plugin.getLogger().warning("Could not unpack default sample blueprint: " + e.getMessage());
+            }
+        }
         if (files == null) {
             return;
         }
@@ -82,16 +99,20 @@ public final class BlueprintManager {
                 boolean filterDangerous = cfg != null && cfg.isBlueprintFilterDangerous();
 
                 Blueprint bp = BlueprintSecurityValidator.sanitizeAndValidate(rawBp, maxDim, maxBlocks, filterDangerous);
-                blueprints.put(id.toUpperCase(Locale.ROOT), bp);
-                blueprintSizes.put(id.toUpperCase(Locale.ROOT), file.length());
+                String upperId = id.toUpperCase(Locale.ROOT);
+                blueprints.put(upperId, bp);
+                blueprintSizes.put(upperId, file.length());
+
+                // Register file name and blueprint name aliases
+                registerAliases(upperId, file.getName(), bp.name());
 
                 // Compute hash for deduplication
                 byte[] bytes = java.nio.file.Files.readAllBytes(file.toPath());
                 String hash = computeSha256(bytes);
-                fileHashes.put(hash, id.toUpperCase(Locale.ROOT));
+                fileHashes.put(hash, upperId);
 
-                if (!blueprintOwners.containsKey(id.toUpperCase(Locale.ROOT))) {
-                    blueprintOwners.put(id.toUpperCase(Locale.ROOT), "Server");
+                if (!blueprintOwners.containsKey(upperId)) {
+                    blueprintOwners.put(upperId, "Server");
                 }
             } catch (Exception e) {
                 plugin.getLogger().warning("Failed to load blueprint from " + file.getName() + ": " + e.getMessage());
@@ -99,6 +120,20 @@ public final class BlueprintManager {
         }
         saveMetadata();
         plugin.getLogger().info("Loaded " + blueprints.size() + " blueprints.");
+    }
+
+    private void registerAliases(String upperId, String fileName, String blueprintName) {
+        String baseName = fileName.replaceFirst("(?i)\\.(litematic|nbt)$", "").trim().toUpperCase(Locale.ROOT);
+        nameAliases.put(baseName, upperId);
+        if (baseName.contains("_")) {
+            String after = baseName.substring(baseName.indexOf('_') + 1).trim();
+            if (!after.isBlank()) {
+                nameAliases.put(after, upperId);
+            }
+        }
+        if (blueprintName != null && !blueprintName.isBlank()) {
+            nameAliases.put(blueprintName.trim().toUpperCase(Locale.ROOT), upperId);
+        }
     }
 
     /**
@@ -181,6 +216,7 @@ public final class BlueprintManager {
         blueprintOwners.put(upperId, owner);
         blueprintSizes.put(upperId, (long) data.length);
         fileHashes.put(hash, upperId);
+        registerAliases(upperId, fileName, bp.name());
 
         saveMetadata();
         return bp;
@@ -194,6 +230,13 @@ public final class BlueprintManager {
         Blueprint bp = blueprints.get(key);
         if (bp != null) {
             return bp;
+        }
+        String aliasedId = nameAliases.get(key);
+        if (aliasedId != null) {
+            bp = blueprints.get(aliasedId);
+            if (bp != null) {
+                return bp;
+            }
         }
         for (Blueprint b : blueprints.values()) {
             if (b.name().equalsIgnoreCase(idOrName.trim())) {
@@ -344,6 +387,7 @@ public final class BlueprintManager {
         blueprints.remove(upperId);
         blueprintOwners.remove(upperId);
         blueprintSizes.remove(upperId);
+        nameAliases.values().removeIf(upperId::equalsIgnoreCase);
 
         // Remove from file hashes
         fileHashes.values().removeIf(upperId::equals);
@@ -373,6 +417,7 @@ public final class BlueprintManager {
                 iterator.remove();
                 blueprintOwners.remove(id);
                 blueprintSizes.remove(id);
+                nameAliases.values().removeIf(id::equalsIgnoreCase);
                 fileHashes.values().removeIf(id::equals);
 
                 File[] files = storageDir.listFiles((dir, name) -> name.startsWith(id));
@@ -441,8 +486,12 @@ public final class BlueprintManager {
     }
 
     private String extractOrGenerateId(String fileName) {
-        if (fileName.startsWith("BP-") && fileName.indexOf('_') > 3) {
-            return fileName.substring(0, fileName.indexOf('_'));
+        String base = fileName.replaceFirst("(?i)\\.(litematic|nbt)$", "").trim();
+        if (base.toUpperCase(Locale.ROOT).startsWith("BP-")) {
+            if (base.indexOf('_') > 3) {
+                return base.substring(0, base.indexOf('_')).toUpperCase(Locale.ROOT);
+            }
+            return base.toUpperCase(Locale.ROOT);
         }
         return generateUniqueId();
     }
