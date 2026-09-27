@@ -42,6 +42,8 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
             case "build" -> triggerBuild(sender, args);
             case "stop", "cancel" -> handleStopCommand(sender, args);
             case "clean" -> handleCleanCommand(sender, args);
+            case "cleanholograms", "cleanhologram", "cleandisplays", "cleandisplay", "purgeholograms" -> handleCleanHologramsDirect(sender, args);
+            case "holograms", "hologram" -> handleHologramsSubcommand(sender, args);
             case "turtle", "turtles" -> handleTurtleSubcommand(sender, args);
             case "give" -> {
                 if (sender instanceof Player player) {
@@ -374,59 +376,163 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
     }
 
     private void handleCleanCommand(CommandSender sender, String[] args) {
-        if (!sender.hasPermission("multiverseprogramming.admin")) {
+        if (!sender.hasPermission("multiverseprogramming.use")) {
             sender.sendMessage(plugin.getPrefix() + " §cYou don't have permission to use this command.");
             return;
         }
 
         if (args.length > 1 && (args[1].equalsIgnoreCase("blueprint") || args[1].equalsIgnoreCase("blueprints") || args[1].equalsIgnoreCase("bp"))) {
+            if (!sender.hasPermission("multiverseprogramming.admin")) {
+                sender.sendMessage(plugin.getPrefix() + " §cYou don't have permission to clean blueprints.");
+                return;
+            }
             handleBlueprintCommand(sender, new String[]{"bp", "clean"});
             return;
         }
 
-        int radiusIdx = (args.length > 1 && args[1].equalsIgnoreCase("holograms")) ? 2 : 1;
-        purgeHolograms(sender, args, radiusIdx);
-    }
-
-    private void purgeHolograms(CommandSender sender, String[] args, int radiusArgIndex) {
-        Double radius = null;
-        if (args.length > radiusArgIndex) {
-            try {
-                radius = Double.parseDouble(args[radiusArgIndex]);
-            } catch (NumberFormatException ignored) {}
+        if (args.length > 1 && (args[1].equalsIgnoreCase("all") || args[1].equalsIgnoreCase("everything"))) {
+            purgeHolograms(sender, args, 2, true);
+            return;
         }
 
+        int radiusIdx = (args.length > 1 && (args[1].equalsIgnoreCase("holograms") || args[1].equalsIgnoreCase("hologram") || args[1].equalsIgnoreCase("display") || args[1].equalsIgnoreCase("displays"))) ? 2 : 1;
+        purgeHolograms(sender, args, radiusIdx, false);
+    }
+
+    private void handleCleanHologramsDirect(CommandSender sender, String[] args) {
+        if (!sender.hasPermission("multiverseprogramming.use")) {
+            sender.sendMessage(plugin.getPrefix() + " §cYou don't have permission to use this command.");
+            return;
+        }
+        purgeHolograms(sender, args, 1, false);
+    }
+
+    private void handleHologramsSubcommand(CommandSender sender, String[] args) {
+        if (!sender.hasPermission("multiverseprogramming.use")) {
+            sender.sendMessage(plugin.getPrefix() + " §cYou don't have permission to use this command.");
+            return;
+        }
+
+        if (args.length > 1 && (args[1].equalsIgnoreCase("clean") || args[1].equalsIgnoreCase("purge") || args[1].equalsIgnoreCase("clear") || args[1].equalsIgnoreCase("remove"))) {
+            purgeHolograms(sender, args, 2, false);
+            return;
+        }
+
+        sender.sendMessage(plugin.getPrefix() + " §b=== Hologram Management ===");
+        sender.sendMessage(" §e/mvprog cleanholograms [radius|all] §8- §7purge exclusive plugin holograms");
+        sender.sendMessage(" §e/mvprog holograms clean [radius|all] §8- §7remove stuck displays & text");
+    }
+
+    public static boolean isPluginHologram(org.bukkit.entity.Entity e) {
+        if (e == null || !e.isValid()) return false;
+
+        for (String tag : e.getScoreboardTags()) {
+            if (tag.equals(com.multiverse.programming.peripheral.MonitorPeripheral.SCOREBOARD_TAG)
+                    || tag.equals(com.multiverse.programming.peripheral.CartographerPeripheral.SCOREBOARD_TAG)
+                    || tag.equals(com.multiverse.programming.peripheral.NpcPeripheral.HOLOGRAM_TAG)
+                    || tag.equals(com.multiverse.programming.turtle.Turtle.TURTLE_HOLOGRAM_TAG)
+                    || tag.startsWith("multiverse_holo")) {
+                return true;
+            }
+        }
+
+        if (e instanceof org.bukkit.entity.TextDisplay td) {
+            String text = td.getText();
+            if (text != null && isPluginHologramText(text)) {
+                return true;
+            }
+        } else if (e instanceof org.bukkit.entity.ArmorStand as) {
+            String name = as.getCustomName();
+            if (name != null && isPluginHologramText(name)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static boolean isPluginHologramText(String text) {
+        return text.contains("Place construction blocks here")
+                || text.contains("Place fuel here")
+                || text.contains("Supply Station Terminal")
+                || text.contains("=== MAP SCAN")
+                || text.contains("Cartographer Scan Map");
+    }
+
+    public static boolean isPluginNpc(org.bukkit.entity.Entity e) {
+        if (e == null || !e.isValid()) return false;
+        return e.getScoreboardTags().contains(com.multiverse.programming.peripheral.NpcPeripheral.NPC_TAG);
+    }
+
+    private void purgeHolograms(CommandSender sender, String[] args, int radiusArgIndex, boolean includeNpcs) {
+        boolean isAdmin = sender.hasPermission("multiverseprogramming.admin");
         Player playerSender = (sender instanceof Player p) ? p : null;
+
+        Double radius = null;
+        boolean forceAll = false;
+
+        if (args.length > radiusArgIndex) {
+            String token = args[radiusArgIndex];
+            if (token.equalsIgnoreCase("all") || token.equalsIgnoreCase("global") || token.equalsIgnoreCase("world") || token.equalsIgnoreCase("worlds")) {
+                forceAll = true;
+            } else {
+                try {
+                    radius = Double.parseDouble(token);
+                } catch (NumberFormatException ignored) {}
+            }
+        }
+
+        // For non-admin players, restrict full server sweep
+        if (!isAdmin && playerSender != null) {
+            if (forceAll) {
+                sender.sendMessage(plugin.getPrefix() + " §cOnly administrators can purge holograms server-wide.");
+                sender.sendMessage(" §7Purging holograms within a safe 32-block radius around you instead.");
+                forceAll = false;
+                radius = 32.0;
+            } else if (radius == null) {
+                radius = 16.0; // Default local radius for players
+            } else {
+                radius = Math.min(64.0, Math.max(1.0, radius)); // Cap at 64 for non-admins
+            }
+        }
+
         int hologramsRemoved = 0;
         int npcsRemoved = 0;
 
-        List<org.bukkit.World> worlds = (playerSender != null && radius != null)
+        List<org.bukkit.World> worlds = (playerSender != null && !forceAll && radius != null)
                 ? List.of(playerSender.getWorld())
                 : Bukkit.getWorlds();
 
         for (org.bukkit.World w : worlds) {
             for (org.bukkit.entity.Entity e : w.getEntities()) {
-                if (radius != null && playerSender != null) {
+                if (radius != null && playerSender != null && !forceAll) {
+                    if (e.getLocation().getWorld() == null || !e.getLocation().getWorld().equals(playerSender.getWorld())) {
+                        continue;
+                    }
                     if (e.getLocation().distanceSquared(playerSender.getLocation()) > (radius * radius)) {
                         continue;
                     }
                 }
-                var tags = e.getScoreboardTags();
-                if (tags.contains(com.multiverse.programming.peripheral.MonitorPeripheral.SCOREBOARD_TAG)
-                        || tags.contains(com.multiverse.programming.peripheral.CartographerPeripheral.SCOREBOARD_TAG)
-                        || tags.contains(com.multiverse.programming.peripheral.NpcPeripheral.HOLOGRAM_TAG)
-                        || tags.contains(com.multiverse.programming.turtle.Turtle.TURTLE_HOLOGRAM_TAG)) {
+
+                if (isPluginHologram(e)) {
                     e.remove();
                     hologramsRemoved++;
-                } else if (tags.contains(com.multiverse.programming.peripheral.NpcPeripheral.NPC_TAG)) {
+                } else if (includeNpcs && isPluginNpc(e)) {
                     e.remove();
                     npcsRemoved++;
                 }
             }
         }
 
-        sender.sendMessage(plugin.getPrefix() + " §aPurged §e" + hologramsRemoved + " §aorphaned hologram(s) and §e" + npcsRemoved + " §aNPC entity/entities"
-                + (radius != null ? " within §e" + radius.intValue() + " §ablocks." : " across loaded worlds."));
+        if (hologramsRemoved == 0 && npcsRemoved == 0) {
+            sender.sendMessage(plugin.getPrefix() + " §aNo orphaned plugin holograms found"
+                    + (radius != null ? " within §e" + radius.intValue() + " §ablocks." : " across loaded worlds."));
+            return;
+        }
+
+        String npcSuffix = (includeNpcs && npcsRemoved > 0) ? " §7(and §e" + npcsRemoved + " §aNPC entity/entities)" : "";
+        sender.sendMessage(plugin.getPrefix() + " §aPurged §e" + hologramsRemoved + " §aexclusive plugin hologram(s)" + npcSuffix
+                + (radius != null ? " within §e" + radius.intValue() + " §ablocks." : " across all loaded worlds."));
     }
 
     private void handleStopCommand(CommandSender sender, String[] args) {
@@ -470,7 +576,7 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
                 sender.sendMessage(plugin.getPrefix() + " §cYou don't have permission to stop holograms.");
                 return;
             }
-            purgeHolograms(sender, args, 2);
+            purgeHolograms(sender, args, 2, false);
             return;
         }
 
@@ -716,13 +822,15 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(" §e/mvprog bp [list|quota|delete] §8- §7manage blueprints and check storage quota");
         sender.sendMessage(" §e/mvprog stop [id|all] §8- §7stop active turtle construction/quarry or list your turtles");
         sender.sendMessage(" §e/mvprog turtle [list|stop] §8- §7manage and inspect your placed turtles");
+        sender.sendMessage(" §e/mvprog cleanholograms [radius] §8- §7purge stuck/orphaned plugin holograms");
         if (sender.hasPermission("multiverseprogramming.admin")) {
             sender.sendMessage(" §6=== Admin Commands ===");
             sender.sendMessage(" §6/mvprog quota <player> §8- §7view specific player's storage quota");
             sender.sendMessage(" §6/mvprog getbypass <code|url> §8- §7download blueprint bypassing storage quotas");
             sender.sendMessage(" §6/mvprog build <bp|code> <x> <y> <z> [turtle] [clear] [orientation] §8- §7order turtle to build");
             sender.sendMessage(" §6/mvprog stop [id|all|computer|holograms] §8- §7stop active work, scripts, or purge holograms");
-            sender.sendMessage(" §6/mvprog clean [holograms|bp] §8- §7purge orphaned holograms or old blueprints");
+            sender.sendMessage(" §6/mvprog clean [holograms|bp|all] §8- §7purge exclusive plugin holograms or old blueprints");
+            sender.sendMessage(" §6/mvprog cleanholograms [all|radius] §8- §7purge exclusive plugin holograms server-wide");
             sender.sendMessage(" §6/mvprog bp clean [days] §8- §7purge old unpinned blueprints");
             sender.sendMessage(" §6/mvprog bp reload §8- §7reload blueprints from disk");
             sender.sendMessage(" §6/mvprog give <item> §8- §7give custom programming item");
@@ -746,8 +854,10 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
             subcommands.add("bp");
             subcommands.add("stop");
             subcommands.add("turtle");
+            subcommands.add("cleanholograms");
+            subcommands.add("clean");
+            subcommands.add("holograms");
             if (sender.hasPermission("multiverseprogramming.admin")) {
-                subcommands.add("clean");
                 subcommands.add("getbypass");
                 subcommands.add("build");
                 subcommands.add("give");
@@ -770,9 +880,38 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
             }
             return StringUtil.copyPartialMatches(args[1], options, completions);
         }
-        if (args.length == 2 && args[0].equalsIgnoreCase("clean") && sender.hasPermission("multiverseprogramming.admin")) {
-            List<String> options = new ArrayList<>(List.of("holograms", "blueprints"));
+        if (args.length == 2 && (args[0].equalsIgnoreCase("cleanholograms") || args[0].equalsIgnoreCase("cleanhologram") || args[0].equalsIgnoreCase("cleandisplays") || args[0].equalsIgnoreCase("purgeholograms"))) {
+            List<String> options = new ArrayList<>(List.of("16", "32", "64"));
+            if (sender.hasPermission("multiverseprogramming.admin")) {
+                options.add("all");
+            }
             return StringUtil.copyPartialMatches(args[1], options, completions);
+        }
+        if (args.length == 2 && args[0].equalsIgnoreCase("clean")) {
+            List<String> options = new ArrayList<>(List.of("holograms", "16", "32", "64"));
+            if (sender.hasPermission("multiverseprogramming.admin")) {
+                options.add("blueprints");
+                options.add("all");
+            }
+            return StringUtil.copyPartialMatches(args[1], options, completions);
+        }
+        if (args.length == 3 && args[0].equalsIgnoreCase("clean") && args[1].equalsIgnoreCase("holograms")) {
+            List<String> options = new ArrayList<>(List.of("16", "32", "64"));
+            if (sender.hasPermission("multiverseprogramming.admin")) {
+                options.add("all");
+            }
+            return StringUtil.copyPartialMatches(args[2], options, completions);
+        }
+        if (args.length == 2 && (args[0].equalsIgnoreCase("holograms") || args[0].equalsIgnoreCase("hologram"))) {
+            List<String> options = new ArrayList<>(List.of("clean", "purge", "clear"));
+            return StringUtil.copyPartialMatches(args[1], options, completions);
+        }
+        if (args.length == 3 && (args[0].equalsIgnoreCase("holograms") || args[0].equalsIgnoreCase("hologram"))) {
+            List<String> options = new ArrayList<>(List.of("16", "32", "64"));
+            if (sender.hasPermission("multiverseprogramming.admin")) {
+                options.add("all");
+            }
+            return StringUtil.copyPartialMatches(args[2], options, completions);
         }
         if (args.length == 2 && (args[0].equalsIgnoreCase("turtle") || args[0].equalsIgnoreCase("turtles"))) {
             List<String> options = new ArrayList<>(List.of("list", "stop"));

@@ -458,4 +458,62 @@ class ComputerCommandTest {
         assertTrue(userCompletions.contains("T-001"));
         assertFalse(userCompletions.contains("T-002"));
     }
+
+    @Test
+    @DisplayName("/mvprog cleanholograms removes exclusive plugin holograms and preserves unrelated entities")
+    void testCleanHologramsExclusive() {
+        Player player = mock(Player.class);
+        World world = mock(World.class);
+        Location playerLoc = new Location(world, 0, 64, 0);
+        when(player.getLocation()).thenReturn(playerLoc);
+        when(player.getWorld()).thenReturn(world);
+        when(player.hasPermission("multiverseprogramming.use")).thenReturn(true);
+        when(player.hasPermission("multiverseprogramming.admin")).thenReturn(true);
+
+        org.bukkit.entity.TextDisplay monitorDisplay = mock(org.bukkit.entity.TextDisplay.class);
+        when(monitorDisplay.isValid()).thenReturn(true);
+        when(monitorDisplay.getLocation()).thenReturn(new Location(world, 2, 64, 2));
+        when(monitorDisplay.getScoreboardTags()).thenReturn(new java.util.HashSet<>(List.of("multiverse_monitor")));
+
+        org.bukkit.entity.TextDisplay chestHologram = mock(org.bukkit.entity.TextDisplay.class);
+        when(chestHologram.isValid()).thenReturn(true);
+        when(chestHologram.getLocation()).thenReturn(new Location(world, 3, 64, 3));
+        when(chestHologram.getScoreboardTags()).thenReturn(new java.util.HashSet<>());
+        when(chestHologram.getText()).thenReturn("§e📦 Place construction blocks here\n§7Needed now: STONE");
+
+        org.bukkit.entity.ArmorStand vanillaStand = mock(org.bukkit.entity.ArmorStand.class);
+        when(vanillaStand.isValid()).thenReturn(true);
+        when(vanillaStand.getLocation()).thenReturn(new Location(world, 5, 64, 5));
+        when(vanillaStand.getScoreboardTags()).thenReturn(new java.util.HashSet<>());
+        when(vanillaStand.getCustomName()).thenReturn("Server Statue");
+
+        when(world.getEntities()).thenReturn(List.of(monitorDisplay, chestHologram, vanillaStand));
+
+        assertTrue(command.onCommand(player, mockCmd, "mvprog", new String[]{"cleanholograms", "16"}));
+
+        verify(monitorDisplay).remove();
+        verify(chestHologram).remove();
+        verify(vanillaStand, never()).remove();
+        verify(player).sendMessage(contains("Purged"));
+    }
+
+    @Test
+    @DisplayName("Tab completion includes cleanholograms and subcommands")
+    void testCleanHologramsTabCompletion() {
+        Player player = mock(Player.class);
+        when(player.hasPermission("multiverseprogramming.use")).thenReturn(true);
+        when(player.hasPermission("multiverseprogramming.admin")).thenReturn(true);
+
+        List<String> root = command.onTabComplete(player, mockCmd, "mvprog", new String[]{""});
+        assertTrue(root.contains("cleanholograms"));
+        assertTrue(root.contains("clean"));
+        assertTrue(root.contains("holograms"));
+
+        List<String> cleanHolo = command.onTabComplete(player, mockCmd, "mvprog", new String[]{"cleanholograms", ""});
+        assertTrue(cleanHolo.contains("16"));
+        assertTrue(cleanHolo.contains("all"));
+
+        List<String> holoSubs = command.onTabComplete(player, mockCmd, "mvprog", new String[]{"holograms", ""});
+        assertTrue(holoSubs.contains("clean"));
+    }
 }
