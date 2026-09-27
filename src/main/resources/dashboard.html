@@ -163,59 +163,6 @@
       border-color: #22c55e;
       color: #fff;
     }
-    .server-network-box {
-      background: #070a13;
-      border: 1px solid var(--card-border);
-      border-radius: 8px;
-      padding: 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    .server-network-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 0.82rem;
-      color: var(--text-muted);
-    }
-    .server-network-badge-btn {
-      background: #1e293b;
-      border: 1px solid var(--card-border);
-      color: #38bdf8;
-      padding: 2px 8px;
-      border-radius: 4px;
-      font-size: 0.75rem;
-      cursor: pointer;
-      transition: 0.15s;
-    }
-    .server-network-badge-btn:hover {
-      border-color: #38bdf8;
-      background: rgba(56, 189, 248, 0.15);
-      color: #fff;
-    }
-    .server-select-dropdown {
-      background: #0f172a;
-      border: 1px solid var(--card-border);
-      color: #fff;
-      padding: 8px 10px;
-      border-radius: 6px;
-      font-size: 0.85rem;
-      outline: none;
-      cursor: pointer;
-      width: 100%;
-    }
-    .server-select-dropdown:focus {
-      border-color: var(--primary);
-    }
-    .server-details-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 0.78rem;
-      color: var(--text-muted);
-      font-family: monospace;
-    }
     .server-ping-badge {
       color: #4ade80;
       font-weight: 600;
@@ -274,9 +221,9 @@
     </div>
     
     <div class="header-controls">
-      <button id="serverNetworkBtn" class="network-badge-btn" onclick="openServerModal()" title="Red de Servidores Activos / Active Servers Network">
+      <button id="serverNetworkBtn" class="network-badge-btn" onclick="openServerModal()" title="Servidores que usan el plugin / Servers using the plugin">
         <span class="status-pulse-dot"></span>
-        <span id="headerServerCount">Servidores Conectados</span>
+        <span id="headerServerCount" data-i18n="headerServerCount">Servidores con el Plugin</span>
       </button>
       <button id="langToggleBtn" class="lang-btn" onclick="toggleLanguage()" title="Cambiar idioma / Switch language">
         🌐 <span id="langLabel">ES</span>
@@ -318,18 +265,17 @@
       <div class="modal-header">
         <div style="display:flex; align-items:center; gap:8px;">
           <span class="status-pulse-dot"></span>
-          <span class="modal-title" data-i18n="serverNetworkTitle">Red de Servidores Activos (Multiverse)</span>
+          <span class="modal-title" data-i18n="serverNetworkTitle">Servidores que usan el Plugin</span>
         </div>
         <button class="close-btn" onclick="closeServerModal()">&times;</button>
       </div>
       <div style="font-size:0.85rem; color:var(--text-muted); margin-bottom:12px;" data-i18n="serverNetworkSub">
-        Servidores donde el plugin MultiverseProgramming y las Tortugas computacionales están activos y construyendo en tiempo real.
+        Servidores y redes donde el plugin MultiverseProgramming y las Tortugas computacionales están activos.
       </div>
-      <div id="serverModalList" style="display:flex; flex-direction:column; gap:10px; max-height:360px; overflow-y:auto; padding-right:4px;">
+      <div id="serverModalList" style="display:flex; flex-direction:column; gap:10px; max-height:380px; overflow-y:auto; padding-right:4px;">
         <!-- Populated dynamically -->
       </div>
-      <div style="margin-top:14px; display:flex; justify-content:space-between; align-items:center;">
-        <button class="btn btn-sm btn-ghost" onclick="promptAddCustomServer()" data-i18n="addServerBtn">+ Añadir Servidor</button>
+      <div style="margin-top:14px; display:flex; justify-content:flex-end; align-items:center;">
         <button class="btn btn-sm" onclick="closeServerModal()" data-i18n="gotItBtn">¡Entendido!</button>
       </div>
     </div>
@@ -425,29 +371,6 @@
     <div class="card">
       <div class="card-title">
         <span data-i18n="inGameTitle">Código de Construcción en el Juego</span>
-      </div>
-
-      <!-- Server Network Selector -->
-      <div class="server-network-box">
-        <div class="server-network-header">
-          <div style="display:flex; align-items:center; gap:6px;">
-            <span class="status-pulse-dot"></span>
-            <strong data-i18n="serverSelectorLabel">Servidor Activo</strong>
-          </div>
-          <button class="server-network-badge-btn" onclick="openServerModal()" title="Ver red de servidores">
-            <span id="serverBadgeCount">Gestionar</span> ⚙
-          </button>
-        </div>
-        <select id="serverSelect" class="server-select-dropdown" onchange="onServerSelectChange(this.value)">
-          <option value="drakes-skyblock">🟢 DrakesCraft Skyblock (BentoBox)</option>
-          <option value="drakes-dallas">🟢 DrakesCraft Dallas (Survival Slimefun)</option>
-          <option value="drakes-creative">🟢 DrakesCraft Creativo (Sandbox Schematics)</option>
-          <option value="drakes-dev">🟢 DrakesCraft Dev Lab (Web API Directa)</option>
-        </select>
-        <div id="serverDetailsRow" class="server-details-row">
-          <span id="serverHostDisplay">play.drakescraft.net</span>
-          <span id="serverPingDisplay" class="server-ping-badge">🟢 En Línea</span>
-        </div>
       </div>
 
       <!-- Blueprint Share Code -->
@@ -725,17 +648,10 @@
         toastBlocks: 'bloques',
         toastParseErr: 'Error al procesar: ',
         toastCopied: '📋 ¡Copiado al portapapeles!',
-        serverNetworkTitle: 'Red de Servidores Activos (Multiverse)',
-        serverNetworkSub: 'Servidores donde el plugin MultiverseProgramming y las Tortugas computacionales están activos.',
-        serverSelectorLabel: 'Servidor de Destino:',
-        serverBadgeCount: '4 Activos',
-        serverStatusOnline: 'En Línea',
+        headerServerCount: 'Servidores con el Plugin',
+        serverNetworkTitle: 'Servidores que usan el Plugin',
+        serverNetworkSub: 'Servidores y redes donde el plugin MultiverseProgramming y las Tortugas computacionales están activos.',
         serverCopyIp: 'Copiar IP',
-        serverSelectBtn: 'Seleccionar',
-        serverSelectedBadge: 'Seleccionado',
-        addServerBtn: '+ Añadir Servidor',
-        promptServerName: 'Nombre del Servidor:',
-        promptServerHost: 'Dirección IP o Dominio (ej: mi.servidor.net):',
         canvas2DHints: '📐 Vista 2D: Capa actual • Desplaza la barra inferior para ver capas • Pasa el ratón sobre un bloque',
         emptyLayer: 'Capa vacía (sin bloques en Y = ',
         toastServerUploaded: '✔ Sincronizado con el servidor: ',
@@ -827,17 +743,10 @@
         toastDeleted: '🗑 Deleted blueprint: ',
         toastRenamed: '✏ Name updated to: ',
         toastNoDeleteFeatured: 'Cannot delete featured blueprints',
-        serverNetworkTitle: 'Active Server Network (Multiverse)',
-        serverNetworkSub: 'Servers where MultiverseProgramming and computational Turtles are active and building.',
-        serverSelectorLabel: 'Target Server:',
-        serverBadgeCount: '4 Active',
-        serverStatusOnline: 'Online',
+        headerServerCount: 'Servers with Plugin',
+        serverNetworkTitle: 'Servers using the Plugin',
+        serverNetworkSub: 'Servers and networks where the MultiverseProgramming plugin and computational turtles are active.',
         serverCopyIp: 'Copy IP',
-        serverSelectBtn: 'Select',
-        serverSelectedBadge: 'Selected',
-        addServerBtn: '+ Add Server',
-        promptServerName: 'Server Name:',
-        promptServerHost: 'IP Address or Domain (e.g. mc.server.net):',
         canvas2DHints: '📐 2D Slice View • Move layer slider below • Hover over blocks for coordinates',
         emptyLayer: 'Empty layer (no blocks at Y = ',
         toastServerUploaded: '✔ Synced with Minecraft server: ',
@@ -882,6 +791,7 @@
         const vDims = document.getElementById('visualizerDims'); if (vDims) vDims.textContent = t.visualizerDefaultDims;
       }
 
+      updateServerUI();
       renderBlueprintList(document.getElementById('searchInput') ? document.getElementById('searchInput').value : '');
     }
 
@@ -900,130 +810,73 @@
     let selectedBlueprint = null;
     let viewMode = '3D'; // '3D' or '2D'
     // =========================================================================
-    // DYNAMIC SERVER CONNECTION & NETWORK STATE
+    // SERVERS USING THE PLUGIN
     // =========================================================================
     const DEFAULT_SERVERS = [
       {
-        id: 'default-server',
-        name: 'DrakesCraft Network',
+        name: 'DrakesCraft Skyblock',
         host: 'play.drakescraft.net',
         port: 25565,
-        mode: 'Servidor Principal',
-        description: 'Servidor con soporte de Tortugas computacionales y construcción de planos.',
-        tags: ['Tortugas', 'Multiverse'],
+        mode: 'Skyblock • BentoBox',
+        description: 'Construcción automática dentro del rango de tu isla respetando permisos de miembros.',
+        tags: ['Skyblock', 'BentoBox', 'Tortugas'],
+        pingText: '🟢 En Línea'
+      },
+      {
+        name: 'DrakesCraft Survival',
+        host: 'dallas.drakescraft.net',
+        port: 25565,
+        mode: 'Survival • Slimefun + Networks',
+        description: 'Servidor principal con soporte técnico Slimefun y logging con CoreProtect.',
+        tags: ['Survival', 'Slimefun', 'Tortugas'],
+        pingText: '🟢 En Línea'
+      },
+      {
+        name: 'DrakesCraft Creativo',
+        host: 'creative.drakescraft.net',
+        port: 25565,
+        mode: 'Creativo • Schematics Sandbox',
+        description: 'Importación instantánea de planos sin costo de materiales para testeo y diseño rápido.',
+        tags: ['Creativo', 'Sandbox', 'Tortugas'],
         pingText: '🟢 En Línea'
       }
     ];
 
     let serverList = [];
-    let selectedServerId = 'default-server';
 
     function initServerNetwork() {
-      // Auto-detect if loaded directly from an embedded plugin HTTP server
+      serverList = [...DEFAULT_SERVERS];
+
+      // Auto-detect if loaded directly from an embedded plugin HTTP server instance
       const isEmbedded = window.location.protocol.startsWith('http') && 
                          !window.location.hostname.includes('github.io');
-
-      try {
-        const saved = localStorage.getItem('mp_server_list');
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            serverList = parsed;
-          } else {
-            serverList = [...DEFAULT_SERVERS];
-          }
-        } else {
-          serverList = [...DEFAULT_SERVERS];
-        }
-      } catch (e) {
-        serverList = [...DEFAULT_SERVERS];
-      }
-
-      // If running directly on a server instance, add/select it automatically
       if (isEmbedded) {
         const currentHost = window.location.hostname;
         const currentPort = parseInt(window.location.port, 10) || (window.location.protocol === 'https:' ? 443 : 80);
         let localInst = serverList.find(s => s.host === currentHost && s.port === currentPort);
         if (!localInst) {
           localInst = {
-            id: 'instance-' + currentHost + '-' + currentPort,
-            name: 'Servidor Local (' + currentHost + (window.location.port ? ':' + window.location.port : '') + ')',
+            name: 'Tu Servidor Local (' + currentHost + (window.location.port ? ':' + window.location.port : '') + ')',
             host: currentHost,
             port: currentPort,
-            mode: 'Instancia Embebida',
-            description: 'Conectado directamente a la API web de este servidor.',
-            tags: ['Conexión Directa', 'API Activa'],
+            mode: 'Servidor Conectado',
+            description: 'Servidor activo ejecutando MultiverseProgramming con API web.',
+            tags: ['Conectado', 'Local', 'API Activa'],
             pingText: '🟢 Conectado'
           };
           serverList.unshift(localInst);
         }
-        selectedServerId = localInst.id;
-      } else {
-        const savedSel = localStorage.getItem('mp_selected_server');
-        if (savedSel && serverList.some(s => s.id === savedSel)) {
-          selectedServerId = savedSel;
-        } else if (serverList.length > 0) {
-          selectedServerId = serverList[0].id;
-        }
       }
 
-      populateServerDropdown();
       updateServerUI();
       checkServerLivePings();
     }
 
-    function populateServerDropdown() {
-      const select = document.getElementById('serverSelect');
-      if (!select) return;
-      if (serverList.length === 0) {
-        select.innerHTML = '<option value="">(Sin servidores configurados)</option>';
-        return;
-      }
-      select.innerHTML = serverList.map(s => `
-        <option value="${escapeHtml(s.id)}" ${s.id === selectedServerId ? 'selected' : ''}>
-          🟢 ${escapeHtml(s.name)} (${escapeHtml(s.host)})
-        </option>
-      `).join('');
-    }
-
-    function getActiveServer() {
-      return serverList.find(s => s.id === selectedServerId) || serverList[0] || null;
-    }
-
     function updateServerUI() {
-      const s = getActiveServer();
-      const hostEl = document.getElementById('serverHostDisplay');
-      const pingEl = document.getElementById('serverPingDisplay');
-      const selectEl = document.getElementById('serverSelect');
       const badgeCount = document.getElementById('headerServerCount');
-      const serverBadgeCount = document.getElementById('serverBadgeCount');
-
-      if (!s) {
-        if (hostEl) hostEl.textContent = 'Ningún servidor vinculado';
-        if (pingEl) pingEl.textContent = '⚪ Inactivo';
-        if (badgeCount) badgeCount.textContent = 'Servidores (0)';
-        if (serverBadgeCount) serverBadgeCount.textContent = '0 Activos';
-        return;
-      }
-
-      if (hostEl) hostEl.textContent = s.host + (s.port && s.port !== 25565 ? ':' + s.port : '');
-      if (pingEl) pingEl.textContent = s.pingText || '🟢 En Línea';
-      if (selectEl && selectEl.value !== s.id) selectEl.value = s.id;
-      
-      const countLabel = serverList.length === 1 ? '1 Servidor' : `${serverList.length} Servidores`;
-      if (badgeCount) badgeCount.textContent = countLabel;
-      if (serverBadgeCount) serverBadgeCount.textContent = `${serverList.length} Conectado${serverList.length > 1 ? 's' : ''}`;
-    }
-
-    function onServerSelectChange(id) {
-      if (!id) return;
-      selectedServerId = id;
-      localStorage.setItem('mp_selected_server', id);
-      updateServerUI();
-      const s = getActiveServer();
-      if (s) {
-        const t = I18N[currentLang] || I18N.es;
-        showToast((t.toastServerSelected || 'Servidor seleccionado: ') + s.name);
+      const t = I18N[currentLang] || I18N.es;
+      if (badgeCount) {
+        badgeCount.textContent = (t.headerServerCount || 'Servidores con el Plugin') + ` (${serverList.length})`;
       }
     }
 
@@ -1043,66 +896,28 @@
       if (!listEl) return;
       const t = I18N[currentLang] || I18N.es;
 
-      if (serverList.length === 0) {
-        listEl.innerHTML = `<div style="text-align:center; padding:20px; color:var(--text-muted);">No tienes servidores configurados. Pulsa en "+ Añadir Servidor" para vincular uno.</div>`;
-        return;
-      }
-
       listEl.innerHTML = serverList.map(s => {
-        const isCurrent = s.id === selectedServerId;
         const hostPort = s.host + (s.port && s.port !== 25565 ? ':' + s.port : '');
         return `
-          <div class="server-card-item ${isCurrent ? 'active' : ''}">
+          <div class="server-card-item">
             <div style="display:flex; justify-content:space-between; align-items:center;">
               <div style="display:flex; align-items:center; gap:8px;">
                 <span class="status-pulse-dot"></span>
                 <strong style="color:#fff; font-size:0.92rem;">${escapeHtml(s.name)}</strong>
               </div>
-              <div style="display:flex; align-items:center; gap:8px;">
-                <span class="server-ping-badge" style="font-size:0.75rem;">${escapeHtml(s.pingText || '🟢 En Línea')}</span>
-                <button class="bp-action-btn bp-delete-btn" title="Eliminar servidor" onclick="deleteServer('${escapeHtml(s.id)}')">🗑</button>
-              </div>
+              <span class="server-ping-badge" style="font-size:0.75rem;">${escapeHtml(s.pingText || '🟢 En Línea')}</span>
             </div>
             <div style="color:var(--text-muted); font-size:0.8rem; line-height:1.4;">${escapeHtml(s.description || s.mode)}</div>
             <div class="server-tags">
               ${(s.tags || []).map(tg => `<span class="server-tag">${escapeHtml(tg)}</span>`).join('')}
             </div>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
               <code style="color:var(--primary); font-size:0.82rem; user-select:all;">${escapeHtml(hostPort)}</code>
-              <div style="display:flex; gap:6px;">
-                <button class="btn btn-sm btn-ghost" onclick="copyServerHost('${escapeHtml(s.host)}')">${t.serverCopyIp || 'Copiar IP'}</button>
-                <button class="btn btn-sm ${isCurrent ? 'btn-ghost' : ''}" style="${isCurrent ? 'border-color:var(--primary); color:var(--primary);' : ''}" onclick="selectServerFromModal('${escapeHtml(s.id)}')">
-                  ${isCurrent ? (t.serverSelectedBadge || '✔ Seleccionado') : (t.serverSelectBtn || 'Seleccionar')}
-                </button>
-              </div>
+              <button class="btn btn-sm btn-ghost" onclick="copyServerHost('${escapeHtml(s.host)}')">${t.serverCopyIp || 'Copiar IP'}</button>
             </div>
           </div>
         `;
       }).join('');
-    }
-
-    function deleteServer(id) {
-      if (serverList.length <= 1) {
-        showToast('Debes mantener al menos un servidor en la lista.');
-        return;
-      }
-      serverList = serverList.filter(s => s.id !== id);
-      try {
-        localStorage.setItem('mp_server_list', JSON.stringify(serverList));
-      } catch (e) {}
-
-      if (selectedServerId === id) {
-        selectedServerId = serverList[0].id;
-      }
-      populateServerDropdown();
-      updateServerUI();
-      renderServerListModal();
-      showToast('🗑 Servidor eliminado');
-    }
-
-    function selectServerFromModal(id) {
-      onServerSelectChange(id);
-      renderServerListModal();
     }
 
     function copyServerHost(host) {
@@ -1112,39 +927,9 @@
       });
     }
 
-    function promptAddCustomServer() {
-      const t = I18N[currentLang] || I18N.es;
-      const name = prompt(t.promptServerName || 'Nombre del Servidor:');
-      if (!name) return;
-      const host = prompt(t.promptServerHost || 'Dirección IP o Dominio:');
-      if (!host) return;
-
-      const newServer = {
-        id: 'custom-' + Date.now(),
-        name: name.trim(),
-        host: host.trim(),
-        port: 25565,
-        mode: 'Servidor Personalizado',
-        description: 'Servidor con MultiverseProgramming configurado por el usuario.',
-        tags: ['Personalizado', 'Tortugas'],
-        pingText: '🟢 En Línea'
-      };
-
-      serverList.push(newServer);
-      try {
-        localStorage.setItem('mp_server_list', JSON.stringify(serverList));
-      } catch (e) {}
-
-      selectedServerId = newServer.id;
-      populateServerDropdown();
-      updateServerUI();
-      renderServerListModal();
-      showToast('✔ Servidor añadido: ' + newServer.name);
-    }
-
     async function checkServerLivePings() {
       for (const s of serverList) {
-        if (!s.host || s.host === 'localhost' || s.host.startsWith('192.168.')) continue;
+        if (!s.host || s.host === 'localhost' || s.host.startsWith('192.168.') || s.host === '127.0.0.1') continue;
         try {
           fetch(`https://api.mcsrvstat.us/3/${s.host}`)
             .then(res => res.json())
@@ -1152,7 +937,6 @@
               if (data && data.online) {
                 const count = (data.players && data.players.online !== undefined) ? data.players.online : 0;
                 s.pingText = `🟢 En Línea (${count} jugadores)`;
-                updateServerUI();
                 renderServerListModal();
               }
             })
@@ -1391,11 +1175,6 @@
       let apiBase = '';
       if (window.location.protocol.startsWith('http') && !window.location.hostname.includes('github.io')) {
         apiBase = window.location.origin;
-      } else {
-        const s = getActiveServer();
-        if (s && s.port) {
-          apiBase = `http://${s.host}:${s.port}`;
-        }
       }
       if (!apiBase) return;
 
