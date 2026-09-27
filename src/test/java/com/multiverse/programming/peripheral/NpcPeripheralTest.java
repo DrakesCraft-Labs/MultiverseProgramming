@@ -65,4 +65,27 @@ class NpcPeripheralTest {
         table.get("clearResponse").call(LuaValue.valueOf("Steve"));
         assertTrue(table.get("getLastResponse").call(LuaValue.valueOf("Steve")).isnil());
     }
+
+    @Test
+    @DisplayName("Npc spawn, create, despawn, clear and remove work cleanly")
+    void testSpawnDespawnAndHologram() {
+        LuaTable table = npc.toLuaTable().checktable();
+        assertFalse(table.get("isSpawned").call().toboolean());
+        assertFalse(table.get("hasSpawned").call().toboolean());
+
+        // spawn and create
+        table.get("spawn").call(LuaValue.valueOf("VILLAGER"));
+        table.get("create").call(LuaValue.valueOf("Bob"), LuaValue.valueOf("VILLAGER"));
+        assertEquals("Bob", table.get("getName").call().tojstring());
+
+        // setHologram and clear
+        assertTrue(table.get("setHologram").call(LuaValue.valueOf("Hello world")).toboolean());
+        assertTrue(table.get("clearHologram").call().toboolean());
+        assertTrue(table.get("clear").call().toboolean());
+
+        // despawn and remove
+        assertTrue(table.get("despawn").call().toboolean());
+        assertTrue(table.get("remove").call().toboolean());
+        assertTrue(table.get("destroy").call().toboolean());
+    }
 }

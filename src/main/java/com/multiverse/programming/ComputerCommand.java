@@ -41,6 +41,7 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
             case "getbypass", "bypassget", "import" -> handleGetCommand(sender, args, true);
             case "build" -> triggerBuild(sender, args);
             case "stop", "cancel" -> handleStopCommand(sender, args);
+            case "clean" -> handleCleanCommand(sender, args);
             case "turtle", "turtles" -> handleTurtleSubcommand(sender, args);
             case "give" -> {
                 if (sender instanceof Player player) {
@@ -355,7 +356,7 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
 
     private void dispatchTurtleBuild(CommandSender sender, Blueprint bp, com.multiverse.programming.turtle.Turtle targetTurtle, org.bukkit.Location origin, boolean clearBlocks, int rotationDegrees) {
         int delay = plugin.getConfigManager().getTurtleBuildDelayTicks();
-        boolean requireMaterials = plugin.getConfigManager().isTurtleRequireMaterials();
+        boolean requireMaterials = false; // /mvprog build is an administrative command and bypasses block/material requirements
         boolean started = targetTurtle.startBuild(bp, origin, delay, requireMaterials, clearBlocks, rotationDegrees,
                 () -> sender.sendMessage(plugin.getPrefix() + " §aTurtle " + targetTurtle.getId() + " finished building " + bp.name() + "!"),
                 err -> sender.sendMessage(plugin.getPrefix() + " §cTurtle " + targetTurtle.getId() + " error: " + err)
@@ -370,6 +371,62 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
                     + (rotationDegrees != 0 ? " §6(Rotation: " + rotationDegrees + "°)§a" : "")
                     + (clearBlocks ? " §c(Area auto-cleared without drops)§a." : "."));
         }
+    }
+
+    private void handleCleanCommand(CommandSender sender, String[] args) {
+        if (!sender.hasPermission("multiverseprogramming.admin")) {
+            sender.sendMessage(plugin.getPrefix() + " §cYou don't have permission to use this command.");
+            return;
+        }
+
+        if (args.length > 1 && (args[1].equalsIgnoreCase("blueprint") || args[1].equalsIgnoreCase("blueprints") || args[1].equalsIgnoreCase("bp"))) {
+            handleBlueprintCommand(sender, new String[]{"bp", "clean"});
+            return;
+        }
+
+        int radiusIdx = (args.length > 1 && args[1].equalsIgnoreCase("holograms")) ? 2 : 1;
+        purgeHolograms(sender, args, radiusIdx);
+    }
+
+    private void purgeHolograms(CommandSender sender, String[] args, int radiusArgIndex) {
+        Double radius = null;
+        if (args.length > radiusArgIndex) {
+            try {
+                radius = Double.parseDouble(args[radiusArgIndex]);
+            } catch (NumberFormatException ignored) {}
+        }
+
+        Player playerSender = (sender instanceof Player p) ? p : null;
+        int hologramsRemoved = 0;
+        int npcsRemoved = 0;
+
+        List<org.bukkit.World> worlds = (playerSender != null && radius != null)
+                ? List.of(playerSender.getWorld())
+                : Bukkit.getWorlds();
+
+        for (org.bukkit.World w : worlds) {
+            for (org.bukkit.entity.Entity e : w.getEntities()) {
+                if (radius != null && playerSender != null) {
+                    if (e.getLocation().distanceSquared(playerSender.getLocation()) > (radius * radius)) {
+                        continue;
+                    }
+                }
+                var tags = e.getScoreboardTags();
+                if (tags.contains(com.multiverse.programming.peripheral.MonitorPeripheral.SCOREBOARD_TAG)
+                        || tags.contains(com.multiverse.programming.peripheral.CartographerPeripheral.SCOREBOARD_TAG)
+                        || tags.contains(com.multiverse.programming.peripheral.NpcPeripheral.HOLOGRAM_TAG)
+                        || tags.contains(com.multiverse.programming.turtle.Turtle.TURTLE_HOLOGRAM_TAG)) {
+                    e.remove();
+                    hologramsRemoved++;
+                } else if (tags.contains(com.multiverse.programming.peripheral.NpcPeripheral.NPC_TAG)) {
+                    e.remove();
+                    npcsRemoved++;
+                }
+            }
+        }
+
+        sender.sendMessage(plugin.getPrefix() + " §aPurged §e" + hologramsRemoved + " §aorphaned hologram(s) and §e" + npcsRemoved + " §aNPC entity/entities"
+                + (radius != null ? " within §e" + radius.intValue() + " §ablocks." : " across loaded worlds."));
     }
 
     private void handleStopCommand(CommandSender sender, String[] args) {
@@ -406,6 +463,16 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
         }
 
         String target = args[1];
+
+        // Subcommand: /mvprog stop holograms [radius]
+        if (target.equalsIgnoreCase("hologram") || target.equalsIgnoreCase("holograms")) {
+            if (!isAdmin) {
+                sender.sendMessage(plugin.getPrefix() + " §cYou don't have permission to stop holograms.");
+                return;
+            }
+            purgeHolograms(sender, args, 2);
+            return;
+        }
 
         // Subcommand: /mvprog stop computer / computers
         if (target.equalsIgnoreCase("computer") || target.equalsIgnoreCase("computers")) {
@@ -654,7 +721,8 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage(" §6/mvprog quota <player> §8- §7view specific player's storage quota");
             sender.sendMessage(" §6/mvprog getbypass <code|url> §8- §7download blueprint bypassing storage quotas");
             sender.sendMessage(" §6/mvprog build <bp|code> <x> <y> <z> [turtle] [clear] [orientation] §8- §7order turtle to build");
-            sender.sendMessage(" §6/mvprog stop [id|all] §8- §7stop any turtle (or all turtles) across the server");
+            sender.sendMessage(" §6/mvprog stop [id|all|computer|holograms] §8- §7stop active work, scripts, or purge holograms");
+            sender.sendMessage(" §6/mvprog clean [holograms|bp] §8- §7purge orphaned holograms or old blueprints");
             sender.sendMessage(" §6/mvprog bp clean [days] §8- §7purge old unpinned blueprints");
             sender.sendMessage(" §6/mvprog bp reload §8- §7reload blueprints from disk");
             sender.sendMessage(" §6/mvprog give <item> §8- §7give custom programming item");
@@ -679,6 +747,7 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
             subcommands.add("stop");
             subcommands.add("turtle");
             if (sender.hasPermission("multiverseprogramming.admin")) {
+                subcommands.add("clean");
                 subcommands.add("getbypass");
                 subcommands.add("build");
                 subcommands.add("give");
@@ -690,6 +759,7 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
             List<String> options = new ArrayList<>();
             options.add("all");
             options.add("computer");
+            options.add("holograms");
             options.add("list");
             if (plugin.getTurtleManager() != null) {
                 if (sender.hasPermission("multiverseprogramming.admin")) {
@@ -698,6 +768,10 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
                     options.addAll(plugin.getTurtleManager().getTurtlesByOwner(p.getUniqueId()).stream().map(com.multiverse.programming.turtle.Turtle::getId).toList());
                 }
             }
+            return StringUtil.copyPartialMatches(args[1], options, completions);
+        }
+        if (args.length == 2 && args[0].equalsIgnoreCase("clean") && sender.hasPermission("multiverseprogramming.admin")) {
+            List<String> options = new ArrayList<>(List.of("holograms", "blueprints"));
             return StringUtil.copyPartialMatches(args[1], options, completions);
         }
         if (args.length == 2 && (args[0].equalsIgnoreCase("turtle") || args[0].equalsIgnoreCase("turtles"))) {

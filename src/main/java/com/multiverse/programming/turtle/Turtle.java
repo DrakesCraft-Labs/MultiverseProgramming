@@ -55,6 +55,8 @@ public final class Turtle {
         RIGHT
     }
 
+    public static final String TURTLE_HOLOGRAM_TAG = "multiverse_turtle_hologram";
+
     private final String id;
     private final org.bukkit.plugin.java.JavaPlugin plugin;
     private UUID owner;
@@ -1362,6 +1364,7 @@ public final class Turtle {
         if (world == null || loc == null) return null;
         try {
             return world.spawn(loc, org.bukkit.entity.TextDisplay.class, display -> {
+                display.addScoreboardTag(TURTLE_HOLOGRAM_TAG);
                 display.setText(text);
                 display.setBillboard(org.bukkit.entity.Display.Billboard.CENTER);
                 display.setDefaultBackground(false);
@@ -1370,6 +1373,7 @@ public final class Turtle {
         } catch (Throwable fallback) {
             try {
                 return world.spawn(loc.clone().subtract(0, 1.0, 0), org.bukkit.entity.ArmorStand.class, as -> {
+                    as.addScoreboardTag(TURTLE_HOLOGRAM_TAG);
                     as.setCustomName(text);
                     as.setCustomNameVisible(true);
                     as.setVisible(false);
@@ -1380,6 +1384,18 @@ public final class Turtle {
                 return null;
             }
         }
+    }
+
+    public static void cleanupHologramsAt(Location loc) {
+        if (loc == null || loc.getWorld() == null) return;
+        try {
+            java.util.Collection<org.bukkit.entity.Entity> nearby = loc.getWorld().getNearbyEntities(loc, 3.0, 3.0, 3.0);
+            for (org.bukkit.entity.Entity e : nearby) {
+                if (e.getScoreboardTags().contains(TURTLE_HOLOGRAM_TAG)) {
+                    e.remove();
+                }
+            }
+        } catch (Throwable ignored) {}
     }
 
     private void updateHologram(org.bukkit.entity.Entity holo, String text) {
@@ -1486,6 +1502,9 @@ public final class Turtle {
             } catch (Throwable ignored) {}
             terminalHologram = null;
         }
+        if (constructionChestLoc != null) cleanupHologramsAt(constructionChestLoc);
+        if (fuelChestLoc != null) cleanupHologramsAt(fuelChestLoc);
+        if (terminalBlockLoc != null) cleanupHologramsAt(terminalBlockLoc);
     }
 
     private void finishBuild(Runnable onDone) {
@@ -1852,6 +1871,9 @@ public final class Turtle {
             try { quarryTerminalHologram.remove(); } catch (Throwable ignored) {}
             quarryTerminalHologram = null;
         }
+        if (quarryStorageChestLoc != null) cleanupHologramsAt(quarryStorageChestLoc);
+        if (quarryFuelChestLoc != null) cleanupHologramsAt(quarryFuelChestLoc);
+        if (terminalBlockLoc != null) cleanupHologramsAt(terminalBlockLoc);
     }
 
     public synchronized boolean isQuarryStorageFull() {

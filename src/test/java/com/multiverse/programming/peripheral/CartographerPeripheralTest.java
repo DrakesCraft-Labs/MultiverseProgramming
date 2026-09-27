@@ -75,4 +75,21 @@ class CartographerPeripheralTest {
         assertTrue(resTable.get("points").istable());
         assertTrue(resTable.get("points").checktable().length() > 0);
     }
+
+    @Test
+    @DisplayName("setHologram, project, and clear functions succeed")
+    void testHologramAndClear() {
+        when(world.getHighestBlockYAt(anyInt(), anyInt())).thenReturn(64);
+        Block topBlock = mock(Block.class);
+        when(topBlock.getType()).thenReturn(Material.GRASS_BLOCK);
+        when(world.getBlockAt(anyInt(), anyInt(), anyInt())).thenReturn(topBlock);
+
+        LuaTable table = cartographer.toLuaTable().checktable();
+        assertTrue(table.get("setHologram").call(LuaValue.valueOf("Test Carto")).toboolean());
+        assertTrue(table.get("project").call(LuaValue.valueOf(2)).arg1().toboolean());
+        assertTrue(table.get("render").call(LuaValue.valueOf(2)).arg1().toboolean());
+        assertTrue(table.get("clear").call().toboolean());
+        assertTrue(table.get("clearHologram").call().toboolean());
+        assertTrue(table.get("remove").call().toboolean());
+    }
 }

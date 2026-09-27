@@ -6,6 +6,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -124,9 +125,10 @@ public final class ComputerListener implements Listener {
     }
 
     public static void cancelAll() {
-        for (RunningEntry entry : runningPrograms.values()) {
-            entry.program().cancel();
-            entry.cleanup().cancel();
+        for (Map.Entry<Location, RunningEntry> e : runningPrograms.entrySet()) {
+            e.getValue().program().cancel();
+            e.getValue().cleanup().cancel();
+            cleanupPeripheralsAround(e.getKey());
         }
         runningPrograms.clear();
         openByPlayer.clear();
@@ -139,6 +141,7 @@ public final class ComputerListener implements Listener {
         if (entry != null) {
             entry.program().cancel();
             entry.cleanup().cancel();
+            cleanupPeripheralsAround(blockLoc);
             return true;
         }
         return false;
@@ -158,6 +161,7 @@ public final class ComputerListener implements Listener {
             if (entry != null) {
                 entry.program().cancel();
                 entry.cleanup().cancel();
+                cleanupPeripheralsAround(loc);
                 count++;
             }
         }
@@ -189,6 +193,29 @@ public final class ComputerListener implements Listener {
         }
 
         Player player = event.getPlayer();
+        Material bType = block.getType();
+
+        if (player.isSneaking()) {
+            if (bType == plugin.getConfigManager().getCartographerBlock()) {
+                event.setCancelled(true);
+                com.multiverse.programming.peripheral.CartographerPeripheral.cleanupAdjacent(block.getLocation());
+                player.sendMessage(plugin.getPrefix() + " §aCleared Cartographer hologram and adjacent displays.");
+                return;
+            }
+            if (bType == plugin.getConfigManager().getNpcBlock()) {
+                event.setCancelled(true);
+                com.multiverse.programming.peripheral.NpcPeripheral.cleanupAt(block.getLocation());
+                player.sendMessage(plugin.getPrefix() + " §aCleared NPC entity and dialogue hologram.");
+                return;
+            }
+            if (bType == plugin.getConfigManager().getMonitorBlock()) {
+                event.setCancelled(true);
+                com.multiverse.programming.peripheral.MonitorPeripheral.removeDisplayAt(block.getLocation());
+                player.sendMessage(plugin.getPrefix() + " §aCleared Monitor display.");
+                return;
+            }
+        }
+
         boolean advanced;
         if (block.getType() == computerBlock) {
             advanced = false;
@@ -457,6 +484,7 @@ public final class ComputerListener implements Listener {
         if (running != null) {
             running.program().cancel();
             running.cleanup().cancel();
+            cleanupPeripheralsAround(loc);
         }
 
         ItemStack disk = advancedDisks.remove(loc);
@@ -464,8 +492,17 @@ public final class ComputerListener implements Listener {
             block.getWorld().dropItemNaturally(block.getLocation(), disk);
         }
 
+        if (isComputerBlock(block.getType())) {
+            cleanupPeripheralsAround(loc);
+        }
         if (block.getType() == plugin.getConfigManager().getMonitorBlock()) {
             com.multiverse.programming.peripheral.MonitorPeripheral.removeDisplayAt(loc);
+        }
+        if (block.getType() == plugin.getConfigManager().getCartographerBlock()) {
+            com.multiverse.programming.peripheral.CartographerPeripheral.cleanupAdjacent(loc);
+        }
+        if (block.getType() == plugin.getConfigManager().getNpcBlock()) {
+            com.multiverse.programming.peripheral.NpcPeripheral.cleanupAt(loc);
         }
     }
 
@@ -473,6 +510,24 @@ public final class ComputerListener implements Listener {
         entry.program().cancel();
         entry.cleanup().cancel();
         runningPrograms.remove(toBlockLocation(loc));
+        cleanupPeripheralsAround(loc);
+    }
+
+    public static void cleanupPeripheralsAround(Location computerLoc) {
+        if (computerLoc == null || computerLoc.getWorld() == null) return;
+        Block computerBlock = computerLoc.getBlock();
+        if (computerBlock == null) return;
+        BlockFace[] faces = {
+                BlockFace.SELF, BlockFace.UP, BlockFace.DOWN, BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST
+        };
+        for (BlockFace face : faces) {
+            Block b = computerBlock.getRelative(face);
+            if (b == null) continue;
+            Location loc = b.getLocation();
+            com.multiverse.programming.peripheral.NpcPeripheral.cleanupAt(loc);
+            com.multiverse.programming.peripheral.CartographerPeripheral.cleanupAdjacent(loc);
+            com.multiverse.programming.peripheral.MonitorPeripheral.removeDisplayAt(loc);
+        }
     }
 
     private void pressAdvanced(Player player, Inventory inv, Location loc) {
@@ -523,6 +578,7 @@ public final class ComputerListener implements Listener {
                 if (entry != null && entry.program() == program) {
                     runningPrograms.remove(blockLoc);
                 }
+                cleanupPeripheralsAround(blockLoc);
                 cleanup[0].cancel();
             }
         }, 1L, 20L);

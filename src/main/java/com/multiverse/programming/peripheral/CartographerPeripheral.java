@@ -7,6 +7,10 @@ import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.entity.ArmorStand;
+import org.bukkit.entity.Display;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.TextDisplay;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
@@ -23,16 +27,21 @@ import org.luaj.vm2.lib.OneArgFunction;
 import org.luaj.vm2.lib.VarArgFunction;
 import org.luaj.vm2.lib.ZeroArgFunction;
 
+import java.util.Collection;
 import java.util.Locale;
 
 /**
  * Peripheral that handles geographical scanning, biome inspection,
- * custom Map item generation, and topography projection onto adjacent monitors.
+ * custom Map item generation, and topography projection onto adjacent monitors
+ * or floating directly above the Cartographer table.
  */
 public final class CartographerPeripheral implements Peripheral {
 
+    public static final String SCOREBOARD_TAG = "multiverse_cartographer";
+
     private final JavaPlugin plugin;
     private final Location location;
+    private Entity hologramEntity;
 
     public CartographerPeripheral(JavaPlugin plugin, Location location) {
         this.plugin = plugin;
@@ -47,6 +56,133 @@ public final class CartographerPeripheral implements Peripheral {
     @Override
     public Location getLocation() {
         return location;
+    }
+
+    public synchronized void updateHologram(String text) {
+        clearHologram();
+        World world = location.getWorld();
+        if (world == null) return;
+
+        Location holoLoc = location.clone().add(0.5, 1.25, 0.5);
+        try {
+            this.hologramEntity = world.spawn(holoLoc, TextDisplay.class, display -> {
+                display.addScoreboardTag(SCOREBOARD_TAG);
+                display.setText(text);
+                display.setBillboard(Display.Billboard.CENTER);
+                display.setDefaultBackground(true);
+                display.setShadowed(true);
+                display.setSeeThrough(true);
+            });
+        } catch (Throwable fallback) {
+            try {
+                this.hologramEntity = world.spawn(holoLoc.clone().subtract(0, 1.0, 0), ArmorStand.class, as -> {
+                    as.addScoreboardTag(SCOREBOARD_TAG);
+                    as.setCustomName(text);
+                    as.setCustomNameVisible(true);
+                    as.setVisible(false);
+                    as.setGravity(false);
+                    as.setMarker(true);
+                });
+            } catch (Throwable ignored) {}
+        }
+    }
+
+    public synchronized void clearHologram() {
+        if (hologramEntity != null && hologramEntity.isValid()) {
+            try {
+                hologramEntity.remove();
+            } catch (Throwable ignored) {}
+            hologramEntity = null;
+        }
+        cleanupAt(location);
+    }
+
+    public void clearMonitor(String sideStr) {
+        if (location == null || location.getWorld() == null) return;
+        Block block = location.getBlock();
+        if (block == null) return;
+        BlockFace face = TransposerPeripheral.parseFace(sideStr);
+        Block rel = block.getRelative(face);
+        if (rel != null) {
+            MonitorPeripheral.removeDisplayAt(rel.getLocation());
+        }
+    }
+
+    public void clearAllAdjacentMonitors() {
+        if (location == null || location.getWorld() == null) return;
+        Block block = location.getBlock();
+        if (block == null) return;
+        for (BlockFace face : new BlockFace[]{BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST, BlockFace.UP, BlockFace.DOWN}) {
+            Block rel = block.getRelative(face);
+            if (rel != null) {
+                MonitorPeripheral.removeDisplayAt(rel.getLocation());
+            }
+        }
+    }
+
+    public static void cleanupAt(Location loc) {
+        if (loc == null || loc.getWorld() == null) return;
+        Location center = loc.clone().add(0.5, 1.25, 0.5);
+        try {
+            Collection<Entity> nearby = loc.getWorld().getNearbyEntities(center, 1.5, 2.0, 1.5);
+            for (Entity e : nearby) {
+                if (e.getScoreboardTags().contains(SCOREBOARD_TAG)) {
+                    e.remove();
+                }
+            }
+        } catch (Throwable ignored) {}
+    }
+
+    public static void cleanupAdjacent(Location loc) {
+        cleanupAt(loc);
+        if (loc == null || loc.getWorld() == null) return;
+        Block block = loc.getBlock();
+        if (block == null) return;
+        for (BlockFace face : new BlockFace[]{BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST, BlockFace.UP, BlockFace.DOWN}) {
+            Block rel = block.getRelative(face);
+            if (rel != null) {
+                cleanupAt(rel.getLocation());
+                MonitorPeripheral.removeDisplayAt(rel.getLocation());
+            }
+        }
+    }
+
+    public String generateAsciiMap(int radius) {
+        World world = location.getWorld();
+        if (world == null) return null;
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("=== MAP SCAN (R:").append(radius).append(") ===\n");
+
+        int originX = location.getBlockX();
+        int originZ = location.getBlockZ();
+        int selfY = location.getBlockY();
+
+        for (int dz = -radius; dz <= radius; dz++) {
+            for (int dx = -radius; dx <= radius; dx++) {
+                int x = originX + dx;
+                int z = originZ + dz;
+                int highY = world.getHighestBlockYAt(x, z);
+                Block top = world.getBlockAt(x, highY, z);
+                Material mat = top.getType();
+
+                if (dx == 0 && dz == 0) {
+                    sb.append("X"); // Self
+                } else if (mat == Material.WATER) {
+                    sb.append("~");
+                } else if (mat == Material.LAVA) {
+                    sb.append("!");
+                } else if (highY > selfY + 2) {
+                    sb.append("^"); // High terrain
+                } else if (highY < selfY - 2) {
+                    sb.append("v"); // Low terrain
+                } else {
+                    sb.append(".");
+                }
+            }
+            sb.append("\n");
+        }
+        return sb.toString().trim();
     }
 
     @Override
@@ -153,6 +289,86 @@ public final class CartographerPeripheral implements Peripheral {
             }
         });
 
+        // cartographer.project([radius]) / cartographer.render([radius])
+        table.set("project", new VarArgFunction() {
+            @Override
+            public Varargs invoke(Varargs args) {
+                int radius = args.narg() >= 1 ? Math.min(8, Math.max(1, args.checkint(1))) : 4;
+                return SyncDispatcher.sync(plugin, () -> {
+                    String mapText = generateAsciiMap(radius);
+                    if (mapText == null) {
+                        return varargsOf(LuaBoolean.FALSE, LuaString.valueOf("World not loaded"));
+                    }
+                    updateHologram(mapText);
+                    return varargsOf(LuaBoolean.TRUE, LuaString.valueOf("Projected map above cartographer"));
+                });
+            }
+        });
+        table.set("render", table.get("project"));
+
+        // cartographer.setHologram(text)
+        table.set("setHologram", new OneArgFunction() {
+            @Override
+            public LuaValue call(LuaValue arg) {
+                String text = arg.checkjstring();
+                SyncDispatcher.sync(plugin, () -> {
+                    updateHologram(text);
+                    return null;
+                });
+                return LuaBoolean.TRUE;
+            }
+        });
+
+        // cartographer.clear([side])
+        table.set("clear", new VarArgFunction() {
+            @Override
+            public Varargs invoke(Varargs args) {
+                String side = args.narg() >= 1 && !args.arg(1).isnil() ? args.checkjstring(1) : null;
+                SyncDispatcher.sync(plugin, () -> {
+                    if (side != null && !side.isBlank()) {
+                        clearMonitor(side);
+                    } else {
+                        clearHologram();
+                        clearAllAdjacentMonitors();
+                    }
+                    return null;
+                });
+                return LuaBoolean.TRUE;
+            }
+        });
+
+        // cartographer.clearHologram() / cartographer.remove()
+        table.set("clearHologram", new ZeroArgFunction() {
+            @Override
+            public LuaValue call() {
+                SyncDispatcher.sync(plugin, () -> {
+                    clearHologram();
+                    return null;
+                });
+                return LuaBoolean.TRUE;
+            }
+        });
+        table.set("remove", table.get("clearHologram"));
+        table.set("despawn", table.get("clearHologram"));
+        table.set("destroy", table.get("clearHologram"));
+
+        // cartographer.clearMonitor([side])
+        table.set("clearMonitor", new VarArgFunction() {
+            @Override
+            public Varargs invoke(Varargs args) {
+                String side = args.narg() >= 1 && !args.arg(1).isnil() ? args.checkjstring(1) : null;
+                SyncDispatcher.sync(plugin, () -> {
+                    if (side != null && !side.isBlank()) {
+                        clearMonitor(side);
+                    } else {
+                        clearAllAdjacentMonitors();
+                    }
+                    return null;
+                });
+                return LuaBoolean.TRUE;
+            }
+        });
+
         // cartographer.renderToMonitor(side, [radius])
         table.set("renderToMonitor", new VarArgFunction() {
             @Override
@@ -169,43 +385,17 @@ public final class CartographerPeripheral implements Peripheral {
                     }
 
                     MonitorPeripheral monitor = new MonitorPeripheral(plugin, rel.getLocation());
-                    StringBuilder sb = new StringBuilder();
-                    sb.append("=== MAP SCAN (R:").append(radius).append(") ===\n");
-
-                    int originX = location.getBlockX();
-                    int originZ = location.getBlockZ();
-                    int selfY = location.getBlockY();
-
-                    for (int dz = -radius; dz <= radius; dz++) {
-                        for (int dx = -radius; dx <= radius; dx++) {
-                            int x = originX + dx;
-                            int z = originZ + dz;
-                            int highY = world.getHighestBlockYAt(x, z);
-                            Block top = world.getBlockAt(x, highY, z);
-                            Material mat = top.getType();
-
-                            if (dx == 0 && dz == 0) {
-                                sb.append("X"); // Self
-                            } else if (mat == Material.WATER) {
-                                sb.append("~");
-                            } else if (mat == Material.LAVA) {
-                                sb.append("!");
-                            } else if (highY > selfY + 2) {
-                                sb.append("^"); // High terrain
-                            } else if (highY < selfY - 2) {
-                                sb.append("v"); // Low terrain
-                            } else {
-                                sb.append(".");
-                            }
-                        }
-                        sb.append("\n");
+                    String mapText = generateAsciiMap(radius);
+                    if (mapText == null) {
+                        return varargsOf(LuaBoolean.FALSE, LuaString.valueOf("World not loaded"));
                     }
 
-                    monitor.setText(sb.toString().trim());
+                    monitor.setText(mapText);
                     return varargsOf(LuaBoolean.TRUE, LuaString.valueOf("Rendered to monitor"));
                 });
             }
         });
+        table.set("renderMap", table.get("renderToMonitor"));
 
         return table;
     }

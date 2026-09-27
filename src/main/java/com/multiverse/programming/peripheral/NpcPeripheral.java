@@ -7,8 +7,11 @@ import org.bukkit.World;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.TextDisplay;
+import org.bukkit.entity.Villager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.luaj.vm2.LuaBoolean;
 import org.luaj.vm2.LuaString;
@@ -20,19 +23,26 @@ import org.luaj.vm2.lib.TwoArgFunction;
 import org.luaj.vm2.lib.VarArgFunction;
 import org.luaj.vm2.lib.ZeroArgFunction;
 
+import java.util.Collection;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * NPC Chatbot & Quest Interposer peripheral.
- * Creates interactive dialogue prompts, chat options, and floating holograms.
+ * Spawns real interactive NPC entities (Villager by default or customizable living entity),
+ * dialogue prompts, floating holograms, and chat option listeners.
  */
 public final class NpcPeripheral implements Peripheral {
+
+    public static final String NPC_TAG = "multiverse_npc";
+    public static final String HOLOGRAM_TAG = "multiverse_npc_hologram";
 
     private final JavaPlugin plugin;
     private final Location location;
 
     private String npcName = "§b[NPC]";
+    private Entity npcEntity;
     private Entity hologramEntity;
     private final Map<String, String> playerResponses = new ConcurrentHashMap<>();
     private final Map<String, Long> lastInteractionTimes = new ConcurrentHashMap<>();
@@ -59,8 +69,81 @@ public final class NpcPeripheral implements Peripheral {
     }
 
     public void recordPlayerResponse(String playerName, String response) {
-        playerResponses.put(playerName.toLowerCase(), response);
-        lastInteractionTimes.put(playerName.toLowerCase(), System.currentTimeMillis());
+        playerResponses.put(playerName.toLowerCase(Locale.ROOT), response);
+        lastInteractionTimes.put(playerName.toLowerCase(Locale.ROOT), System.currentTimeMillis());
+    }
+
+    public synchronized boolean spawnNpc(String typeName) {
+        World world = location.getWorld();
+        if (world == null) return false;
+
+        despawnNpc();
+
+        Location spawnLoc = location.clone().add(0.5, 1.0, 0.5);
+
+        EntityType type = EntityType.VILLAGER;
+        if (typeName != null && !typeName.isBlank()) {
+            try {
+                type = EntityType.valueOf(typeName.trim().toUpperCase(Locale.ROOT));
+            } catch (IllegalArgumentException ignored) {
+                for (EntityType et : EntityType.values()) {
+                    if (et.name().equalsIgnoreCase(typeName.trim())) {
+                        type = et;
+                        break;
+                    }
+                }
+            }
+        }
+
+        try {
+            Entity entity = world.spawnEntity(spawnLoc, type);
+            if (entity != null) {
+                entity.addScoreboardTag(NPC_TAG);
+                entity.setCustomName(npcName);
+                entity.setCustomNameVisible(true);
+                if (entity instanceof LivingEntity living) {
+                    living.setAI(false);
+                    living.setInvulnerable(true);
+                    living.setSilent(true);
+                    living.setCollidable(false);
+                    living.setRemoveWhenFarAway(false);
+                }
+                if (entity instanceof Villager villager) {
+                    villager.setProfession(Villager.Profession.LIBRARIAN);
+                }
+                this.npcEntity = entity;
+                return true;
+            }
+            return false;
+        } catch (Throwable t) {
+            try {
+                Villager entity = world.spawn(spawnLoc, Villager.class, v -> {
+                    v.addScoreboardTag(NPC_TAG);
+                    v.setCustomName(npcName);
+                    v.setCustomNameVisible(true);
+                    v.setAI(false);
+                    v.setInvulnerable(true);
+                    v.setSilent(true);
+                    v.setCollidable(false);
+                    v.setRemoveWhenFarAway(false);
+                    v.setProfession(Villager.Profession.LIBRARIAN);
+                });
+                this.npcEntity = entity;
+                return entity != null;
+            } catch (Throwable ignored) {
+                return false;
+            }
+        }
+    }
+
+    public synchronized void despawnNpc() {
+        if (npcEntity != null && npcEntity.isValid()) {
+            try {
+                npcEntity.remove();
+            } catch (Throwable ignored) {}
+            npcEntity = null;
+        }
+        cleanupEntitiesAt(location);
     }
 
     public synchronized void updateHologram(String text) {
@@ -68,9 +151,11 @@ public final class NpcPeripheral implements Peripheral {
         World world = location.getWorld();
         if (world == null) return;
 
-        Location holoLoc = location.clone().add(0.5, 1.3, 0.5);
+        double yOffset = (npcEntity != null && npcEntity.isValid()) ? 2.25 : 1.3;
+        Location holoLoc = location.clone().add(0.5, yOffset, 0.5);
         try {
             this.hologramEntity = world.spawn(holoLoc, TextDisplay.class, display -> {
+                display.addScoreboardTag(HOLOGRAM_TAG);
                 display.setText(text);
                 display.setBillboard(Display.Billboard.CENTER);
                 display.setDefaultBackground(false);
@@ -79,6 +164,7 @@ public final class NpcPeripheral implements Peripheral {
         } catch (Throwable fallback) {
             try {
                 this.hologramEntity = world.spawn(holoLoc.clone().subtract(0, 1.0, 0), ArmorStand.class, as -> {
+                    as.addScoreboardTag(HOLOGRAM_TAG);
                     as.setCustomName(text);
                     as.setCustomNameVisible(true);
                     as.setVisible(false);
@@ -96,18 +182,63 @@ public final class NpcPeripheral implements Peripheral {
             } catch (Throwable ignored) {}
             hologramEntity = null;
         }
+        cleanupHologramsAt(location);
+    }
+
+    public synchronized void removeAll() {
+        despawnNpc();
+        clearHologram();
+        ACTIVE_NPCS.remove(this);
+    }
+
+    public static void cleanupEntitiesAt(Location loc) {
+        if (loc == null || loc.getWorld() == null) return;
+        Location center = loc.clone().add(0.5, 1.0, 0.5);
+        try {
+            Collection<Entity> nearby = loc.getWorld().getNearbyEntities(center, 1.5, 2.5, 1.5);
+            for (Entity e : nearby) {
+                if (e.getScoreboardTags().contains(NPC_TAG)) {
+                    e.remove();
+                }
+            }
+        } catch (Throwable ignored) {}
+    }
+
+    public static void cleanupHologramsAt(Location loc) {
+        if (loc == null || loc.getWorld() == null) return;
+        Location center = loc.clone().add(0.5, 1.5, 0.5);
+        try {
+            Collection<Entity> nearby = loc.getWorld().getNearbyEntities(center, 1.5, 2.5, 1.5);
+            for (Entity e : nearby) {
+                if (e.getScoreboardTags().contains(HOLOGRAM_TAG)) {
+                    e.remove();
+                }
+            }
+        } catch (Throwable ignored) {}
+    }
+
+    public static void cleanupAt(Location loc) {
+        cleanupEntitiesAt(loc);
+        cleanupHologramsAt(loc);
     }
 
     @Override
     public LuaValue toLuaTable() {
         LuaTable table = new LuaTable();
 
-        // npc.setName(name)
-        table.set("setName", new OneArgFunction() {
+        // npc.setName(name, [spawnEntity=true])
+        table.set("setName", new VarArgFunction() {
             @Override
-            public LuaValue call(LuaValue arg) {
-                npcName = arg.checkjstring();
+            public Varargs invoke(Varargs args) {
+                npcName = args.checkjstring(1);
+                boolean spawn = args.narg() < 2 || args.checkboolean(2);
                 SyncDispatcher.sync(plugin, () -> {
+                    if (npcEntity != null && npcEntity.isValid()) {
+                        npcEntity.setCustomName(npcName);
+                        npcEntity.setCustomNameVisible(true);
+                    } else if (spawn) {
+                        spawnNpc("VILLAGER");
+                    }
                     updateHologram(npcName);
                     return null;
                 });
@@ -122,6 +253,60 @@ public final class NpcPeripheral implements Peripheral {
                 return LuaString.valueOf(npcName);
             }
         });
+
+        // npc.spawn([entityType]) -> boolean
+        table.set("spawn", new VarArgFunction() {
+            @Override
+            public Varargs invoke(Varargs args) {
+                String type = args.narg() >= 1 ? args.checkjstring(1) : "VILLAGER";
+                boolean ok = SyncDispatcher.sync(plugin, () -> {
+                    boolean spawned = spawnNpc(type);
+                    updateHologram(npcName);
+                    return spawned;
+                });
+                return LuaBoolean.valueOf(ok);
+            }
+        });
+
+        // npc.create([name], [entityType]) -> boolean
+        table.set("create", new VarArgFunction() {
+            @Override
+            public Varargs invoke(Varargs args) {
+                if (args.narg() >= 1) {
+                    npcName = args.checkjstring(1);
+                }
+                String type = args.narg() >= 2 ? args.checkjstring(2) : "VILLAGER";
+                boolean ok = SyncDispatcher.sync(plugin, () -> {
+                    boolean spawned = spawnNpc(type);
+                    updateHologram(npcName);
+                    return spawned;
+                });
+                return LuaBoolean.valueOf(ok);
+            }
+        });
+
+        // npc.despawn() / npc.remove() / npc.destroy()
+        table.set("despawn", new ZeroArgFunction() {
+            @Override
+            public LuaValue call() {
+                SyncDispatcher.sync(plugin, () -> {
+                    removeAll();
+                    return null;
+                });
+                return LuaBoolean.TRUE;
+            }
+        });
+        table.set("remove", table.get("despawn"));
+        table.set("destroy", table.get("despawn"));
+
+        // npc.isSpawned() -> boolean
+        table.set("isSpawned", new ZeroArgFunction() {
+            @Override
+            public LuaValue call() {
+                return LuaBoolean.valueOf(npcEntity != null && npcEntity.isValid());
+            }
+        });
+        table.set("hasSpawned", table.get("isSpawned"));
 
         // npc.say(playerName, message)
         table.set("say", new TwoArgFunction() {
@@ -191,7 +376,7 @@ public final class NpcPeripheral implements Peripheral {
         table.set("getLastResponse", new OneArgFunction() {
             @Override
             public LuaValue call(LuaValue arg) {
-                String pName = arg.checkjstring().toLowerCase();
+                String pName = arg.checkjstring().toLowerCase(Locale.ROOT);
                 String resp = playerResponses.get(pName);
                 return resp != null ? LuaString.valueOf(resp) : LuaValue.NIL;
             }
@@ -201,7 +386,7 @@ public final class NpcPeripheral implements Peripheral {
         table.set("clearResponse", new OneArgFunction() {
             @Override
             public LuaValue call(LuaValue arg) {
-                playerResponses.remove(arg.checkjstring().toLowerCase());
+                playerResponses.remove(arg.checkjstring().toLowerCase(Locale.ROOT));
                 return LuaBoolean.TRUE;
             }
         });
@@ -219,7 +404,7 @@ public final class NpcPeripheral implements Peripheral {
             }
         });
 
-        // npc.clearHologram()
+        // npc.clearHologram() / npc.clear()
         table.set("clearHologram", new ZeroArgFunction() {
             @Override
             public LuaValue call() {
@@ -230,6 +415,7 @@ public final class NpcPeripheral implements Peripheral {
                 return LuaBoolean.TRUE;
             }
         });
+        table.set("clear", table.get("clearHologram"));
 
         return table;
     }
