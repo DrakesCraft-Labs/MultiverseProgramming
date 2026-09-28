@@ -182,6 +182,16 @@ public final class ComputerListener implements Listener {
         return mat != null && (mat == computerBlock || mat == advancedComputerBlock);
     }
 
+    public static boolean isComputer(Block block) {
+        if (block == null) return false;
+        String id = getBlockMachineId(block);
+        if (DiskManager.ID_COMPUTER.equalsIgnoreCase(id) || DiskManager.ID_ADVANCED_COMPUTER.equalsIgnoreCase(id)) {
+            return true;
+        }
+        Location loc = toBlockLocation(block.getLocation());
+        return (loc != null && (runningPrograms.containsKey(loc) || advancedDisks.containsKey(loc)));
+    }
+
     public static boolean isMultiverseNetsBlock(Block block) {
         if (block == null) return false;
         try {
@@ -205,6 +215,70 @@ public final class ComputerListener implements Listener {
         }
     }
 
+    public static boolean isSlimefunBlock(Block block) {
+        if (block == null) return false;
+        try {
+            if (Bukkit.getPluginManager().isPluginEnabled("Slimefun")) {
+                Class<?> blockStorage = Class.forName("me.mrCookieSlime.Slimefun.api.BlockStorage");
+                java.lang.reflect.Method checkLoc = blockStorage.getMethod("check", Location.class);
+                if (checkLoc.invoke(null, block.getLocation()) != null) {
+                    return true;
+                }
+                java.lang.reflect.Method hasInfo = blockStorage.getMethod("hasBlockInfo", Location.class);
+                if (Boolean.TRUE.equals(hasInfo.invoke(null, block.getLocation()))) {
+                    return true;
+                }
+            }
+        } catch (Throwable ignored) {}
+
+        try {
+            if (block.getState() instanceof org.bukkit.block.TileState tileState) {
+                var pdc = tileState.getPersistentDataContainer();
+                if (pdc != null) {
+                    for (org.bukkit.NamespacedKey key : pdc.getKeys()) {
+                        if ("slimefun".equalsIgnoreCase(key.getNamespace())) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        } catch (Throwable ignored) {}
+
+        try {
+            if (block.hasMetadata("slimefun_block") || block.hasMetadata("slimefun_item")) {
+                return true;
+            }
+        } catch (Throwable ignored) {}
+
+        return false;
+    }
+
+    public static boolean isSlimefunItem(ItemStack item) {
+        if (item == null || !item.hasItemMeta()) return false;
+        try {
+            if (Bukkit.getPluginManager().isPluginEnabled("Slimefun")) {
+                Class<?> sfItem = Class.forName("io.github.thebusybiscuit.slimefun4.api.items.SlimefunItem");
+                java.lang.reflect.Method getByItem = sfItem.getMethod("getByItem", ItemStack.class);
+                if (getByItem.invoke(null, item) != null) {
+                    return true;
+                }
+            }
+        } catch (Throwable ignored) {}
+
+        try {
+            var pdc = item.getItemMeta().getPersistentDataContainer();
+            if (pdc != null) {
+                for (org.bukkit.NamespacedKey key : pdc.getKeys()) {
+                    if ("slimefun".equalsIgnoreCase(key.getNamespace())) {
+                        return true;
+                    }
+                }
+            }
+        } catch (Throwable ignored) {}
+
+        return false;
+    }
+
     public static String getBlockMachineId(Block block) {
         if (block == null) return null;
         try {
@@ -221,6 +295,9 @@ public final class ComputerListener implements Listener {
     @EventHandler(ignoreCancelled = true)
     public void onBlockPlace(org.bukkit.event.block.BlockPlaceEvent event) {
         ItemStack item = event.getItemInHand();
+        if (isSlimefunItem(item) || isSlimefunBlock(event.getBlockPlaced()) || isMultiverseNetsBlock(event.getBlockPlaced())) {
+            return;
+        }
         String machineId = DiskManager.getMachineId(item);
         if (machineId != null && event.getBlockPlaced().getState() instanceof org.bukkit.block.TileState tileState) {
             try {
@@ -240,8 +317,8 @@ public final class ComputerListener implements Listener {
             return;
         }
 
-        // Never intercept MultiverseNets blocks (e.g. Slimefun Encoder, Crafting Grid, Controller, etc.)
-        if (isMultiverseNetsBlock(block)) {
+        // Never intercept MultiverseNets or Slimefun blocks
+        if (isMultiverseNetsBlock(block) || isSlimefunBlock(block)) {
             return;
         }
 
@@ -249,19 +326,19 @@ public final class ComputerListener implements Listener {
         Material bType = block.getType();
 
         if (player.isSneaking()) {
-            if (bType == plugin.getConfigManager().getCartographerBlock()) {
+            if (bType == plugin.getConfigManager().getCartographerBlock() && com.multiverse.programming.peripheral.CartographerPeripheral.hasDisplaysAround(block.getLocation())) {
                 event.setCancelled(true);
                 com.multiverse.programming.peripheral.CartographerPeripheral.cleanupAdjacent(block.getLocation());
                 player.sendMessage(plugin.getPrefix() + " §aCleared Cartographer hologram and adjacent displays.");
                 return;
             }
-            if (bType == plugin.getConfigManager().getNpcBlock()) {
+            if (bType == plugin.getConfigManager().getNpcBlock() && isNpcBlock(block)) {
                 event.setCancelled(true);
                 com.multiverse.programming.peripheral.NpcPeripheral.cleanupAt(block.getLocation());
                 player.sendMessage(plugin.getPrefix() + " §aCleared NPC entity and dialogue hologram.");
                 return;
             }
-            if (bType == plugin.getConfigManager().getMonitorBlock()) {
+            if (bType == plugin.getConfigManager().getMonitorBlock() && com.multiverse.programming.peripheral.MonitorPeripheral.hasDisplayAt(block.getLocation())) {
                 event.setCancelled(true);
                 com.multiverse.programming.peripheral.MonitorPeripheral.removeDisplayAt(block.getLocation());
                 player.sendMessage(plugin.getPrefix() + " §aCleared Monitor display.");
@@ -269,6 +346,7 @@ public final class ComputerListener implements Listener {
             }
         }
 
+        Location blockLoc = toBlockLocation(block.getLocation());
         String machineId = getBlockMachineId(block);
         boolean advanced;
         if (DiskManager.ID_ADVANCED_COMPUTER.equalsIgnoreCase(machineId)) {
@@ -285,18 +363,18 @@ public final class ComputerListener implements Listener {
                 player.sendMessage(plugin.getPrefix() + " §cStandard computers are currently disabled by the server administration.");
                 return;
             }
-        } else if (block.getType() == computerBlock) {
-            advanced = false;
-            if (!plugin.getConfigManager().isEnableComputer()) {
-                event.setCancelled(true);
-                player.sendMessage(plugin.getPrefix() + " §cStandard computers are currently disabled by the server administration.");
-                return;
-            }
-        } else if (block.getType() == advancedComputerBlock) {
+        } else if (blockLoc != null && advancedDisks.containsKey(blockLoc)) {
             advanced = true;
             if (!plugin.getConfigManager().isEnableAdvancedComputer()) {
                 event.setCancelled(true);
                 player.sendMessage(plugin.getPrefix() + " §cAdvanced computers are currently disabled by the server administration.");
+                return;
+            }
+        } else if (blockLoc != null && runningPrograms.containsKey(blockLoc)) {
+            advanced = false;
+            if (!plugin.getConfigManager().isEnableComputer()) {
+                event.setCancelled(true);
+                player.sendMessage(plugin.getPrefix() + " §cStandard computers are currently disabled by the server administration.");
                 return;
             }
         } else {
@@ -310,7 +388,6 @@ public final class ComputerListener implements Listener {
             return;
         }
 
-        Location blockLoc = toBlockLocation(block.getLocation());
         if (advanced && player.isSneaking() && isProgramRunning(blockLoc)) {
             stopProgramAt(blockLoc);
             player.sendMessage(plugin.getPrefix() + " §cForce-stopped running script on Advanced Computer at [" + blockLoc.getBlockX() + ", " + blockLoc.getBlockY() + ", " + blockLoc.getBlockZ() + "].");
@@ -513,7 +590,7 @@ public final class ComputerListener implements Listener {
     @EventHandler(ignoreCancelled = true)
     public void onPistonExtend(BlockPistonExtendEvent event) {
         for (Block b : event.getBlocks()) {
-            if (isComputerBlock(b.getType())) {
+            if (isComputer(b)) {
                 event.setCancelled(true);
                 return;
             }
@@ -523,7 +600,7 @@ public final class ComputerListener implements Listener {
     @EventHandler(ignoreCancelled = true)
     public void onPistonRetract(BlockPistonRetractEvent event) {
         for (Block b : event.getBlocks()) {
-            if (isComputerBlock(b.getType())) {
+            if (isComputer(b)) {
                 event.setCancelled(true);
                 return;
             }
@@ -578,7 +655,7 @@ public final class ComputerListener implements Listener {
             block.getWorld().dropItemNaturally(block.getLocation(), disk);
         }
 
-        if (isComputerBlock(block.getType())) {
+        if (isComputer(block)) {
             cleanupPeripheralsAround(loc);
         }
         if (block.getType() == plugin.getConfigManager().getMonitorBlock()) {
@@ -693,16 +770,12 @@ public final class ComputerListener implements Listener {
         if (block == null) return false;
         Material npcMat = plugin.getConfigManager() != null ? plugin.getConfigManager().getNpcBlock() : Material.SCULK_CATALYST;
         if (block.getType() != npcMat) return false;
-        for (com.multiverse.programming.peripheral.NpcPeripheral npc : com.multiverse.programming.peripheral.NpcPeripheral.getActiveNpcs()) {
-            Location nLoc = npc.getLocation();
-            if (nLoc != null && nLoc.getWorld() != null && nLoc.getWorld().equals(block.getWorld())
-                    && nLoc.getBlockX() == block.getX() && nLoc.getBlockY() == block.getY() && nLoc.getBlockZ() == block.getZ()) {
-                return true;
-            }
+        if (com.multiverse.programming.peripheral.NpcPeripheral.hasNpcAt(block.getLocation())) {
+            return true;
         }
         for (BlockFace face : new BlockFace[]{BlockFace.UP, BlockFace.DOWN, BlockFace.NORTH, BlockFace.SOUTH, BlockFace.WEST, BlockFace.EAST}) {
             Block adj = block.getRelative(face);
-            if (adj != null && isComputerBlock(adj.getType())) {
+            if (adj != null && isComputer(adj)) {
                 return true;
             }
         }

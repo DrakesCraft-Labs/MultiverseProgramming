@@ -145,24 +145,10 @@ public final class RecipeManager {
         safelyRemoveRecipe(key);
 
         ShapedRecipe recipe = new ShapedRecipe(key, DiskManager.createComputer(computerBlock));
-        if (computerBlock == Material.LECTERN) {
-            recipe.shape("SSS", " B ", " S ");
-            try {
-                if (Tag.WOODEN_SLABS != null) {
-                    recipe.setIngredient('S', new RecipeChoice.MaterialChoice(Tag.WOODEN_SLABS));
-                } else {
-                    recipe.setIngredient('S', new RecipeChoice.MaterialChoice(Material.OAK_SLAB));
-                }
-            } catch (Throwable t) {
-                recipe.setIngredient('S', new RecipeChoice.MaterialChoice(Material.OAK_SLAB));
-            }
-            recipe.setIngredient('B', Material.BOOKSHELF);
-        } else {
-            recipe.shape(" I ", "ICI", " R ");
-            recipe.setIngredient('I', Material.IRON_INGOT);
-            recipe.setIngredient('C', computerBlock);
-            recipe.setIngredient('R', Material.REDSTONE);
-        }
+        recipe.shape(" I ", "ICI", " R ");
+        recipe.setIngredient('I', Material.IRON_INGOT);
+        recipe.setIngredient('C', computerBlock);
+        recipe.setIngredient('R', Material.REDSTONE);
         plugin.getServer().addRecipe(recipe);
     }
 
@@ -208,11 +194,10 @@ public final class RecipeManager {
         safelyRemoveRecipe(key);
 
         ShapedRecipe recipe = new ShapedRecipe(key, DiskManager.createCrafter(crafterBlock));
-        recipe.shape("III", "ICI", "RDR");
+        recipe.shape(" I ", "ICI", " R ");
         recipe.setIngredient('I', Material.IRON_INGOT);
-        recipe.setIngredient('C', Material.CRAFTING_TABLE);
+        recipe.setIngredient('C', crafterBlock);
         recipe.setIngredient('R', Material.REDSTONE);
-        recipe.setIngredient('D', Material.DROPPER);
         plugin.getServer().addRecipe(recipe);
     }
 
@@ -281,9 +266,10 @@ public final class RecipeManager {
         safelyRemoveRecipe(key);
 
         ShapedRecipe recipe = new ShapedRecipe(key, DiskManager.createCartographer(cartographerBlock));
-        recipe.shape("PP ", "WW ", "WW ");
-        recipe.setIngredient('P', Material.PAPER);
-        recipe.setIngredient('W', Material.OAK_PLANKS);
+        recipe.shape(" I ", "ICI", " R ");
+        recipe.setIngredient('I', Material.IRON_INGOT);
+        recipe.setIngredient('C', cartographerBlock);
+        recipe.setIngredient('R', Material.REDSTONE);
         plugin.getServer().addRecipe(recipe);
     }
 
@@ -306,8 +292,10 @@ public final class RecipeManager {
         safelyRemoveRecipe(key);
 
         ShapedRecipe recipe = new ShapedRecipe(key, DiskManager.createFarmer(farmerBlock));
-        recipe.shape("W W", "W W", "WWW");
-        recipe.setIngredient('W', Material.OAK_SLAB);
+        recipe.shape(" I ", "ICI", " R ");
+        recipe.setIngredient('I', Material.IRON_INGOT);
+        recipe.setIngredient('C', farmerBlock);
+        recipe.setIngredient('R', Material.REDSTONE);
         plugin.getServer().addRecipe(recipe);
     }
 
@@ -317,10 +305,10 @@ public final class RecipeManager {
         safelyRemoveRecipe(key);
 
         ShapedRecipe recipe = new ShapedRecipe(key, DiskManager.createQuarry(quarryBlock));
-        recipe.shape("III", "IFI", "SSS");
+        recipe.shape(" I ", "ICI", " R ");
         recipe.setIngredient('I', Material.IRON_INGOT);
-        recipe.setIngredient('F', Material.FURNACE);
-        recipe.setIngredient('S', Material.SMOOTH_STONE);
+        recipe.setIngredient('C', quarryBlock);
+        recipe.setIngredient('R', Material.REDSTONE);
         plugin.getServer().addRecipe(recipe);
     }
 

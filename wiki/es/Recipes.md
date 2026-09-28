@@ -21,20 +21,20 @@ Forma (exactamente como en la mesa de crafteo):
 
 ## Computadora (atril)
 
-La computadora es un atril (lectern). Forma (receta vanilla del atril):
+La computadora es una mejora tecnológica sobre un **atril** (lectern) vanilla:
 
 ```text
 +---+---+---+
-| S | S | S |
+|   | I |   |
 +---+---+---+
-|   | B |   |
+| I | L | I |
 +---+---+---+
-|   | S |   |
+|   | R |   |
 +---+---+---+
 ```
 
-**Leyenda:** `S` = Losa de madera (cualquier madera) · `B` = Librería  
-**Resultado:** 1 **Computadora** (atril)
+**Leyenda:** `L` = Atril (Lectern) · `I` = Lingote de hierro · `R` = Redstone  
+**Resultado:** 1 **Computadora** (atril tecnológico)
 
 ## Computadora avanzada (mesa de encantamientos)
 
@@ -72,15 +72,15 @@ La computadora avanzada es una **mesa de encantamientos** y depende de la comput
 
 ```text
 +---+---+---+
-| I | I | I |
+|   | I |   |
 +---+---+---+
 | I | C | I |
 +---+---+---+
-| R | D | R |
+|   | R |   |
 +---+---+---+
 ```
 
-**Leyenda:** `I` = Lingote de hierro · `C` = Mesa de crafteo · `R` = Redstone · `D` = Soltador (Dropper)  
+**Leyenda:** `I` = Lingote de hierro · `C` = Crafter vanilla (o Soltador/Dispensador) · `R` = Redstone  
 **Resultado:** 1 **Auto-Crafter**
 
 ## Inventory Transposer (Clasificador / Transpositor)
@@ -147,15 +147,15 @@ La computadora avanzada es una **mesa de encantamientos** y depende de la comput
 
 ```text
 +---+---+---+
-| P | P |   |
+|   | I |   |
 +---+---+---+
-| W | W |   |
+| I | C | I |
 +---+---+---+
-| W | W |   |
+|   | R |   |
 +---+---+---+
 ```
 
-**Leyenda:** `P` = Papel · `W` = Tablones de roble (Oak Planks)  
+**Leyenda:** `I` = Lingote de hierro · `C` = Mesa de cartografía vanilla · `R` = Redstone  
 **Resultado:** 1 **Cartographer & Map Renderer** (Mesa de cartografía)
 
 ## Potion & Alchemical Synthesizer (Sintetizador Alquímico)
@@ -177,15 +177,15 @@ La computadora avanzada es una **mesa de encantamientos** y depende de la comput
 
 ```text
 +---+---+---+
-| W |   | W |
+|   | I |   |
 +---+---+---+
-| W |   | W |
+| I | C | I |
 +---+---+---+
-| W | W | W |
+|   | R |   |
 +---+---+---+
 ```
 
-**Leyenda:** `W` = Losa de roble (Oak Slab)  
+**Leyenda:** `I` = Lingote de hierro · `C` = Compostador vanilla · `R` = Redstone  
 **Resultado:** 1 **Farming / Harvesting Module** (Compostador)
 
 ## Turtle Quarry Engine Upgrade (Mejora de Motor de Cantera para Tortuga)
@@ -197,15 +197,15 @@ La computadora avanzada es una **mesa de encantamientos** y depende de la comput
 
 ```text
 +---+---+---+
-| I | I | I |
+|   | I |   |
 +---+---+---+
-| I | F | I |
+| I | B | I |
 +---+---+---+
-| S | S | S |
+|   | R |   |
 +---+---+---+
 ```
 
-**Leyenda:** `I` = Lingote de hierro · `F` = Horno (Furnace) · `S` = Piedra lisa (Smooth Stone)  
+**Leyenda:** `I` = Lingote de hierro · `B` = Alto horno vanilla (Blast Furnace) · `R` = Redstone  
 **Resultado:** 1 **Turtle Quarry Engine Upgrade** (Alto horno)
 
 ## NPC Chatbot & Quest Interposer (Núcleo de Diálogo NPC)

@@ -19,17 +19,19 @@ All custom items can be obtained via vanilla crafting in survival mode.
 
 ## Computer (Lectern)
 
+The Computer is a technological upgrade over a vanilla **Lectern**:
+
 ```text
 +---+---+---+
-| S | S | S |
+|   | I |   |
 +---+---+---+
-|   | B |   |
+| I | L | I |
 +---+---+---+
-|   | S |   |
+|   | R |   |
 +---+---+---+
 ```
 
-**Legend:** `S` = Wooden Slab (any wood) · `B` = Bookshelf  
+**Legend:** `L` = Vanilla Lectern · `I` = Iron Ingot · `R` = Redstone Dust  
 **Result:** 1 **Computer** (Lectern)
 
 ## Advanced Computer (Enchanting Table)
@@ -66,15 +68,15 @@ All custom items can be obtained via vanilla crafting in survival mode.
 
 ```text
 +---+---+---+
-| I | I | I |
+|   | I |   |
 +---+---+---+
 | I | C | I |
 +---+---+---+
-| R | D | R |
+|   | R |   |
 +---+---+---+
 ```
 
-**Legend:** `I` = Iron Ingot · `C` = Crafting Table · `R` = Redstone Dust · `D` = Dropper  
+**Legend:** `I` = Iron Ingot · `C` = Vanilla Crafter (or Dropper/Dispenser) · `R` = Redstone Dust  
 **Result:** 1 **Auto-Crafter**
 
 ## Inventory Transposer (Container Router)
@@ -141,15 +143,15 @@ All custom items can be obtained via vanilla crafting in survival mode.
 
 ```text
 +---+---+---+
-| P | P |   |
+|   | I |   |
 +---+---+---+
-| W | W |   |
+| I | C | I |
 +---+---+---+
-| W | W |   |
+|   | R |   |
 +---+---+---+
 ```
 
-**Legend:** `P` = Paper · `W` = Oak Planks  
+**Legend:** `I` = Iron Ingot · `C` = Vanilla Cartography Table · `R` = Redstone Dust  
 **Result:** 1 **Cartographer & Map Renderer** (Cartography Table)
 
 ## Potion & Alchemical Synthesizer (Brewing Stand)
@@ -171,15 +173,15 @@ All custom items can be obtained via vanilla crafting in survival mode.
 
 ```text
 +---+---+---+
-| W |   | W |
+|   | I |   |
 +---+---+---+
-| W |   | W |
+| I | C | I |
 +---+---+---+
-| W | W | W |
+|   | R |   |
 +---+---+---+
 ```
 
-**Legend:** `W` = Oak Slab  
+**Legend:** `I` = Iron Ingot · `C` = Vanilla Composter · `R` = Redstone Dust  
 **Result:** 1 **Farming / Harvesting Module** (Composter)
 
 ## Turtle Quarry Engine Upgrade (Blast Furnace)
@@ -191,15 +193,15 @@ All custom items can be obtained via vanilla crafting in survival mode.
 
 ```text
 +---+---+---+
-| I | I | I |
+|   | I |   |
 +---+---+---+
-| I | F | I |
+| I | B | I |
 +---+---+---+
-| S | S | S |
+|   | R |   |
 +---+---+---+
 ```
 
-**Legend:** `I` = Iron Ingot · `F` = Furnace · `S` = Smooth Stone  
+**Legend:** `I` = Iron Ingot · `B` = Vanilla Blast Furnace · `R` = Redstone Dust  
 **Result:** 1 **Turtle Quarry Engine Upgrade** (Blast Furnace)
 
 ## NPC Chatbot & Quest Interposer (Sculk Catalyst)

@@ -276,4 +276,89 @@ class TurtleListenerTest {
         verify(mockTurtleManager, never()).getTurtleByTerminal(any());
         verify(player, never()).openInventory(any(Inventory.class));
     }
+
+    @Test
+    @DisplayName("onTurtlePlace does not create turtle when placing vanilla dispenser")
+    void testVanillaDispenserPlaceDoesNotCreateTurtle() {
+        org.bukkit.inventory.ItemStack vanillaDispenser = new org.bukkit.inventory.ItemStack(Material.DISPENSER);
+        Block block = mock(Block.class);
+        when(block.getType()).thenReturn(Material.DISPENSER);
+
+        Player player = mock(Player.class);
+        when(player.getLocation()).thenReturn(new Location(mockWorld, 0, 64, 0));
+
+        org.bukkit.event.block.BlockPlaceEvent event = new org.bukkit.event.block.BlockPlaceEvent(
+                block,
+                mock(org.bukkit.block.BlockState.class),
+                mock(Block.class),
+                vanillaDispenser,
+                player,
+                true,
+                org.bukkit.inventory.EquipmentSlot.HAND
+        );
+
+        listener.onTurtlePlace(event);
+
+        verify(mockTurtleManager, never()).createTurtle(any(), any(), any());
+        verify(player, never()).sendMessage(contains("placed"));
+    }
+
+    @Test
+    @DisplayName("onTurtlePlace does not create turtle when placing Slimefun dispenser")
+    void testSlimefunDispenserPlaceDoesNotCreateTurtle() {
+        org.bukkit.inventory.ItemStack sfDispenser = new org.bukkit.inventory.ItemStack(Material.DISPENSER);
+        org.bukkit.inventory.meta.ItemMeta meta = mock(org.bukkit.inventory.meta.ItemMeta.class);
+        org.bukkit.persistence.PersistentDataContainer pdc = BukkitMockHelper.createMockPDC();
+        pdc.set(new org.bukkit.NamespacedKey("slimefun", "slimefun_item"), org.bukkit.persistence.PersistentDataType.STRING, "ELECTRIC_FURNACE");
+        when(meta.getPersistentDataContainer()).thenReturn(pdc);
+        when(sfDispenser.getItemMeta()).thenReturn(meta);
+
+        Block block = mock(Block.class);
+        when(block.getType()).thenReturn(Material.DISPENSER);
+
+        Player player = mock(Player.class);
+        when(player.getLocation()).thenReturn(new Location(mockWorld, 0, 64, 0));
+
+        org.bukkit.event.block.BlockPlaceEvent event = new org.bukkit.event.block.BlockPlaceEvent(
+                block,
+                mock(org.bukkit.block.BlockState.class),
+                mock(Block.class),
+                sfDispenser,
+                player,
+                true,
+                org.bukkit.inventory.EquipmentSlot.HAND
+        );
+
+        listener.onTurtlePlace(event);
+
+        verify(mockTurtleManager, never()).createTurtle(any(), any(), any());
+        verify(player, never()).sendMessage(contains("placed"));
+    }
+
+    @Test
+    @DisplayName("onTurtleInteract does not intercept Slimefun dispenser block")
+    void testTurtleInteractIgnoresSlimefunDispenser() {
+        Block block = mock(Block.class);
+        when(block.getType()).thenReturn(Material.DISPENSER);
+        org.bukkit.block.TileState state = mock(org.bukkit.block.TileState.class);
+        org.bukkit.persistence.PersistentDataContainer pdc = BukkitMockHelper.createMockPDC();
+        pdc.set(new org.bukkit.NamespacedKey("slimefun", "slimefun_item"), org.bukkit.persistence.PersistentDataType.STRING, "CARGO_NODE_INPUT");
+        when(state.getPersistentDataContainer()).thenReturn(pdc);
+        when(block.getState()).thenReturn(state);
+
+        Player player = mock(Player.class);
+        org.bukkit.event.player.PlayerInteractEvent event = new org.bukkit.event.player.PlayerInteractEvent(
+                player,
+                org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK,
+                null,
+                block,
+                org.bukkit.block.BlockFace.UP,
+                org.bukkit.inventory.EquipmentSlot.HAND
+        );
+
+        listener.onTurtleInteract(event);
+
+        assertFalse(event.isCancelled(), "Event must NOT be cancelled for Slimefun machine block");
+        verify(player, never()).openInventory(any(Inventory.class));
+    }
 }

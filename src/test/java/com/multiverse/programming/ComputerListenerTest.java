@@ -66,6 +66,11 @@ class ComputerListenerTest {
 
         Block block = mock(Block.class);
         when(block.getType()).thenReturn(Material.LECTERN);
+        org.bukkit.block.TileState state = mock(org.bukkit.block.TileState.class);
+        org.bukkit.persistence.PersistentDataContainer pdc = BukkitMockHelper.createMockPDC();
+        pdc.set(DiskManager.KEY_ID, org.bukkit.persistence.PersistentDataType.STRING, DiskManager.ID_COMPUTER);
+        when(state.getPersistentDataContainer()).thenReturn(pdc);
+        when(block.getState()).thenReturn(state);
 
         PlayerInteractEvent event = new PlayerInteractEvent(
                 player,
@@ -113,6 +118,11 @@ class ComputerListenerTest {
     void testPistonExtendCancelled() {
         Block computerBlock = mock(Block.class);
         when(computerBlock.getType()).thenReturn(Material.LECTERN);
+        org.bukkit.block.TileState state = mock(org.bukkit.block.TileState.class);
+        org.bukkit.persistence.PersistentDataContainer pdc = BukkitMockHelper.createMockPDC();
+        pdc.set(DiskManager.KEY_ID, org.bukkit.persistence.PersistentDataType.STRING, DiskManager.ID_COMPUTER);
+        when(state.getPersistentDataContainer()).thenReturn(pdc);
+        when(computerBlock.getState()).thenReturn(state);
 
         Block piston = mock(Block.class);
         BlockPistonExtendEvent event = new BlockPistonExtendEvent(piston, List.of(computerBlock), org.bukkit.block.BlockFace.NORTH);
@@ -194,12 +204,106 @@ class ComputerListenerTest {
 
         Block computer = mock(Block.class);
         when(computer.getType()).thenReturn(Material.LECTERN);
+        org.bukkit.block.TileState cState = mock(org.bukkit.block.TileState.class);
+        org.bukkit.persistence.PersistentDataContainer cPdc = BukkitMockHelper.createMockPDC();
+        cPdc.set(DiskManager.KEY_ID, org.bukkit.persistence.PersistentDataType.STRING, DiskManager.ID_COMPUTER);
+        when(cState.getPersistentDataContainer()).thenReturn(cPdc);
+        when(computer.getState()).thenReturn(cState);
         when(catalystBlock.getRelative(org.bukkit.block.BlockFace.NORTH)).thenReturn(computer);
 
         org.bukkit.event.block.SculkBloomEvent bloomEvent = mock(org.bukkit.event.block.SculkBloomEvent.class);
         when(bloomEvent.getBlock()).thenReturn(catalystBlock);
         listener.onSculkBloom(bloomEvent);
         verify(bloomEvent).setCancelled(true);
+    }
+
+    @Test
+    @DisplayName("onBlockUse does not intercept vanilla lectern without PDC")
+    void testVanillaLecternNotIntercepted() {
+        Player player = mock(Player.class);
+        when(player.hasPermission("multiverseprogramming.use")).thenReturn(true);
+
+        Block block = mock(Block.class);
+        when(block.getType()).thenReturn(Material.LECTERN);
+        org.bukkit.World world = mock(org.bukkit.World.class);
+        when(block.getLocation()).thenReturn(new Location(world, 10, 64, 10));
+        org.bukkit.block.TileState state = mock(org.bukkit.block.TileState.class);
+        org.bukkit.persistence.PersistentDataContainer pdc = BukkitMockHelper.createMockPDC();
+        when(state.getPersistentDataContainer()).thenReturn(pdc);
+        when(block.getState()).thenReturn(state);
+
+        PlayerInteractEvent event = new PlayerInteractEvent(
+                player,
+                Action.RIGHT_CLICK_BLOCK,
+                null,
+                block,
+                org.bukkit.block.BlockFace.UP,
+                EquipmentSlot.HAND
+        );
+
+        listener.onBlockUse(event);
+
+        assertFalse(event.isCancelled(), "Vanilla lectern must NOT be cancelled");
+        verify(player, never()).openInventory(any(Inventory.class));
+    }
+
+    @Test
+    @DisplayName("onBlockUse does not intercept vanilla enchanting table without PDC")
+    void testVanillaEnchantingTableNotIntercepted() {
+        Player player = mock(Player.class);
+        when(player.hasPermission("multiverseprogramming.use")).thenReturn(true);
+
+        Block block = mock(Block.class);
+        when(block.getType()).thenReturn(Material.ENCHANTING_TABLE);
+        org.bukkit.World world = mock(org.bukkit.World.class);
+        when(block.getLocation()).thenReturn(new Location(world, 20, 64, 20));
+        org.bukkit.block.TileState state = mock(org.bukkit.block.TileState.class);
+        org.bukkit.persistence.PersistentDataContainer pdc = BukkitMockHelper.createMockPDC();
+        when(state.getPersistentDataContainer()).thenReturn(pdc);
+        when(block.getState()).thenReturn(state);
+
+        PlayerInteractEvent event = new PlayerInteractEvent(
+                player,
+                Action.RIGHT_CLICK_BLOCK,
+                null,
+                block,
+                org.bukkit.block.BlockFace.UP,
+                EquipmentSlot.HAND
+        );
+
+        listener.onBlockUse(event);
+
+        assertFalse(event.isCancelled(), "Vanilla enchanting table must NOT be cancelled");
+        verify(player, never()).openInventory(any(Inventory.class));
+    }
+
+    @Test
+    @DisplayName("onBlockUse does not intercept Slimefun blocks")
+    void testSlimefunBlockNotIntercepted() {
+        Player player = mock(Player.class);
+        when(player.hasPermission("multiverseprogramming.use")).thenReturn(true);
+
+        Block block = mock(Block.class);
+        when(block.getType()).thenReturn(Material.ENCHANTING_TABLE);
+        org.bukkit.block.TileState state = mock(org.bukkit.block.TileState.class);
+        org.bukkit.persistence.PersistentDataContainer pdc = BukkitMockHelper.createMockPDC();
+        pdc.set(new org.bukkit.NamespacedKey("slimefun", "slimefun_item"), org.bukkit.persistence.PersistentDataType.STRING, "AUTO_ENCHANTER");
+        when(state.getPersistentDataContainer()).thenReturn(pdc);
+        when(block.getState()).thenReturn(state);
+
+        PlayerInteractEvent event = new PlayerInteractEvent(
+                player,
+                Action.RIGHT_CLICK_BLOCK,
+                null,
+                block,
+                org.bukkit.block.BlockFace.UP,
+                EquipmentSlot.HAND
+        );
+
+        listener.onBlockUse(event);
+
+        assertFalse(event.isCancelled(), "Slimefun block must NOT be cancelled");
+        verify(player, never()).openInventory(any(Inventory.class));
     }
 
     @Test

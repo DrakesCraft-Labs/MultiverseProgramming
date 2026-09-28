@@ -147,6 +147,27 @@ public final class CartographerPeripheral implements Peripheral {
         }
     }
 
+    public static boolean hasDisplaysAround(Location loc) {
+        if (loc == null || loc.getWorld() == null) return false;
+        Location holoLoc = loc.clone().add(0.5, 1.25, 0.5);
+        Collection<Entity> nearby = loc.getWorld().getNearbyEntities(holoLoc, 1.5, 1.5, 1.5);
+        for (Entity e : nearby) {
+            if (e.getScoreboardTags().contains(SCOREBOARD_TAG)) {
+                return true;
+            }
+        }
+        Block block = loc.getBlock();
+        if (block != null) {
+            for (BlockFace face : new BlockFace[]{BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST, BlockFace.UP, BlockFace.DOWN}) {
+                Block rel = block.getRelative(face);
+                if (rel != null && MonitorPeripheral.hasDisplayAt(rel.getLocation())) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     public String generateAsciiMap(int radius) {
         World world = location.getWorld();
         if (world == null) return null;

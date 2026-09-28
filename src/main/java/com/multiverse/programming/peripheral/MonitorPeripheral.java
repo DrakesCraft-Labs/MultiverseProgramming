@@ -99,6 +99,20 @@ public final class MonitorPeripheral implements Peripheral {
         }
     }
 
+    public static boolean hasDisplayAt(Location loc) {
+        if (loc == null || loc.getWorld() == null) {
+            return false;
+        }
+        Location targetLoc = loc.clone().add(0.5, 1.25, 0.5);
+        Collection<Entity> nearby = targetLoc.getWorld().getNearbyEntities(targetLoc, 1.0, 1.0, 1.0);
+        for (Entity e : nearby) {
+            if (e instanceof TextDisplay td && td.getScoreboardTags().contains(SCOREBOARD_TAG)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public void setText(String text) {
         lines.clear();
         if (text != null && !text.isEmpty()) {

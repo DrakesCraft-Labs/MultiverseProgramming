@@ -60,11 +60,17 @@ public final class TurtleListener implements Listener {
             return;
         }
 
+        if (com.multiverse.programming.ComputerListener.isSlimefunItem(item)
+                || com.multiverse.programming.ComputerListener.isSlimefunBlock(event.getBlockPlaced())
+                || com.multiverse.programming.ComputerListener.isMultiverseNetsBlock(event.getBlockPlaced())) {
+            return;
+        }
+
         boolean isTurtleItem = DiskManager.isMachine(item, DiskManager.ID_TURTLE)
                 || (meta != null && meta.hasDisplayName()
                 && meta.getDisplayName().contains(DiskManager.TURTLE_NAME));
 
-        if (!isTurtleItem && item.getType() != turtleMat) {
+        if (!isTurtleItem) {
             return;
         }
 
@@ -117,8 +123,9 @@ public final class TurtleListener implements Listener {
             return;
         }
 
-        // Never intercept MultiverseNets blocks (e.g. Controllers on Lodestone)
-        if (com.multiverse.programming.ComputerListener.isMultiverseNetsBlock(block)) {
+        // Never intercept MultiverseNets or Slimefun blocks (e.g. Controllers on Lodestone, Cargo Nodes, Electric machines)
+        if (com.multiverse.programming.ComputerListener.isMultiverseNetsBlock(block)
+                || com.multiverse.programming.ComputerListener.isSlimefunBlock(block)) {
             return;
         }
 
@@ -443,6 +450,11 @@ public final class TurtleListener implements Listener {
                 } catch (Throwable ignored) {}
                 return;
             }
+        }
+
+        if (com.multiverse.programming.ComputerListener.isMultiverseNetsBlock(block)
+                || com.multiverse.programming.ComputerListener.isSlimefunBlock(block)) {
+            return;
         }
 
         if (block.getType() != getTurtleBlock()) {

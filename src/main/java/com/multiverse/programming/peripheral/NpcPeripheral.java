@@ -52,6 +52,18 @@ public final class NpcPeripheral implements Peripheral {
         return ACTIVE_NPCS;
     }
 
+    public static boolean hasNpcAt(Location loc) {
+        if (loc == null || loc.getWorld() == null) return false;
+        for (NpcPeripheral npc : ACTIVE_NPCS) {
+            Location nLoc = npc.getLocation();
+            if (nLoc != null && nLoc.getWorld() != null && nLoc.getWorld().equals(loc.getWorld())
+                    && nLoc.getBlockX() == loc.getBlockX() && nLoc.getBlockY() == loc.getBlockY() && nLoc.getBlockZ() == loc.getBlockZ()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public NpcPeripheral(JavaPlugin plugin, Location location) {
         this.plugin = plugin;
         this.location = location;

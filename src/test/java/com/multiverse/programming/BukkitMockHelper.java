@@ -163,6 +163,7 @@ public final class BukkitMockHelper {
             store.remove(k);
             return null;
         }).when(pdc).remove(any());
+        when(pdc.getKeys()).thenAnswer(inv -> new java.util.HashSet<>(store.keySet()));
         return pdc;
     }
 
