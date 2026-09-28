@@ -96,4 +96,26 @@ class DiskManagerTest {
         assertEquals("", DiskManager.readProgram(new ItemStack(Material.DIAMOND)));
         assertEquals("", DiskManager.readProgram(null));
     }
+
+    @Test
+    @DisplayName("All created machines and items have mvprog_ IDs in their PDC")
+    void testMachineIdsPrefixedWithMvprog() {
+        assertEquals("mvprog_floppy_disk", DiskManager.getMachineId(DiskManager.createFloppyDisk()));
+        assertEquals("mvprog_computer", DiskManager.getMachineId(DiskManager.createComputer()));
+        assertEquals("mvprog_advanced_computer", DiskManager.getMachineId(DiskManager.createAdvancedComputer()));
+        assertEquals("mvprog_display_monitor", DiskManager.getMachineId(DiskManager.createMonitor()));
+        assertEquals("mvprog_auto_crafter", DiskManager.getMachineId(DiskManager.createCrafter()));
+        assertEquals("mvprog_inventory_transposer", DiskManager.getMachineId(DiskManager.createTransposer()));
+        assertEquals("mvprog_sound_synthesizer", DiskManager.getMachineId(DiskManager.createSpeaker()));
+        assertEquals("mvprog_programmable_turtle", DiskManager.getMachineId(DiskManager.createTurtle()));
+        assertEquals("mvprog_block_entity_scanner", DiskManager.getMachineId(DiskManager.createScanner(Material.OBSERVER)));
+        assertEquals("mvprog_cartographer_table", DiskManager.getMachineId(DiskManager.createCartographer(Material.CARTOGRAPHY_TABLE)));
+        assertEquals("mvprog_alchemical_synthesizer", DiskManager.getMachineId(DiskManager.createAlchemist(Material.BREWING_STAND)));
+        assertEquals("mvprog_farming_attachment", DiskManager.getMachineId(DiskManager.createFarmer(Material.COMPOSTER)));
+        assertEquals("mvprog_quarry_excavator", DiskManager.getMachineId(DiskManager.createQuarry(Material.BLAST_FURNACE)));
+        assertEquals("mvprog_npc_dialogue_core", DiskManager.getMachineId(DiskManager.createNpc(Material.SCULK_CATALYST)));
+
+        assertTrue(DiskManager.isMachine(DiskManager.createComputer(), DiskManager.ID_COMPUTER));
+        assertFalse(DiskManager.isMachine(DiskManager.createComputer(), "wrong_id"));
+    }
 }

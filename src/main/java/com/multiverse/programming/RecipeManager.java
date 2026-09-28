@@ -10,20 +10,20 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 public final class RecipeManager {
 
-    public static final String KEY_FLOPPY_DISK = "floppy_disk";
-    public static final String KEY_COMPUTER = "computer";
-    public static final String KEY_ADVANCED_COMPUTER = "advanced_computer";
-    public static final String KEY_MONITOR = "display_monitor";
-    public static final String KEY_CRAFTER = "auto_crafter";
-    public static final String KEY_TRANSPOSER = "inventory_transposer";
-    public static final String KEY_SPEAKER = "sound_synthesizer";
-    public static final String KEY_TURTLE = "programmable_turtle";
-    public static final String KEY_SCANNER = "block_entity_scanner";
-    public static final String KEY_CARTOGRAPHER = "cartographer_table";
-    public static final String KEY_ALCHEMIST = "alchemical_synthesizer";
-    public static final String KEY_FARMER = "farming_attachment";
-    public static final String KEY_QUARRY = "quarry_excavator";
-    public static final String KEY_NPC = "npc_dialogue_core";
+    public static final String KEY_FLOPPY_DISK = DiskManager.ID_FLOPPY_DISK;
+    public static final String KEY_COMPUTER = DiskManager.ID_COMPUTER;
+    public static final String KEY_ADVANCED_COMPUTER = DiskManager.ID_ADVANCED_COMPUTER;
+    public static final String KEY_MONITOR = DiskManager.ID_MONITOR;
+    public static final String KEY_CRAFTER = DiskManager.ID_CRAFTER;
+    public static final String KEY_TRANSPOSER = DiskManager.ID_TRANSPOSER;
+    public static final String KEY_SPEAKER = DiskManager.ID_SPEAKER;
+    public static final String KEY_TURTLE = DiskManager.ID_TURTLE;
+    public static final String KEY_SCANNER = DiskManager.ID_SCANNER;
+    public static final String KEY_CARTOGRAPHER = DiskManager.ID_CARTOGRAPHER;
+    public static final String KEY_ALCHEMIST = DiskManager.ID_ALCHEMIST;
+    public static final String KEY_FARMER = DiskManager.ID_FARMER;
+    public static final String KEY_QUARRY = DiskManager.ID_QUARRY;
+    public static final String KEY_NPC = DiskManager.ID_NPC;
 
     private final JavaPlugin plugin;
 

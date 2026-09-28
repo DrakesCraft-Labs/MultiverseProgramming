@@ -201,4 +201,57 @@ class ComputerListenerTest {
         listener.onSculkBloom(bloomEvent);
         verify(bloomEvent).setCancelled(true);
     }
+
+    @Test
+    @DisplayName("onBlockUse does not intercept MultiverseNets blocks")
+    void testDoesNotInterceptMultiverseNetsBlocks() {
+        Player player = mock(Player.class);
+        when(player.hasPermission("multiverseprogramming.use")).thenReturn(true);
+
+        Block block = mock(Block.class);
+        when(block.getType()).thenReturn(Material.ENCHANTING_TABLE);
+        when(block.getX()).thenReturn(10);
+        when(block.getY()).thenReturn(64);
+        when(block.getZ()).thenReturn(10);
+
+        org.bukkit.Chunk chunk = mock(org.bukkit.Chunk.class);
+        when(chunk.isLoaded()).thenReturn(true);
+        org.bukkit.persistence.PersistentDataContainer pdc = BukkitMockHelper.createMockPDC();
+        pdc.set(new org.bukkit.NamespacedKey("multiversenets", "t10_64_10"), org.bukkit.persistence.PersistentDataType.STRING, "MVN_SF_ENCODER");
+        when(chunk.getPersistentDataContainer()).thenReturn(pdc);
+        when(block.getChunk()).thenReturn(chunk);
+
+        PlayerInteractEvent event = new PlayerInteractEvent(
+                player,
+                Action.RIGHT_CLICK_BLOCK,
+                null,
+                block,
+                org.bukkit.block.BlockFace.UP,
+                EquipmentSlot.HAND
+        );
+
+        listener.onBlockUse(event);
+
+        assertFalse(event.isCancelled());
+        verify(player, never()).openInventory(any(Inventory.class));
+    }
+
+    @Test
+    @DisplayName("onInventoryClick ignores non-computer holder inventories")
+    void testIgnoresNonComputerHolderInventories() {
+        Player player = mock(Player.class);
+        Inventory top = mock(Inventory.class);
+        when(top.getHolder()).thenReturn(mock(org.bukkit.inventory.InventoryHolder.class));
+
+        InventoryView view = mock(InventoryView.class);
+        when(view.getTopInventory()).thenReturn(top);
+        when(view.getTitle()).thenReturn("Some Other Plugin GUI");
+
+        InventoryClickEvent event = mock(InventoryClickEvent.class);
+        when(event.getWhoClicked()).thenReturn(player);
+        when(event.getView()).thenReturn(view);
+
+        listener.onInventoryClick(event);
+        verify(event, never()).setCancelled(true);
+    }
 }

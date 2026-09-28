@@ -60,8 +60,9 @@ public final class TurtleListener implements Listener {
             return;
         }
 
-        boolean isTurtleItem = meta != null && meta.hasDisplayName()
-                && meta.getDisplayName().contains(DiskManager.TURTLE_NAME);
+        boolean isTurtleItem = DiskManager.isMachine(item, DiskManager.ID_TURTLE)
+                || (meta != null && meta.hasDisplayName()
+                && meta.getDisplayName().contains(DiskManager.TURTLE_NAME));
 
         if (!isTurtleItem && item.getType() != turtleMat) {
             return;
@@ -96,6 +97,7 @@ public final class TurtleListener implements Listener {
         if (placedBlock.getState() instanceof org.bukkit.block.TileState tileState) {
             try {
                 var pdc = tileState.getPersistentDataContainer();
+                pdc.set(DiskManager.KEY_ID, org.bukkit.persistence.PersistentDataType.STRING, DiskManager.ID_TURTLE);
                 pdc.set(new org.bukkit.NamespacedKey(plugin, "turtle_id"), org.bukkit.persistence.PersistentDataType.STRING, turtle.getId());
                 pdc.set(new org.bukkit.NamespacedKey(plugin, "turtle_owner"), org.bukkit.persistence.PersistentDataType.STRING, player.getUniqueId().toString());
                 tileState.update();
@@ -112,6 +114,11 @@ public final class TurtleListener implements Listener {
         }
         Block block = event.getClickedBlock();
         if (block == null) {
+            return;
+        }
+
+        // Never intercept MultiverseNets blocks (e.g. Controllers on Lodestone)
+        if (com.multiverse.programming.ComputerListener.isMultiverseNetsBlock(block)) {
             return;
         }
 
@@ -183,16 +190,22 @@ public final class TurtleListener implements Listener {
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
         Inventory top = event.getView().getTopInventory();
+        boolean isSupplyHolder = top != null && top.getHolder() instanceof SupplyStationHolder;
         String title = event.getView().getTitle();
 
-        if (title.startsWith(SupplyStationGUI.TITLE_PREFIX)) {
+        if (isSupplyHolder || title.startsWith(SupplyStationGUI.TITLE_PREFIX)) {
             event.setCancelled(true);
             int rawSlot = event.getRawSlot();
             if (rawSlot < 0 || rawSlot >= SupplyStationGUI.SIZE) {
                 return;
             }
-            String turtleId = title.substring(SupplyStationGUI.TITLE_PREFIX.length()).trim();
-            Turtle turtle = (plugin.getTurtleManager() != null) ? plugin.getTurtleManager().getTurtleById(turtleId) : null;
+            Turtle turtle;
+            if (isSupplyHolder) {
+                turtle = ((SupplyStationHolder) top.getHolder()).getTurtle();
+            } else {
+                String turtleId = title.substring(SupplyStationGUI.TITLE_PREFIX.length()).trim();
+                turtle = (plugin.getTurtleManager() != null) ? plugin.getTurtleManager().getTurtleById(turtleId) : null;
+            }
             if (turtle == null) return;
             Player player = (Player) event.getWhoClicked();
 

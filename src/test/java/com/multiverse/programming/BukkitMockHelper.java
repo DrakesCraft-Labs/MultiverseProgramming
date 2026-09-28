@@ -122,6 +122,9 @@ public final class BukkitMockHelper {
                 return null;
             }).when(bookMeta).setPages(any(String[].class));
 
+            org.bukkit.persistence.PersistentDataContainer pdc = createMockPDC();
+            when(bookMeta.getPersistentDataContainer()).thenReturn(pdc);
+
             return bookMeta;
         }
 
@@ -133,7 +136,34 @@ public final class BukkitMockHelper {
             nameHolder[0] = i.getArgument(0);
             return null;
         }).when(meta).setDisplayName(anyString());
+        org.bukkit.persistence.PersistentDataContainer pdc = createMockPDC();
+        when(meta.getPersistentDataContainer()).thenReturn(pdc);
         return meta;
+    }
+
+    public static org.bukkit.persistence.PersistentDataContainer createMockPDC() {
+        org.bukkit.persistence.PersistentDataContainer pdc = mock(org.bukkit.persistence.PersistentDataContainer.class);
+        java.util.Map<org.bukkit.NamespacedKey, Object> store = new java.util.HashMap<>();
+        doAnswer(inv -> {
+            org.bukkit.NamespacedKey k = inv.getArgument(0);
+            Object v = inv.getArgument(2);
+            store.put(k, v);
+            return null;
+        }).when(pdc).set(any(), any(), any());
+        doAnswer(inv -> {
+            org.bukkit.NamespacedKey k = inv.getArgument(0);
+            return store.get(k);
+        }).when(pdc).get(any(), any());
+        doAnswer(inv -> {
+            org.bukkit.NamespacedKey k = inv.getArgument(0);
+            return store.containsKey(k);
+        }).when(pdc).has(any(), any());
+        doAnswer(inv -> {
+            org.bukkit.NamespacedKey k = inv.getArgument(0);
+            store.remove(k);
+            return null;
+        }).when(pdc).remove(any());
+        return pdc;
     }
 
     public static void tearDownMockServer() {

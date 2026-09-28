@@ -182,6 +182,54 @@ public final class ComputerListener implements Listener {
         return mat != null && (mat == computerBlock || mat == advancedComputerBlock);
     }
 
+    public static boolean isMultiverseNetsBlock(Block block) {
+        if (block == null) return false;
+        try {
+            org.bukkit.Chunk chunk = block.getChunk();
+            if (chunk == null || !chunk.isLoaded()) return false;
+            var pdc = chunk.getPersistentDataContainer();
+            if (pdc == null) return false;
+            String suffix = block.getX() + "_" + block.getY() + "_" + block.getZ();
+            org.bukkit.NamespacedKey tKey = new org.bukkit.NamespacedKey("multiversenets", "t" + suffix);
+            org.bukkit.NamespacedKey nKey = new org.bukkit.NamespacedKey("multiversenets", "n" + suffix);
+            if (pdc.has(tKey, org.bukkit.persistence.PersistentDataType.STRING)
+                    || pdc.has(nKey, org.bukkit.persistence.PersistentDataType.STRING)) {
+                return true;
+            }
+            org.bukkit.NamespacedKey tKeyCap = new org.bukkit.NamespacedKey("MultiverseNets", "t" + suffix);
+            org.bukkit.NamespacedKey nKeyCap = new org.bukkit.NamespacedKey("MultiverseNets", "n" + suffix);
+            return pdc.has(tKeyCap, org.bukkit.persistence.PersistentDataType.STRING)
+                    || pdc.has(nKeyCap, org.bukkit.persistence.PersistentDataType.STRING);
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    public static String getBlockMachineId(Block block) {
+        if (block == null) return null;
+        try {
+            if (block.getState() instanceof org.bukkit.block.TileState tileState) {
+                var pdc = tileState.getPersistentDataContainer();
+                if (pdc != null && pdc.has(DiskManager.KEY_ID, org.bukkit.persistence.PersistentDataType.STRING)) {
+                    return pdc.get(DiskManager.KEY_ID, org.bukkit.persistence.PersistentDataType.STRING);
+                }
+            }
+        } catch (Throwable ignored) {}
+        return null;
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onBlockPlace(org.bukkit.event.block.BlockPlaceEvent event) {
+        ItemStack item = event.getItemInHand();
+        String machineId = DiskManager.getMachineId(item);
+        if (machineId != null && event.getBlockPlaced().getState() instanceof org.bukkit.block.TileState tileState) {
+            try {
+                tileState.getPersistentDataContainer().set(DiskManager.KEY_ID, org.bukkit.persistence.PersistentDataType.STRING, machineId);
+                tileState.update();
+            } catch (Throwable ignored) {}
+        }
+    }
+
     @EventHandler
     public void onBlockUse(PlayerInteractEvent event) {
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK) {
@@ -189,6 +237,11 @@ public final class ComputerListener implements Listener {
         }
         Block block = event.getClickedBlock();
         if (block == null) {
+            return;
+        }
+
+        // Never intercept MultiverseNets blocks (e.g. Slimefun Encoder, Crafting Grid, Controller, etc.)
+        if (isMultiverseNetsBlock(block)) {
             return;
         }
 
@@ -216,8 +269,23 @@ public final class ComputerListener implements Listener {
             }
         }
 
+        String machineId = getBlockMachineId(block);
         boolean advanced;
-        if (block.getType() == computerBlock) {
+        if (DiskManager.ID_ADVANCED_COMPUTER.equalsIgnoreCase(machineId)) {
+            advanced = true;
+            if (!plugin.getConfigManager().isEnableAdvancedComputer()) {
+                event.setCancelled(true);
+                player.sendMessage(plugin.getPrefix() + " §cAdvanced computers are currently disabled by the server administration.");
+                return;
+            }
+        } else if (DiskManager.ID_COMPUTER.equalsIgnoreCase(machineId)) {
+            advanced = false;
+            if (!plugin.getConfigManager().isEnableComputer()) {
+                event.setCancelled(true);
+                player.sendMessage(plugin.getPrefix() + " §cStandard computers are currently disabled by the server administration.");
+                return;
+            }
+        } else if (block.getType() == computerBlock) {
             advanced = false;
             if (!plugin.getConfigManager().isEnableComputer()) {
                 event.setCancelled(true);
@@ -252,13 +320,13 @@ public final class ComputerListener implements Listener {
         openByPlayer.put(player.getUniqueId(), new BlockRef(advanced, blockLoc));
 
         if (!advanced) {
-            player.openInventory(ComputerGUI.open());
+            player.openInventory(ComputerGUI.open(blockLoc));
             return;
         }
 
         boolean isRunning = isProgramRunning(blockLoc);
         ItemStack savedDisk = advancedDisks.get(blockLoc);
-        Inventory inv = ComputerGUI.openAdvanced(isRunning);
+        Inventory inv = ComputerGUI.openAdvanced(isRunning, blockLoc);
         if (savedDisk != null && !savedDisk.getType().isAir()) {
             inv.setItem(ComputerGUI.DISK_SLOT, savedDisk);
         }
@@ -270,9 +338,17 @@ public final class ComputerListener implements Listener {
         if (!(event.getWhoClicked() instanceof Player player)) {
             return;
         }
+        Inventory top = event.getView().getTopInventory();
+        boolean isHolder = top != null && top.getHolder() instanceof ComputerHolder;
         String title = event.getView().getTitle();
-        boolean advanced = ComputerGUI.ADVANCED_TITLE.equals(title);
-        if (!advanced && !ComputerGUI.TITLE.equals(title)) {
+        boolean advanced;
+        if (isHolder) {
+            advanced = ((ComputerHolder) top.getHolder()).isAdvanced();
+        } else if (ComputerGUI.ADVANCED_TITLE.equals(title)) {
+            advanced = true;
+        } else if (ComputerGUI.TITLE.equals(title)) {
+            advanced = false;
+        } else {
             return;
         }
 
@@ -332,8 +408,10 @@ public final class ComputerListener implements Listener {
         if (!(event.getWhoClicked() instanceof Player)) {
             return;
         }
+        Inventory top = event.getView().getTopInventory();
+        boolean isHolder = top != null && top.getHolder() instanceof ComputerHolder;
         String title = event.getView().getTitle();
-        if (!ComputerGUI.TITLE.equals(title) && !ComputerGUI.ADVANCED_TITLE.equals(title)) {
+        if (!isHolder && !ComputerGUI.TITLE.equals(title) && !ComputerGUI.ADVANCED_TITLE.equals(title)) {
             return;
         }
         for (int raw : event.getRawSlots()) {
@@ -349,9 +427,17 @@ public final class ComputerListener implements Listener {
         if (!(event.getPlayer() instanceof Player player)) {
             return;
         }
+        Inventory top = event.getView().getTopInventory();
+        boolean isHolder = top != null && top.getHolder() instanceof ComputerHolder;
         String title = event.getView().getTitle();
-        boolean advanced = ComputerGUI.ADVANCED_TITLE.equals(title);
-        if (!advanced && !ComputerGUI.TITLE.equals(title)) {
+        boolean advanced;
+        if (isHolder) {
+            advanced = ((ComputerHolder) top.getHolder()).isAdvanced();
+        } else if (ComputerGUI.ADVANCED_TITLE.equals(title)) {
+            advanced = true;
+        } else if (ComputerGUI.TITLE.equals(title)) {
+            advanced = false;
+        } else {
             return;
         }
 

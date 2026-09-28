@@ -23,15 +23,25 @@ public final class ComputerGUI {
     }
 
     public static Inventory open() {
-        return open(TITLE, "§a✔ Validate & Run");
+        return open((Location) null);
+    }
+
+    public static Inventory open(Location location) {
+        return open(location, TITLE, "§a✔ Validate & Run");
     }
 
     public static Inventory openAdvanced() {
-        return openAdvanced(false);
+        return openAdvanced(false, null);
     }
 
     public static Inventory openAdvanced(boolean isRunning) {
-        Inventory inv = Bukkit.createInventory(null, 9, ADVANCED_TITLE);
+        return openAdvanced(isRunning, null);
+    }
+
+    public static Inventory openAdvanced(boolean isRunning, Location location) {
+        ComputerHolder holder = new ComputerHolder(true, location);
+        Inventory inv = Bukkit.createInventory(holder, 9, ADVANCED_TITLE);
+        holder.setInventory(inv);
 
         ItemStack frame = new ItemStack(Material.BLACK_STAINED_GLASS_PANE);
         ItemMeta frameMeta = frame.getItemMeta();
@@ -67,8 +77,10 @@ public final class ComputerGUI {
         return inv;
     }
 
-    private static Inventory open(String title, String buttonLabel) {
-        Inventory inv = Bukkit.createInventory(null, 9, title);
+    private static Inventory open(Location location, String title, String buttonLabel) {
+        ComputerHolder holder = new ComputerHolder(false, location);
+        Inventory inv = Bukkit.createInventory(holder, 9, title);
+        holder.setInventory(inv);
 
         ItemStack frame = new ItemStack(Material.BLACK_STAINED_GLASS_PANE);
         ItemMeta frameMeta = frame.getItemMeta();

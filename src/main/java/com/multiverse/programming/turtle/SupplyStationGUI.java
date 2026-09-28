@@ -32,7 +32,9 @@ public final class SupplyStationGUI {
 
     public static Inventory create(Turtle turtle) {
         String title = TITLE_PREFIX + turtle.getId();
-        Inventory inv = Bukkit.createInventory(null, SIZE, title);
+        SupplyStationHolder holder = new SupplyStationHolder(turtle);
+        Inventory inv = Bukkit.createInventory(holder, SIZE, title);
+        holder.setInventory(inv);
         refresh(inv, turtle);
         return inv;
     }

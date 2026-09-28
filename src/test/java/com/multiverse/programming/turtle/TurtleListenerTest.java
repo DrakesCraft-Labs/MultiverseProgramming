@@ -243,4 +243,37 @@ class TurtleListenerTest {
         verify(mockTurtle).stopAnyWork();
         verify(player).sendMessage(contains("Stopped active task for Turtle T-001"));
     }
+
+    @Test
+    @DisplayName("onTurtleInteract ignores MultiverseNets blocks such as Lodestone controller")
+    void testTurtleInteractIgnoresMultiverseNetsLodestone() {
+        Block block = mock(Block.class);
+        when(block.getType()).thenReturn(Material.LODESTONE);
+        when(block.getX()).thenReturn(20);
+        when(block.getY()).thenReturn(64);
+        when(block.getZ()).thenReturn(20);
+
+        org.bukkit.Chunk chunk = mock(org.bukkit.Chunk.class);
+        when(chunk.isLoaded()).thenReturn(true);
+        org.bukkit.persistence.PersistentDataContainer pdc = BukkitMockHelper.createMockPDC();
+        pdc.set(new org.bukkit.NamespacedKey("multiversenets", "t20_64_20"), org.bukkit.persistence.PersistentDataType.STRING, "MVN_CONTROLLER");
+        when(chunk.getPersistentDataContainer()).thenReturn(pdc);
+        when(block.getChunk()).thenReturn(chunk);
+
+        Player player = mock(Player.class);
+        org.bukkit.event.player.PlayerInteractEvent event = new org.bukkit.event.player.PlayerInteractEvent(
+                player,
+                org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK,
+                null,
+                block,
+                org.bukkit.block.BlockFace.UP,
+                org.bukkit.inventory.EquipmentSlot.HAND
+        );
+
+        listener.onTurtleInteract(event);
+
+        assertFalse(event.isCancelled(), "Event must not be cancelled for MultiverseNets controller block");
+        verify(mockTurtleManager, never()).getTurtleByTerminal(any());
+        verify(player, never()).openInventory(any(Inventory.class));
+    }
 }

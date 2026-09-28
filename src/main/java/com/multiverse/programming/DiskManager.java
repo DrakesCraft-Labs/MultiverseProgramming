@@ -6,10 +6,30 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 
+import org.bukkit.NamespacedKey;
+import org.bukkit.persistence.PersistentDataType;
+
 import java.util.ArrayList;
 import java.util.List;
 
 public final class DiskManager {
+
+    public static final NamespacedKey KEY_ID = new NamespacedKey("multiverseprogramming", "mvprog_id");
+
+    public static final String ID_FLOPPY_DISK = "mvprog_floppy_disk";
+    public static final String ID_COMPUTER = "mvprog_computer";
+    public static final String ID_ADVANCED_COMPUTER = "mvprog_advanced_computer";
+    public static final String ID_MONITOR = "mvprog_display_monitor";
+    public static final String ID_CRAFTER = "mvprog_auto_crafter";
+    public static final String ID_TRANSPOSER = "mvprog_inventory_transposer";
+    public static final String ID_SPEAKER = "mvprog_sound_synthesizer";
+    public static final String ID_TURTLE = "mvprog_programmable_turtle";
+    public static final String ID_SCANNER = "mvprog_block_entity_scanner";
+    public static final String ID_CARTOGRAPHER = "mvprog_cartographer_table";
+    public static final String ID_ALCHEMIST = "mvprog_alchemical_synthesizer";
+    public static final String ID_FARMER = "mvprog_farming_attachment";
+    public static final String ID_QUARRY = "mvprog_quarry_excavator";
+    public static final String ID_NPC = "mvprog_npc_dialogue_core";
 
     public static final String NAME = "Floppy Disk";
     public static final String COMPUTER_NAME = "Computer";
@@ -29,6 +49,34 @@ public final class DiskManager {
     private DiskManager() {
     }
 
+    private static void applyId(ItemMeta meta, String id) {
+        if (meta == null || id == null) return;
+        try {
+            var pdc = meta.getPersistentDataContainer();
+            if (pdc != null) {
+                pdc.set(KEY_ID, PersistentDataType.STRING, id);
+            }
+        } catch (Throwable ignored) {}
+    }
+
+    public static String getMachineId(ItemStack item) {
+        if (item == null || !item.hasItemMeta()) return null;
+        try {
+            ItemMeta meta = item.getItemMeta();
+            if (meta == null) return null;
+            var pdc = meta.getPersistentDataContainer();
+            if (pdc == null) return null;
+            return pdc.get(KEY_ID, PersistentDataType.STRING);
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
+    public static boolean isMachine(ItemStack item, String id) {
+        String found = getMachineId(item);
+        return found != null && found.equalsIgnoreCase(id);
+    }
+
     public static ItemStack createFloppyDisk() {
         ItemStack disk = new ItemStack(Material.WRITABLE_BOOK);
         ItemMeta rawMeta = disk.getItemMeta();
@@ -39,9 +87,11 @@ public final class DiskManager {
                     "§7Insert it into the computer's disk slot."
             ));
             meta.setPages("-- Write your program here\n-- Example:\n-- print(\"hello world\")");
+            applyId(meta, ID_FLOPPY_DISK);
             disk.setItemMeta(meta);
         } else if (rawMeta != null) {
             rawMeta.setDisplayName(NAME);
+            applyId(rawMeta, ID_FLOPPY_DISK);
             disk.setItemMeta(rawMeta);
         }
         return disk;
@@ -58,6 +108,7 @@ public final class DiskManager {
         if (meta != null) {
             meta.setDisplayName(COMPUTER_NAME);
             meta.setLore(List.of("§7Place it and right-click it to open the GUI."));
+            applyId(meta, ID_COMPUTER);
             computer.setItemMeta(meta);
         }
         return computer;
@@ -77,6 +128,7 @@ public final class DiskManager {
                     "§7Runs looping programs without the short timeout.",
                     "§7Keeps the disk inside its inventory."
             ));
+            applyId(meta, ID_ADVANCED_COMPUTER);
             computer.setItemMeta(meta);
         }
         return computer;
@@ -96,6 +148,7 @@ public final class DiskManager {
                     "§7Place adjacent to a Computer.",
                     "§7Allows Lua scripts to project floating text in the world."
             ));
+            applyId(meta, ID_MONITOR);
             item.setItemMeta(meta);
         }
         return item;
@@ -115,6 +168,7 @@ public final class DiskManager {
                     "§7Place adjacent to a Computer.",
                     "§7Automates Minecraft 1.21 crafting recipes via Lua."
             ));
+            applyId(meta, ID_CRAFTER);
             item.setItemMeta(meta);
         }
         return item;
@@ -134,6 +188,7 @@ public final class DiskManager {
                     "§7Place adjacent to a Computer.",
                     "§7Inspects and moves items between adjacent chests and containers."
             ));
+            applyId(meta, ID_TRANSPOSER);
             item.setItemMeta(meta);
         }
         return item;
@@ -153,6 +208,7 @@ public final class DiskManager {
                     "§7Place adjacent to a Computer.",
                     "§7Plays musical notes, custom frequencies, and audio effects."
             ));
+            applyId(meta, ID_SPEAKER);
             item.setItemMeta(meta);
         }
         return item;
@@ -173,6 +229,7 @@ public final class DiskManager {
                     "§7Place it and right-click to open its GUI.",
                     "§7Connects with Web Portal & builds Blueprints."
             ));
+            applyId(meta, ID_TURTLE);
             item.setItemMeta(meta);
         }
         return item;
@@ -188,6 +245,7 @@ public final class DiskManager {
                     "§7Place adjacent to a Computer or Turtle.",
                     "§7Scans entities, players, and blocks within a radius via Lua."
             ));
+            applyId(meta, ID_SCANNER);
             item.setItemMeta(meta);
         }
         return item;
@@ -203,6 +261,7 @@ public final class DiskManager {
                     "§7Place adjacent to a Computer.",
                     "§7Scans terrain topography and generates custom in-game maps."
             ));
+            applyId(meta, ID_CARTOGRAPHER);
             item.setItemMeta(meta);
         }
         return item;
@@ -218,6 +277,7 @@ public final class DiskManager {
                     "§7Place adjacent to a Computer.",
                     "§7Automates potion synthesis and alchemy from connected containers."
             ));
+            applyId(meta, ID_ALCHEMIST);
             item.setItemMeta(meta);
         }
         return item;
@@ -233,6 +293,7 @@ public final class DiskManager {
                     "§7Place adjacent to a Computer.",
                     "§7Inspects crop maturity, auto-harvests, and replants crops."
             ));
+            applyId(meta, ID_FARMER);
             item.setItemMeta(meta);
         }
         return item;
@@ -250,6 +311,7 @@ public final class DiskManager {
                     "§7Enables volumetric strip-mining via turtle.quarry().",
                     "§cOnly functions when attached to a Turtle."
             ));
+            applyId(meta, ID_QUARRY);
             item.setItemMeta(meta);
         }
         return item;
@@ -265,6 +327,7 @@ public final class DiskManager {
                     "§7Interactive NPC & quest dialogue core.",
                     "§7Projects floating holograms and prompts players with choices."
             ));
+            applyId(meta, ID_NPC);
             item.setItemMeta(meta);
         }
         return item;
