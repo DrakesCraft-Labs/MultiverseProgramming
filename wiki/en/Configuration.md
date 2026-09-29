@@ -132,6 +132,38 @@ All commands are prefixed with `/mvprog`.
 
 ---
 
+## Permissions
+
+The plugin registers **three** permission nodes. If you use a permissions plugin (LuckPerms, PermissionsEx, etc.), grant these nodes to your ranks.
+
+| Permission node | Default | What it enables |
+|---|---|---|
+| `multiverseprogramming.use` | `true` (all players) | Base access: using **computers** (opening the GUI, validating and running disks) and the `/mvprog` command with its player subcommands (`help`, `web`, `get`, `quota`, `bp ...`, `stop`, `turtle`), downloading blueprints and checking storage quotas. |
+| `multiverseprogramming.turtle` | `true` (all players) | **Turtle** access: placing Turtles, opening their control panel, running Lua scripts on them, refueling, using the Supply Station terminal, and managing the access list of a Turtle you own. |
+| `multiverseprogramming.admin` | `op` (server operators) | Full administrative access: `/mvprog build`, `give`, `reload`, `getbypass`, `bp clean`; viewing/managing other players' quotas and blueprints; stopping or breaking **any** Turtle regardless of owner; bypassing region/claim protection. |
+
+### Permission inheritance
+
+Children are declared in `plugin.yml`, so granting a parent node also grants its children:
+
+- `multiverseprogramming.admin` → grants `multiverseprogramming.use` **and** `multiverseprogramming.turtle`.
+- `multiverseprogramming.use` → grants `multiverseprogramming.turtle`.
+
+You only need to grant the top-level node for a rank; you do not have to list every node separately.
+
+### Per-Turtle ownership
+
+The `multiverseprogramming.turtle` node decides whether a player can interact with Turtles **at all**. On top of it, every Turtle enforces its own ownership:
+
+- The **owner** (whoever placed it) can always open, operate and break it.
+- The owner can authorize other players using the **Access Control** button in the Turtle panel; authorized players can open and operate **that specific** Turtle.
+- **Breaking / disassembling** a Turtle is reserved for its owner or an administrator — authorized operators cannot dismantle it. A Turtle with no registered owner can only be removed by an administrator.
+- Administrators (`multiverseprogramming.admin`) bypass all of the above.
+
+> 💡 Revoking `multiverseprogramming.turtle` from a player takes effect immediately: they will no longer be able to place Turtles or open any panel, even for Turtles they own.
+
+---
+
 ## Region Protection & Security
 
 The plugin automatically hooks into **WorldGuard** and **ProtectionStones** (without hard dependencies):

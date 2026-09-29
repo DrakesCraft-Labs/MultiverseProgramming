@@ -132,6 +132,38 @@ Todos los comandos usan el prefijo `/mvprog`.
 
 ---
 
+## Permisos
+
+El plugin registra **tres** nodos de permiso. Si usas un plugin de permisos (LuckPerms, PermissionsEx, etc.), concede estos nodos a tus rangos.
+
+| Nodo de permiso | Por defecto | Qué habilita |
+|---|---|---|
+| `multiverseprogramming.use` | `true` (todos los jugadores) | Acceso base: usar **computadoras** (abrir la interfaz, validar y ejecutar disquetes) y el comando `/mvprog` con sus subcomandos de jugador (`help`, `web`, `get`, `quota`, `bp ...`, `stop`, `turtle`), descargar esquemáticas y consultar cuotas de almacenamiento. |
+| `multiverseprogramming.turtle` | `true` (todos los jugadores) | Acceso a **tortugas**: colocar tortugas, abrir su panel de control, ejecutar scripts Lua en ellas, repostar combustible, usar el terminal de suministros y gestionar la lista de acceso de una tortuga de tu propiedad. |
+| `multiverseprogramming.admin` | `op` (operadores del servidor) | Acceso administrativo completo: `/mvprog build`, `give`, `reload`, `getbypass`, `bp clean`; ver y gestionar cuotas y esquemáticas de otros jugadores; detener o romper **cualquier** tortuga independientemente de su dueño; omitir la protección de regiones/reclamos. |
+
+### Herencia de permisos
+
+Los hijos están declarados en `plugin.yml`, así que conceder un nodo padre también concede sus hijos:
+
+- `multiverseprogramming.admin` → concede `multiverseprogramming.use` **y** `multiverseprogramming.turtle`.
+- `multiverseprogramming.use` → concede `multiverseprogramming.turtle`.
+
+Basta con conceder el nodo superior a un rango; no hace falta listar cada nodo por separado.
+
+### Propiedad por tortuga
+
+El nodo `multiverseprogramming.turtle` decide si un jugador puede interactuar con tortugas **en absoluto**. Además, cada tortuga aplica su propia propiedad:
+
+- El **dueño** (quien la colocó) siempre puede abrirla, operarla y romperla.
+- El dueño puede autorizar a otros jugadores desde el botón **Access Control** del panel; los autorizados pueden abrir y operar **esa** tortuga concreta.
+- **Romper / desmontar** una tortuga queda reservado a su dueño o a un administrador — los operadores autorizados no pueden desmontarla. Una tortuga sin dueño registrado solo puede eliminarla un administrador.
+- Los administradores (`multiverseprogramming.admin`) omiten todo lo anterior.
+
+> 💡 Si retiras `multiverseprogramming.turtle` a un jugador, el cambio es inmediato: ya no podrá colocar tortugas ni abrir ningún panel, ni siquiera de las tortugas que posea.
+
+---
+
 ## Seguridad y Protección de Regiones
 
 El plugin se integra automáticamente con **WorldGuard**, **ProtectionStones** y **CoreProtect**:
