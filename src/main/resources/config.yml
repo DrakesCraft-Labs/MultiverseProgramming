@@ -164,6 +164,13 @@ web-portal-bind-address: "0.0.0.0"
 # Players can open this link directly without port forwarding or manual setup.
 web-portal-public-url: "https://drakescraft-labs.github.io/MultiverseProgramming/"
 
+# Allow the Web Portal to dispatch builds, pause, and cancel tasks on Turtles remotely
+# (endpoints /api/build, /api/pause and /api/cancel).
+# SECURITY: those endpoints are unauthenticated, so while this is false (recommended) anyone
+# able to reach the HTTP port could otherwise control ANY Turtle by ID. Only enable this on
+# trusted or private setups, and keep the bind address on 127.0.0.1 where possible.
+web-portal-remote-dispatch: false
+
 # ===================================================================== #
 #                   Blueprint Security & Storage Quotas                 #
 # ===================================================================== #

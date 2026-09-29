@@ -301,6 +301,11 @@ public final class WebServerManager {
         }
     }
 
+    /** Response returned when remote dispatch is disabled (the secure default). */
+    private static final String REMOTE_DISPATCH_DISABLED_JSON =
+            "{\"ok\":false,\"error\":\"Remote build dispatch is disabled on this server. "
+                    + "Set 'web-portal-remote-dispatch: true' in config.yml to enable it.\"}";
+
     private class BuildHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
@@ -311,6 +316,11 @@ public final class WebServerManager {
 
             if (!"POST".equalsIgnoreCase(exchange.getRequestMethod())) {
                 sendJsonResponse(exchange, 405, "{\"error\":\"Method not allowed\"}");
+                return;
+            }
+
+            if (!plugin.getConfigManager().isWebPortalRemoteDispatch()) {
+                sendJsonResponse(exchange, 403, REMOTE_DISPATCH_DISABLED_JSON);
                 return;
             }
 
@@ -392,6 +402,11 @@ public final class WebServerManager {
             try {
                 String body = readBody(exchange);
                 JsonObject json = JsonParser.parseString(body).getAsJsonObject();
+                if (!plugin.getConfigManager().isWebPortalRemoteDispatch()) {
+                    sendJsonResponse(exchange, 403, REMOTE_DISPATCH_DISABLED_JSON);
+                    return;
+                }
+
                 String turtleId = json.get("turtleId").getAsString();
                 Turtle turtle = plugin.getTurtleManager().getTurtleById(turtleId);
                 if (turtle == null) {
@@ -426,6 +441,11 @@ public final class WebServerManager {
             try {
                 String body = readBody(exchange);
                 JsonObject json = JsonParser.parseString(body).getAsJsonObject();
+                if (!plugin.getConfigManager().isWebPortalRemoteDispatch()) {
+                    sendJsonResponse(exchange, 403, REMOTE_DISPATCH_DISABLED_JSON);
+                    return;
+                }
+
                 String turtleId = json.get("turtleId").getAsString();
                 Turtle turtle = plugin.getTurtleManager().getTurtleById(turtleId);
                 if (turtle == null) {

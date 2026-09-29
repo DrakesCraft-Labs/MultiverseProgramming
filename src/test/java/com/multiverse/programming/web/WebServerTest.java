@@ -120,6 +120,22 @@ class WebServerTest {
     }
 
     @Test
+    @DisplayName("POST /api/build is rejected with 403 while remote dispatch is disabled")
+    void testBuildDispatchDisabledByDefault() throws IOException, InterruptedException {
+        HttpClient client = HttpClient.newHttpClient();
+        String body = "{\"blueprintId\":\"BP-TEST\",\"turtleId\":\"T-001\",\"x\":0,\"y\":0,\"z\":0}";
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create("http://127.0.0.1:" + port + "/api/build"))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(body))
+                .build();
+
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        assertEquals(403, response.statusCode());
+        assertTrue(response.body().contains("disabled"), "Error body should explain the endpoint is disabled");
+    }
+
+    @Test
     @DisplayName("GET /api/turtles returns active online turtles in JSON")
     void testGetTurtles() throws IOException, InterruptedException {
         HttpClient client = HttpClient.newHttpClient();

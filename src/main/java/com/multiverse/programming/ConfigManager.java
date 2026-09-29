@@ -73,6 +73,11 @@ public final class ConfigManager {
     public static final int DEFAULT_WEB_PORTAL_PORT = 8080;
     public static final String DEFAULT_WEB_PORTAL_BIND = "0.0.0.0";
     public static final String DEFAULT_WEB_PORTAL_PUBLIC_URL = "https://drakescraft-labs.github.io/MultiverseProgramming/";
+    /**
+     * Remote build dispatch from the web portal is disabled by default because the endpoints are
+     * unauthenticated: anyone able to reach the HTTP port could control any Turtle.
+     */
+    public static final boolean DEFAULT_WEB_PORTAL_REMOTE_DISPATCH = false;
 
     public static final double DEFAULT_BLUEPRINT_PLAYER_QUOTA_MB = 15.0;
     public static final double DEFAULT_BLUEPRINT_MAX_FILE_SIZE_MB = 10.0;
@@ -144,6 +149,7 @@ public final class ConfigManager {
     private int webPortalPort = DEFAULT_WEB_PORTAL_PORT;
     private String webPortalBindAddress = DEFAULT_WEB_PORTAL_BIND;
     private String webPortalPublicUrl = DEFAULT_WEB_PORTAL_PUBLIC_URL;
+    private boolean webPortalRemoteDispatch = DEFAULT_WEB_PORTAL_REMOTE_DISPATCH;
 
     private double blueprintPlayerQuotaMb = DEFAULT_BLUEPRINT_PLAYER_QUOTA_MB;
     private double blueprintMaxFileSizeMb = DEFAULT_BLUEPRINT_MAX_FILE_SIZE_MB;
@@ -345,6 +351,7 @@ public final class ConfigManager {
         this.webPortalPublicUrl = (rawPublicUrl != null && !rawPublicUrl.isBlank())
                 ? rawPublicUrl.trim()
                 : DEFAULT_WEB_PORTAL_PUBLIC_URL;
+        this.webPortalRemoteDispatch = config.getBoolean("web-portal-remote-dispatch", DEFAULT_WEB_PORTAL_REMOTE_DISPATCH);
 
         double rawQuota = config.getDouble("blueprint-player-quota-mb", DEFAULT_BLUEPRINT_PLAYER_QUOTA_MB);
         this.blueprintPlayerQuotaMb = rawQuota > 0 ? rawQuota : DEFAULT_BLUEPRINT_PLAYER_QUOTA_MB;
@@ -484,6 +491,10 @@ public final class ConfigManager {
 
     public String getWebPortalPublicUrl() {
         return webPortalPublicUrl;
+    }
+
+    public boolean isWebPortalRemoteDispatch() {
+        return webPortalRemoteDispatch;
     }
 
     public double getBlueprintPlayerQuotaMb() {
