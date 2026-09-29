@@ -15,6 +15,14 @@ permissions:
   multiverseprogramming.use:
     description: Allows using computers, web portal, downloading blueprints and checking quota
     default: true
+    children:
+      multiverseprogramming.turtle: true
+  multiverseprogramming.turtle:
+    description: Allows opening and operating programmable Turtles (control panel, supply terminal)
+    default: true
   multiverseprogramming.admin:
     description: Full administrative access (bypass, give, reload, build, purge, view others' quotas)
     default: op
+    children:
+      multiverseprogramming.use: true
+      multiverseprogramming.turtle: true

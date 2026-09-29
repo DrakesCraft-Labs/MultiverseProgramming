@@ -170,6 +170,7 @@ class TurtleListenerTest {
 
         Player player = mock(Player.class);
         when(player.getLocation()).thenReturn(loc);
+        when(player.hasPermission(TurtleListener.PERMISSION_TURTLE)).thenReturn(true);
 
         org.bukkit.event.player.PlayerInteractEvent event = new org.bukkit.event.player.PlayerInteractEvent(
                 player,
@@ -242,6 +243,67 @@ class TurtleListenerTest {
         assertTrue(event.isCancelled());
         verify(mockTurtle).stopAnyWork();
         verify(player).sendMessage(contains("Stopped active task for Turtle T-001"));
+    }
+
+    @Test
+    @DisplayName("A regular player with the turtle permission opens the Turtle control panel")
+    void testRegularPlayerOpensTurtleGUI() {
+        Location loc = new Location(mockWorld, 5, 64, 5);
+        Block block = mock(Block.class);
+        when(block.getLocation()).thenReturn(loc);
+        when(block.getType()).thenReturn(Material.DISPENSER);
+
+        Turtle mockTurtle = mock(Turtle.class);
+        when(mockTurtle.getId()).thenReturn("T-001");
+        when(mockTurtle.getStatus()).thenReturn(Turtle.Status.IDLE);
+        when(mockTurtle.getStatusMessage()).thenReturn("Idle");
+        when(mockTurtleManager.getTurtle(loc)).thenReturn(mockTurtle);
+
+        Player player = mock(Player.class);
+        when(player.hasPermission(TurtleListener.PERMISSION_TURTLE)).thenReturn(true);
+
+        org.bukkit.event.player.PlayerInteractEvent event = new org.bukkit.event.player.PlayerInteractEvent(
+                player,
+                org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK,
+                null,
+                block,
+                org.bukkit.block.BlockFace.UP,
+                org.bukkit.inventory.EquipmentSlot.HAND
+        );
+        listener.onTurtleInteract(event);
+
+        assertTrue(event.isCancelled());
+        verify(player).openInventory(any(Inventory.class));
+    }
+
+    @Test
+    @DisplayName("A player without the turtle permission is denied and no GUI opens")
+    void testPlayerWithoutTurtlePermissionIsDenied() {
+        Location loc = new Location(mockWorld, 5, 64, 5);
+        Block block = mock(Block.class);
+        when(block.getLocation()).thenReturn(loc);
+        when(block.getType()).thenReturn(Material.DISPENSER);
+
+        Turtle mockTurtle = mock(Turtle.class);
+        when(mockTurtle.getId()).thenReturn("T-001");
+        when(mockTurtleManager.getTurtle(loc)).thenReturn(mockTurtle);
+
+        Player player = mock(Player.class);
+        when(player.hasPermission(TurtleListener.PERMISSION_TURTLE)).thenReturn(false);
+
+        org.bukkit.event.player.PlayerInteractEvent event = new org.bukkit.event.player.PlayerInteractEvent(
+                player,
+                org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK,
+                null,
+                block,
+                org.bukkit.block.BlockFace.UP,
+                org.bukkit.inventory.EquipmentSlot.HAND
+        );
+        listener.onTurtleInteract(event);
+
+        assertTrue(event.isCancelled(), "Interaction must be swallowed so the turtle block is not used as a container");
+        verify(player, never()).openInventory(any(Inventory.class));
+        verify(player).sendMessage(contains("don't have permission to use Turtles"));
     }
 
     @Test

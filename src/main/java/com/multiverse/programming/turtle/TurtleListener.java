@@ -40,6 +40,12 @@ import java.util.function.Consumer;
  */
 public final class TurtleListener implements Listener {
 
+    /**
+     * Permission required to open and operate a Turtle's control panel or supply terminal.
+     * Must stay in sync with the permission declared in plugin.yml (default: true).
+     */
+    public static final String PERMISSION_TURTLE = "multiverseprogramming.turtle";
+
     private final MultiverseProgrammingPlugin plugin;
 
     public TurtleListener(MultiverseProgrammingPlugin plugin) {
@@ -134,6 +140,10 @@ public final class TurtleListener implements Listener {
                 Turtle turtle = plugin.getTurtleManager().getTurtleByTerminal(block.getLocation());
                 if (turtle != null) {
                     event.setCancelled(true);
+                    if (!event.getPlayer().hasPermission(PERMISSION_TURTLE)) {
+                        event.getPlayer().sendMessage(plugin.getPrefix() + " §cYou don't have permission to use Turtles.");
+                        return;
+                    }
                     SupplyStationGUI.open(event.getPlayer(), turtle);
                     return;
                 }
@@ -185,7 +195,7 @@ public final class TurtleListener implements Listener {
             return;
         }
 
-        if (!player.hasPermission("multiverseprogramming.turtle")) {
+        if (!player.hasPermission(PERMISSION_TURTLE)) {
             player.sendMessage(plugin.getPrefix() + " §cYou don't have permission to use Turtles.");
             return;
         }
