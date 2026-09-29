@@ -27,6 +27,7 @@ import org.bukkit.scheduler.BukkitTask;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -66,6 +67,7 @@ public final class Turtle {
     private int selectedSlot; // 0 to 15
     private final ItemStack[] inventory = new ItemStack[16];
     private ItemStack disk;
+    private final Set<UUID> authorizedPlayers = new LinkedHashSet<>();
     private Status status = Status.IDLE;
     private String statusMessage = "Idle";
 
@@ -149,6 +151,43 @@ public final class Turtle {
 
     public void setOwner(UUID owner) {
         this.owner = owner;
+    }
+
+    public synchronized boolean isOwner(UUID uuid) {
+        return uuid != null && uuid.equals(owner);
+    }
+
+    /**
+     * Players explicitly authorized by the owner to open and operate this Turtle.
+     */
+    public synchronized List<UUID> getAuthorizedPlayers() {
+        return new ArrayList<>(authorizedPlayers);
+    }
+
+    /**
+     * Whether the given player may open and operate this Turtle.
+     * An unclaimed Turtle (no owner) stays open to anyone holding the base permission,
+     * preserving the previous behaviour for turtles restored without an owner.
+     */
+    public synchronized boolean isAccessAllowed(UUID uuid) {
+        if (owner == null) return true;
+        if (uuid == null) return false;
+        return owner.equals(uuid) || authorizedPlayers.contains(uuid);
+    }
+
+    /**
+     * Authorizes a player to operate this Turtle. The owner is always allowed and
+     * cannot be added again.
+     *
+     * @return true if the player was newly authorized, false if already authorized or invalid
+     */
+    public synchronized boolean addAuthorized(UUID uuid) {
+        if (uuid == null || uuid.equals(owner)) return false;
+        return authorizedPlayers.add(uuid);
+    }
+
+    public synchronized boolean removeAuthorized(UUID uuid) {
+        return uuid != null && authorizedPlayers.remove(uuid);
     }
 
     public String getOwnerName() {

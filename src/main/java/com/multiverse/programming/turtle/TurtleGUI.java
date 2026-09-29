@@ -28,6 +28,7 @@ public final class TurtleGUI implements InventoryHolder {
     public static final int WEB_BUTTON_SLOT = 2;
     public static final int BUILD_BUTTON_SLOT = 3;
     public static final int FUEL_SLOT = 4;
+    public static final int ACCESS_BUTTON_SLOT = 5;
 
     // Classic 4x4 Grid in double chest GUI
     public static final int[] TURTLE_SLOTS = {
@@ -123,7 +124,19 @@ public final class TurtleGUI implements InventoryHolder {
                 List.of("§7Click with coal or lava to refuel.")
         ));
 
-        // 6. Populate 16 Turtle Inventory Slots
+        // 6. Access Control Button (owner only)
+        inventory.setItem(ACCESS_BUTTON_SLOT, createItem(
+                Material.PLAYER_HEAD,
+                "§d👥 Access Control",
+                List.of(
+                        "§7Authorize other players to open",
+                        "§7and operate this Turtle.",
+                        "§8Owner only.",
+                        "§d▶ Click to manage access"
+                )
+        ));
+
+        // 7. Populate 16 Turtle Inventory Slots
         for (int i = 0; i < 16; i++) {
             int guiSlot = TURTLE_SLOTS[i];
             ItemStack item = turtle.getItem(i);

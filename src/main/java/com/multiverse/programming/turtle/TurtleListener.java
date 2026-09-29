@@ -33,6 +33,7 @@ import org.luaj.vm2.LuaError;
 import org.luaj.vm2.LuaValue;
 
 import java.util.Objects;
+import java.util.UUID;
 import java.util.function.Consumer;
 
 /**
@@ -45,6 +46,9 @@ public final class TurtleListener implements Listener {
      * Must stay in sync with the permission declared in plugin.yml (default: true).
      */
     public static final String PERMISSION_TURTLE = "multiverseprogramming.turtle";
+
+    /** Whether a player may bypass per-Turtle ownership/authorization checks. */
+    public static final String PERMISSION_ADMIN = "multiverseprogramming.admin";
 
     private final MultiverseProgrammingPlugin plugin;
 
@@ -83,6 +87,11 @@ public final class TurtleListener implements Listener {
         Player player = event.getPlayer();
         if (!plugin.getConfigManager().isEnableTurtle()) {
             player.sendMessage(plugin.getPrefix() + " §cTurtles are currently disabled by the server administration.");
+            event.setCancelled(true);
+            return;
+        }
+        if (!player.hasPermission(PERMISSION_TURTLE)) {
+            player.sendMessage(plugin.getPrefix() + " §cYou don't have permission to place Turtles.");
             event.setCancelled(true);
             return;
         }
@@ -139,12 +148,17 @@ public final class TurtleListener implements Listener {
             if (plugin.getTurtleManager() != null) {
                 Turtle turtle = plugin.getTurtleManager().getTurtleByTerminal(block.getLocation());
                 if (turtle != null) {
+                    Player terminalPlayer = event.getPlayer();
                     event.setCancelled(true);
-                    if (!event.getPlayer().hasPermission(PERMISSION_TURTLE)) {
-                        event.getPlayer().sendMessage(plugin.getPrefix() + " §cYou don't have permission to use Turtles.");
+                    if (!terminalPlayer.hasPermission(PERMISSION_TURTLE)) {
+                        terminalPlayer.sendMessage(plugin.getPrefix() + " §cYou don't have permission to use Turtles.");
                         return;
                     }
-                    SupplyStationGUI.open(event.getPlayer(), turtle);
+                    if (!canOperate(turtle, terminalPlayer)) {
+                        terminalPlayer.sendMessage(plugin.getPrefix() + " §cOnly the owner or players authorized by the owner can operate this Turtle.");
+                        return;
+                    }
+                    SupplyStationGUI.open(terminalPlayer, turtle);
                     return;
                 }
             }
@@ -200,6 +214,11 @@ public final class TurtleListener implements Listener {
             return;
         }
 
+        if (!canOperate(turtle, player)) {
+            player.sendMessage(plugin.getPrefix() + " §cOnly the owner or players authorized by the owner can operate this Turtle.");
+            return;
+        }
+
         TurtleGUI gui = new TurtleGUI(turtle);
         player.openInventory(gui.getInventory());
     }
@@ -225,6 +244,11 @@ public final class TurtleListener implements Listener {
             }
             if (turtle == null) return;
             Player player = (Player) event.getWhoClicked();
+            if (!canOperate(turtle, player)) {
+                player.closeInventory();
+                player.sendMessage(plugin.getPrefix() + " §cOnly the owner or players authorized by the owner can operate this Turtle.");
+                return;
+            }
 
             if (rawSlot == SupplyStationGUI.SLOT_RESUME) {
                 boolean resumed = turtle.revalidateAndResume();
@@ -257,6 +281,11 @@ public final class TurtleListener implements Listener {
             return;
         }
 
+        if (top != null && top.getHolder() instanceof TurtleAccessHolder access) {
+            handleAccessClick(event, top, access.getTurtle());
+            return;
+        }
+
         if (!(top.getHolder() instanceof TurtleGUI gui)) {
             return;
         }
@@ -271,6 +300,15 @@ public final class TurtleListener implements Listener {
             Turtle turtle = gui.getTurtle();
             Player player = (Player) event.getWhoClicked();
 
+            // Defense-in-depth: re-validate that the clicker may operate this Turtle, even though
+            // the panel can normally only be opened through the already-gated interaction path.
+            if (!canOperate(turtle, player)) {
+                event.setCancelled(true);
+                player.closeInventory();
+                player.sendMessage(plugin.getPrefix() + " §cOnly the owner or players authorized by the owner can operate this Turtle.");
+                return;
+            }
+
             // Run Button
             if (rawSlot == TurtleGUI.RUN_BUTTON_SLOT) {
                 event.setCancelled(true);
@@ -282,6 +320,13 @@ public final class TurtleListener implements Listener {
             if (rawSlot == TurtleGUI.WEB_BUTTON_SLOT) {
                 event.setCancelled(true);
                 handleWebButton(player, turtle);
+                return;
+            }
+
+            // Access Control Button (owner only)
+            if (rawSlot == TurtleGUI.ACCESS_BUTTON_SLOT) {
+                event.setCancelled(true);
+                handleAccessButton(player, turtle);
                 return;
             }
 
@@ -397,6 +442,89 @@ public final class TurtleListener implements Listener {
         turtle.setRunningScript(program);
     }
 
+    /**
+     * Handles clicks inside the owner-only access control GUI: clicking an authorized
+     * player revokes access, clicking an online player grants it.
+     */
+    private void handleAccessClick(InventoryClickEvent event, Inventory top, Turtle turtle) {
+        event.setCancelled(true);
+        if (turtle == null || top == null) return;
+        if (!(event.getWhoClicked() instanceof Player player)) return;
+        if (event.getRawSlot() < 0) return;
+
+        if (!player.hasPermission(PERMISSION_ADMIN) && !turtle.isOwner(player.getUniqueId())) {
+            player.sendMessage(plugin.getPrefix() + " §cOnly the owner can manage who may operate this Turtle.");
+            return;
+        }
+
+        UUID target = TurtleAccessGUI.readTargetUuid(event.getCurrentItem());
+        if (target == null) return;
+
+        int raw = event.getRawSlot();
+        if (raw >= TurtleAccessGUI.FIRST_AUTHORIZED_SLOT
+                && raw < TurtleAccessGUI.FIRST_AUTHORIZED_SLOT + TurtleAccessGUI.AUTHORIZED_SLOTS) {
+            if (turtle.removeAuthorized(target)) {
+                markTurtleDirty();
+                player.sendMessage(plugin.getPrefix() + " §e" + TurtleAccessGUI.nameOf(target)
+                        + " §7can no longer operate this Turtle.");
+                TurtleAccessGUI.refresh(top, turtle);
+            }
+            return;
+        }
+
+        if (raw >= TurtleAccessGUI.FIRST_ONLINE_SLOT && raw < TurtleAccessGUI.SIZE) {
+            if (turtle.addAuthorized(target)) {
+                markTurtleDirty();
+                player.sendMessage(plugin.getPrefix() + " §a" + TurtleAccessGUI.nameOf(target)
+                        + " §7can now open and operate this Turtle.");
+                Player online = Bukkit.getPlayer(target);
+                if (online != null && online.isOnline()) {
+                    online.sendMessage(plugin.getPrefix() + " §aYou were authorized to operate Turtle §e"
+                            + turtle.getId() + "§a by §f" + player.getName() + "§a.");
+                }
+                TurtleAccessGUI.refresh(top, turtle);
+            } else {
+                player.sendMessage(plugin.getPrefix() + " §eThat player is already authorized.");
+            }
+        }
+    }
+
+    private void handleAccessButton(Player player, Turtle turtle) {
+        if (!player.hasPermission(PERMISSION_ADMIN) && !turtle.isOwner(player.getUniqueId())) {
+            player.sendMessage(plugin.getPrefix() + " §cOnly the owner can manage who may operate this Turtle.");
+            return;
+        }
+        if (turtle.getOwner() == null) {
+            player.sendMessage(plugin.getPrefix() + " §eThis Turtle has no registered owner, so access is open to everyone with permission.");
+            return;
+        }
+        TurtleAccessGUI.open(player, turtle);
+    }
+
+    /**
+     * Whether the given player may open and operate the Turtle (owner, an authorized
+     * player, or an administrator).
+     */
+    private boolean canOperate(Turtle turtle, Player player) {
+        if (player.hasPermission(PERMISSION_ADMIN)) return true;
+        return turtle.isAccessAllowed(player.getUniqueId());
+    }
+
+    /**
+     * Whether the given player may break/disassemble the Turtle: its owner or an administrator.
+     * Unclaimed turtles (no owner) can only be removed by administrators.
+     */
+    private boolean canBreakTurtle(Turtle turtle, Player player) {
+        if (player.hasPermission(PERMISSION_ADMIN)) return true;
+        return turtle.getOwner() != null && turtle.getOwner().equals(player.getUniqueId());
+    }
+
+    private void markTurtleDirty() {
+        if (plugin.getTurtleManager() != null) {
+            plugin.getTurtleManager().markDirty();
+        }
+    }
+
     private void handleWebButton(Player player, Turtle turtle) {
         String webUrl = plugin.getConfigManager().getWebPortalPublicUrl();
         if (webUrl == null || webUrl.isBlank()) {
@@ -413,6 +541,11 @@ public final class TurtleListener implements Listener {
 
     @EventHandler
     public void onInventoryDrag(InventoryDragEvent event) {
+        Inventory dragTop = event.getView().getTopInventory();
+        if (dragTop != null && dragTop.getHolder() instanceof TurtleAccessHolder) {
+            event.setCancelled(true);
+            return;
+        }
         if (event.getView().getTitle().startsWith(SupplyStationGUI.TITLE_PREFIX)) {
             for (int slot : event.getRawSlots()) {
                 if (slot < SupplyStationGUI.SIZE) {
@@ -487,12 +620,10 @@ public final class TurtleListener implements Listener {
         }
 
         Player player = event.getPlayer();
-        if (!player.hasPermission("multiverseprogramming.admin")) {
-            if (turtle.getOwner() != null && !turtle.getOwner().equals(player.getUniqueId())) {
-                player.sendMessage(plugin.getPrefix() + " §cYou cannot break a Turtle owned by another player!");
-                event.setCancelled(true);
-                return;
-            }
+        if (!canBreakTurtle(turtle, player)) {
+            player.sendMessage(plugin.getPrefix() + " §cYou cannot break this Turtle: only its owner or an administrator may do so.");
+            event.setCancelled(true);
+            return;
         }
 
         plugin.getTurtleManager().removeTurtle(turtle.getLocation());

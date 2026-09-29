@@ -61,6 +61,44 @@ class TurtleTest {
     }
 
     @Test
+    @DisplayName("Owner can authorize and revoke other players")
+    void testTurtleAccessAuthorization() {
+        UUID owner = UUID.randomUUID();
+        UUID ally = UUID.randomUUID();
+        Turtle turtle = new Turtle(mockPlugin, "T-001", startLoc, BlockFace.NORTH, owner);
+
+        assertTrue(turtle.isOwner(owner));
+        assertFalse(turtle.isOwner(ally));
+        assertTrue(turtle.isAccessAllowed(owner), "Owner must always have access");
+        assertFalse(turtle.isAccessAllowed(ally), "Unauthorized players must not have access");
+
+        assertTrue(turtle.addAuthorized(ally));
+        assertTrue(turtle.isAccessAllowed(ally));
+        assertEquals(java.util.List.of(ally), turtle.getAuthorizedPlayers());
+
+        assertFalse(turtle.addAuthorized(ally), "Adding the same player twice must return false");
+        assertFalse(turtle.addAuthorized(owner), "Owner cannot be added to the allow-list");
+        assertFalse(turtle.addAuthorized(null));
+
+        assertTrue(turtle.removeAuthorized(ally));
+        assertFalse(turtle.isAccessAllowed(ally));
+        assertFalse(turtle.removeAuthorized(ally), "Revoking twice returns false");
+    }
+
+    @Test
+    @DisplayName("Unclaimed turtle (no owner) stays open; owned turtle denies strangers")
+    void testTurtleAccessUnclaimedVsOwned() {
+        Turtle unclaimed = new Turtle(mockPlugin, "T-002", startLoc, BlockFace.NORTH, null);
+        assertTrue(unclaimed.isAccessAllowed(UUID.randomUUID()));
+
+        UUID owner = UUID.randomUUID();
+        Turtle owned = new Turtle(mockPlugin, "T-003", startLoc, BlockFace.NORTH, owner);
+        assertFalse(owned.isAccessAllowed(null));
+        assertFalse(owned.isAccessAllowed(UUID.randomUUID()));
+        assertTrue(owned.isAccessAllowed(owner));
+    }
+
+    @Test
     @DisplayName("Turtle turn left and right cycles facing directions")
     void testTurtleRotation() {
         Turtle turtle = new Turtle(mockPlugin, "T-001", startLoc, BlockFace.NORTH, null);

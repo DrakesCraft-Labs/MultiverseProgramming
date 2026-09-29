@@ -3,6 +3,7 @@ package com.multiverse.programming.turtle;
 
 import com.multiverse.programming.BukkitMockHelper;
 import com.multiverse.programming.ConfigManager;
+import com.multiverse.programming.DiskManager;
 import com.multiverse.programming.MultiverseProgrammingPlugin;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -13,6 +14,10 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockExplodeEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.InventoryView;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -20,6 +25,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -34,7 +40,8 @@ class TurtleListenerTest {
 
     @BeforeEach
     void setUp() {
-        BukkitMockHelper.setUpMockServer();
+        org.bukkit.Server server = BukkitMockHelper.setUpMockServer();
+        doReturn(new ArrayList<Player>()).when(server).getOnlinePlayers();
         mockPlugin = mock(MultiverseProgrammingPlugin.class);
         when(mockPlugin.getPrefix()).thenReturn("§8[§bMVP§8]§r");
 
@@ -167,6 +174,7 @@ class TurtleListenerTest {
         Turtle mockTurtle = mock(Turtle.class);
         when(mockTurtle.getId()).thenReturn("T-001");
         when(mockTurtleManager.getTurtleByTerminal(loc)).thenReturn(mockTurtle);
+        when(mockTurtle.isAccessAllowed(any())).thenReturn(true);
 
         Player player = mock(Player.class);
         when(player.getLocation()).thenReturn(loc);
@@ -191,6 +199,7 @@ class TurtleListenerTest {
         Turtle mockTurtle = mock(Turtle.class);
         when(mockTurtle.getId()).thenReturn("T-001");
         when(mockTurtle.revalidateAndResume()).thenReturn(true);
+        when(mockTurtle.isAccessAllowed(any())).thenReturn(true);
         when(mockTurtleManager.getTurtleById("T-001")).thenReturn(mockTurtle);
 
         Player player = mock(Player.class);
@@ -221,6 +230,7 @@ class TurtleListenerTest {
         Turtle mockTurtle = mock(Turtle.class);
         when(mockTurtle.getId()).thenReturn("T-001");
         when(mockTurtle.stopAnyWork()).thenReturn(true);
+        when(mockTurtle.isAccessAllowed(any())).thenReturn(true);
         when(mockTurtleManager.getTurtleById("T-001")).thenReturn(mockTurtle);
 
         Player player = mock(Player.class);
@@ -257,6 +267,7 @@ class TurtleListenerTest {
         when(mockTurtle.getId()).thenReturn("T-001");
         when(mockTurtle.getStatus()).thenReturn(Turtle.Status.IDLE);
         when(mockTurtle.getStatusMessage()).thenReturn("Idle");
+        when(mockTurtle.isAccessAllowed(any())).thenReturn(true);
         when(mockTurtleManager.getTurtle(loc)).thenReturn(mockTurtle);
 
         Player player = mock(Player.class);
@@ -304,6 +315,332 @@ class TurtleListenerTest {
         assertTrue(event.isCancelled(), "Interaction must be swallowed so the turtle block is not used as a container");
         verify(player, never()).openInventory(any(Inventory.class));
         verify(player).sendMessage(contains("don't have permission to use Turtles"));
+    }
+
+    @Test
+    @DisplayName("The Turtle owner can open the control panel")
+    void testOwnerOpensTurtleGUI() {
+        Location loc = new Location(mockWorld, 5, 64, 5);
+        Block block = mock(Block.class);
+        when(block.getLocation()).thenReturn(loc);
+        when(block.getType()).thenReturn(Material.DISPENSER);
+
+        UUID ownerUuid = UUID.randomUUID();
+        Turtle mockTurtle = mock(Turtle.class);
+        when(mockTurtle.getId()).thenReturn("T-001");
+        when(mockTurtle.getOwner()).thenReturn(ownerUuid);
+        when(mockTurtle.getStatus()).thenReturn(Turtle.Status.IDLE);
+        when(mockTurtle.getStatusMessage()).thenReturn("Idle");
+        when(mockTurtle.isAccessAllowed(ownerUuid)).thenReturn(true);
+        when(mockTurtleManager.getTurtle(loc)).thenReturn(mockTurtle);
+
+        Player owner = mock(Player.class);
+        when(owner.getUniqueId()).thenReturn(ownerUuid);
+        when(owner.hasPermission(TurtleListener.PERMISSION_TURTLE)).thenReturn(true);
+        when(owner.hasPermission(TurtleListener.PERMISSION_ADMIN)).thenReturn(false);
+
+        org.bukkit.event.player.PlayerInteractEvent event = new org.bukkit.event.player.PlayerInteractEvent(
+                owner,
+                org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK,
+                null,
+                block,
+                org.bukkit.block.BlockFace.UP,
+                org.bukkit.inventory.EquipmentSlot.HAND
+        );
+        listener.onTurtleInteract(event);
+
+        assertTrue(event.isCancelled());
+        verify(owner).openInventory(any(Inventory.class));
+    }
+
+    @Test
+    @DisplayName("A player authorized by the owner can open the control panel")
+    void testAuthorizedPlayerOpensTurtleGUI() {
+        Location loc = new Location(mockWorld, 5, 64, 5);
+        Block block = mock(Block.class);
+        when(block.getLocation()).thenReturn(loc);
+        when(block.getType()).thenReturn(Material.DISPENSER);
+
+        UUID ownerUuid = UUID.randomUUID();
+        UUID allyUuid = UUID.randomUUID();
+        Turtle mockTurtle = mock(Turtle.class);
+        when(mockTurtle.getId()).thenReturn("T-001");
+        when(mockTurtle.getOwner()).thenReturn(ownerUuid);
+        when(mockTurtle.getStatus()).thenReturn(Turtle.Status.IDLE);
+        when(mockTurtle.getStatusMessage()).thenReturn("Idle");
+        when(mockTurtle.isAccessAllowed(allyUuid)).thenReturn(true);
+        when(mockTurtleManager.getTurtle(loc)).thenReturn(mockTurtle);
+
+        Player ally = mock(Player.class);
+        when(ally.getUniqueId()).thenReturn(allyUuid);
+        when(ally.hasPermission(TurtleListener.PERMISSION_TURTLE)).thenReturn(true);
+        when(ally.hasPermission(TurtleListener.PERMISSION_ADMIN)).thenReturn(false);
+
+        org.bukkit.event.player.PlayerInteractEvent event = new org.bukkit.event.player.PlayerInteractEvent(
+                ally,
+                org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK,
+                null,
+                block,
+                org.bukkit.block.BlockFace.UP,
+                org.bukkit.inventory.EquipmentSlot.HAND
+        );
+        listener.onTurtleInteract(event);
+
+        assertTrue(event.isCancelled());
+        verify(ally).openInventory(any(Inventory.class));
+    }
+
+    @Test
+    @DisplayName("A player who is neither owner nor authorized is denied")
+    void testUnauthorizedPlayerDenied() {
+        Location loc = new Location(mockWorld, 5, 64, 5);
+        Block block = mock(Block.class);
+        when(block.getLocation()).thenReturn(loc);
+        when(block.getType()).thenReturn(Material.DISPENSER);
+
+        UUID ownerUuid = UUID.randomUUID();
+        UUID strangerUuid = UUID.randomUUID();
+        Turtle mockTurtle = mock(Turtle.class);
+        when(mockTurtle.getId()).thenReturn("T-001");
+        when(mockTurtle.getOwner()).thenReturn(ownerUuid);
+        when(mockTurtle.isAccessAllowed(strangerUuid)).thenReturn(false);
+        when(mockTurtleManager.getTurtle(loc)).thenReturn(mockTurtle);
+
+        Player stranger = mock(Player.class);
+        when(stranger.getUniqueId()).thenReturn(strangerUuid);
+        when(stranger.hasPermission(TurtleListener.PERMISSION_TURTLE)).thenReturn(true);
+        when(stranger.hasPermission(TurtleListener.PERMISSION_ADMIN)).thenReturn(false);
+
+        org.bukkit.event.player.PlayerInteractEvent event = new org.bukkit.event.player.PlayerInteractEvent(
+                stranger,
+                org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK,
+                null,
+                block,
+                org.bukkit.block.BlockFace.UP,
+                org.bukkit.inventory.EquipmentSlot.HAND
+        );
+        listener.onTurtleInteract(event);
+
+        assertTrue(event.isCancelled());
+        verify(stranger, never()).openInventory(any(Inventory.class));
+        verify(stranger).sendMessage(contains("authorized by the owner"));
+    }
+
+    @Test
+    @DisplayName("Owner clicking an online player in the access GUI authorizes them")
+    void testOwnerAuthorizesPlayerViaAccessGUI() {
+        UUID ownerUuid = UUID.randomUUID();
+        UUID targetUuid = UUID.randomUUID();
+
+        Turtle mockTurtle = mock(Turtle.class);
+        when(mockTurtle.getId()).thenReturn("T-001");
+        when(mockTurtle.getOwner()).thenReturn(ownerUuid);
+        when(mockTurtle.getOwnerName()).thenReturn("Owner");
+        when(mockTurtle.isOwner(ownerUuid)).thenReturn(true);
+        when(mockTurtle.getAuthorizedPlayers()).thenReturn(new ArrayList<>());
+        when(mockTurtle.addAuthorized(targetUuid)).thenReturn(true);
+
+        TurtleAccessHolder holder = new TurtleAccessHolder(mockTurtle);
+        Inventory mockInv = mock(Inventory.class);
+        holder.setInventory(mockInv);
+        when(mockInv.getHolder()).thenReturn(holder);
+
+        Player owner = mock(Player.class);
+        when(owner.getUniqueId()).thenReturn(ownerUuid);
+        when(owner.hasPermission(TurtleListener.PERMISSION_ADMIN)).thenReturn(false);
+        when(owner.getName()).thenReturn("Owner");
+
+        ItemStack head = mock(ItemStack.class);
+        when(head.getType()).thenReturn(Material.PLAYER_HEAD);
+        ItemMeta headMeta = BukkitMockHelper.createMockItemMeta(Material.PLAYER_HEAD);
+        headMeta.getPersistentDataContainer().set(TurtleAccessGUI.ACCESS_UUID_KEY, PersistentDataType.STRING, targetUuid.toString());
+        when(head.getItemMeta()).thenReturn(headMeta);
+
+        InventoryView view = mock(InventoryView.class);
+        when(view.getTopInventory()).thenReturn(mockInv);
+        when(view.getTitle()).thenReturn(TurtleAccessGUI.TITLE_PREFIX + "T-001");
+        when(view.getPlayer()).thenReturn(owner);
+
+        org.bukkit.event.inventory.InventoryClickEvent event = mock(org.bukkit.event.inventory.InventoryClickEvent.class);
+        when(event.getView()).thenReturn(view);
+        when(event.getWhoClicked()).thenReturn(owner);
+        when(event.getRawSlot()).thenReturn(TurtleAccessGUI.FIRST_ONLINE_SLOT);
+        when(event.getCurrentItem()).thenReturn(head);
+
+        listener.onInventoryClick(event);
+
+        verify(mockTurtle).addAuthorized(targetUuid);
+        verify(owner).sendMessage(contains("can now open and operate this Turtle"));
+    }
+
+    @Test
+    @DisplayName("Placing a Turtle without the turtle permission is denied")
+    void testTurtlePlaceDeniedWithoutPermission() {
+        org.bukkit.inventory.ItemStack turtleItem = DiskManager.createTurtle(Material.DISPENSER);
+        Block block = mock(Block.class);
+        when(block.getType()).thenReturn(Material.DISPENSER);
+
+        Player player = mock(Player.class);
+        when(player.getLocation()).thenReturn(new Location(mockWorld, 0, 64, 0));
+        when(player.hasPermission(TurtleListener.PERMISSION_TURTLE)).thenReturn(false);
+
+        org.bukkit.event.block.BlockPlaceEvent event = new org.bukkit.event.block.BlockPlaceEvent(
+                block,
+                mock(org.bukkit.block.BlockState.class),
+                mock(Block.class),
+                turtleItem,
+                player,
+                true,
+                org.bukkit.inventory.EquipmentSlot.HAND
+        );
+        listener.onTurtlePlace(event);
+
+        assertTrue(event.isCancelled());
+        verify(mockTurtleManager, never()).createTurtle(any(), any(), any());
+        verify(player).sendMessage(contains("don't have permission to place Turtles"));
+    }
+
+    @Test
+    @DisplayName("Placing a Turtle with the turtle permission is allowed")
+    void testTurtlePlaceAllowedWithPermission() {
+        org.bukkit.inventory.ItemStack turtleItem = DiskManager.createTurtle(Material.DISPENSER);
+        Block block = mock(Block.class);
+        when(block.getType()).thenReturn(Material.DISPENSER);
+
+        Turtle mockTurtle = mock(Turtle.class);
+        when(mockTurtle.getId()).thenReturn("T-001");
+        when(mockTurtleManager.createTurtle(any(), any(), any())).thenReturn(mockTurtle);
+
+        Player player = mock(Player.class);
+        when(player.getUniqueId()).thenReturn(UUID.randomUUID());
+        when(player.getLocation()).thenReturn(new Location(mockWorld, 0, 64, 0));
+        when(player.hasPermission(TurtleListener.PERMISSION_TURTLE)).thenReturn(true);
+
+        org.bukkit.event.block.BlockPlaceEvent event = new org.bukkit.event.block.BlockPlaceEvent(
+                block,
+                mock(org.bukkit.block.BlockState.class),
+                mock(Block.class),
+                turtleItem,
+                player,
+                true,
+                org.bukkit.inventory.EquipmentSlot.HAND
+        );
+        listener.onTurtlePlace(event);
+
+        assertFalse(event.isCancelled());
+        verify(mockTurtleManager).createTurtle(any(), any(), any());
+        verify(player).sendMessage(contains("placed"));
+    }
+
+    @Test
+    @DisplayName("The owner can break and disassemble their own Turtle")
+    void testOwnerBreaksTurtle() {
+        Location loc = new Location(mockWorld, 10, 64, 10);
+        Block block = mock(Block.class);
+        when(block.getLocation()).thenReturn(loc);
+        when(block.getType()).thenReturn(Material.DISPENSER);
+        when(block.getWorld()).thenReturn(mockWorld);
+
+        UUID ownerUuid = UUID.randomUUID();
+        Turtle mockTurtle = turtleOwnedBy(ownerUuid, "T-001");
+        when(mockTurtleManager.getTurtle(loc)).thenReturn(mockTurtle);
+
+        Player owner = mock(Player.class);
+        when(owner.getUniqueId()).thenReturn(ownerUuid);
+        when(owner.hasPermission(TurtleListener.PERMISSION_ADMIN)).thenReturn(false);
+        when(owner.isSneaking()).thenReturn(false);
+        when(owner.getLocation()).thenReturn(loc);
+
+        BlockBreakEvent event = new BlockBreakEvent(block, owner);
+        listener.onBlockBreak(event);
+
+        assertFalse(event.isCancelled());
+        verify(mockTurtleManager).removeTurtle(any());
+        verify(owner).sendMessage(contains("disassembled"));
+    }
+
+    @Test
+    @DisplayName("A stranger cannot break someone else's Turtle")
+    void testStrangerCannotBreakTurtle() {
+        Location loc = new Location(mockWorld, 10, 64, 10);
+        Block block = mock(Block.class);
+        when(block.getLocation()).thenReturn(loc);
+        when(block.getType()).thenReturn(Material.DISPENSER);
+
+        Turtle mockTurtle = turtleOwnedBy(UUID.randomUUID(), "T-001");
+        when(mockTurtleManager.getTurtle(loc)).thenReturn(mockTurtle);
+
+        Player stranger = mock(Player.class);
+        when(stranger.getUniqueId()).thenReturn(UUID.randomUUID());
+        when(stranger.hasPermission(TurtleListener.PERMISSION_ADMIN)).thenReturn(false);
+        when(stranger.isSneaking()).thenReturn(false);
+        when(stranger.getLocation()).thenReturn(loc);
+
+        BlockBreakEvent event = new BlockBreakEvent(block, stranger);
+        listener.onBlockBreak(event);
+
+        assertTrue(event.isCancelled());
+        verify(mockTurtleManager, never()).removeTurtle(any());
+        verify(stranger).sendMessage(contains("only its owner or an administrator"));
+    }
+
+    @Test
+    @DisplayName("An unclaimed Turtle cannot be broken by a regular player")
+    void testUnownedTurtleCannotBeBrokenByPlayer() {
+        Location loc = new Location(mockWorld, 10, 64, 10);
+        Block block = mock(Block.class);
+        when(block.getLocation()).thenReturn(loc);
+        when(block.getType()).thenReturn(Material.DISPENSER);
+
+        Turtle mockTurtle = turtleOwnedBy(null, "T-001");
+        when(mockTurtleManager.getTurtle(loc)).thenReturn(mockTurtle);
+
+        Player player = mock(Player.class);
+        when(player.getUniqueId()).thenReturn(UUID.randomUUID());
+        when(player.hasPermission(TurtleListener.PERMISSION_ADMIN)).thenReturn(false);
+        when(player.isSneaking()).thenReturn(false);
+        when(player.getLocation()).thenReturn(loc);
+
+        BlockBreakEvent event = new BlockBreakEvent(block, player);
+        listener.onBlockBreak(event);
+
+        assertTrue(event.isCancelled());
+        verify(mockTurtleManager, never()).removeTurtle(any());
+    }
+
+    @Test
+    @DisplayName("An administrator can break any Turtle")
+    void testAdminCanBreakTurtle() {
+        Location loc = new Location(mockWorld, 10, 64, 10);
+        Block block = mock(Block.class);
+        when(block.getLocation()).thenReturn(loc);
+        when(block.getType()).thenReturn(Material.DISPENSER);
+        when(block.getWorld()).thenReturn(mockWorld);
+
+        Turtle mockTurtle = turtleOwnedBy(UUID.randomUUID(), "T-001");
+        when(mockTurtleManager.getTurtle(loc)).thenReturn(mockTurtle);
+
+        Player admin = mock(Player.class);
+        when(admin.getUniqueId()).thenReturn(UUID.randomUUID());
+        when(admin.hasPermission(TurtleListener.PERMISSION_ADMIN)).thenReturn(true);
+        when(admin.isSneaking()).thenReturn(false);
+        when(admin.getLocation()).thenReturn(loc);
+
+        BlockBreakEvent event = new BlockBreakEvent(block, admin);
+        listener.onBlockBreak(event);
+
+        assertFalse(event.isCancelled());
+        verify(mockTurtleManager).removeTurtle(any());
+    }
+
+    private Turtle turtleOwnedBy(UUID ownerUuid, String id) {
+        Turtle turtle = mock(Turtle.class);
+        when(turtle.getId()).thenReturn(id);
+        when(turtle.getOwner()).thenReturn(ownerUuid);
+        when(turtle.getDisk()).thenReturn(null);
+        when(turtle.getInventory()).thenReturn(new ItemStack[16]);
+        when(mockTurtleManager.checkBlockProtection(any())).thenReturn(null);
+        return turtle;
     }
 
     @Test

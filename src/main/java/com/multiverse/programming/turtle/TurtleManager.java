@@ -236,6 +236,14 @@ public final class TurtleManager {
                 Turtle turtle = new Turtle(plugin, key, loc, facing, ownerUuid);
                 turtle.setFuel(fuel);
 
+                // Restore players authorized to operate this turtle
+                for (String authorizedStr : tSec.getStringList("authorized")) {
+                    if (authorizedStr == null || authorizedStr.isBlank()) continue;
+                    try {
+                        turtle.addAuthorized(UUID.fromString(authorizedStr));
+                    } catch (Exception ignored) {}
+                }
+
                 // Restore disk
                 ItemStack disk = tSec.getItemStack("disk");
                 if (disk != null && !disk.getType().isAir()) {
@@ -292,6 +300,14 @@ public final class TurtleManager {
                     sec.set("owner", turtle.getOwner().toString());
                 }
                 sec.set("fuel", turtle.getFuel());
+
+                // Persist the access allow-list (owner-authorized operators)
+                List<String> authorized = turtle.getAuthorizedPlayers().stream()
+                        .map(UUID::toString)
+                        .toList();
+                if (!authorized.isEmpty()) {
+                    sec.set("authorized", authorized);
+                }
 
                 // Save disk
                 if (turtle.getDisk() != null && !turtle.getDisk().getType().isAir()) {
