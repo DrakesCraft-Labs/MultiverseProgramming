@@ -171,6 +171,15 @@ web-portal-public-url: "https://drakescraft-labs.github.io/MultiverseProgramming
 # trusted or private setups, and keep the bind address on 127.0.0.1 where possible.
 web-portal-remote-dispatch: false
 
+# Optional shared access token protecting the blueprint WRITE endpoints (/api/upload and
+# /api/delete). When set to a non-empty value, those requests must present the token via the
+# "X-MVP-Token" HTTP header (or a "token" field in the JSON body); otherwise they are rejected
+# with HTTP 401. Leave blank to keep uploads open (recommended only when the port is bound to
+# 127.0.0.1 or otherwise private). Note: regardless of this setting, the portal NEVER trusts a
+# client-supplied "Server"/"Admin" identity, so remote clients cannot delete other players'
+# blueprints or bypass storage quotas.
+web-portal-access-token: ""
+
 # ===================================================================== #
 #                   Blueprint Security & Storage Quotas                 #
 # ===================================================================== #

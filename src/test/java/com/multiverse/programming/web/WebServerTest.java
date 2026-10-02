@@ -34,6 +34,9 @@ class WebServerTest {
     private MultiverseProgrammingPlugin mockPlugin;
     private WebServerManager webServer;
     private int port;
+    private ConfigManager mockConfig;
+    private BlueprintManager mockBpManager;
+    private Blueprint testBlueprint;
 
     @BeforeEach
     void setUp() throws IOException {
@@ -46,7 +49,7 @@ class WebServerTest {
             port = socket.getLocalPort();
         }
 
-        ConfigManager mockConfig = mock(ConfigManager.class);
+        mockConfig = mock(ConfigManager.class);
         when(mockConfig.isWebPortalEnabled()).thenReturn(true);
         when(mockConfig.getWebPortalBindAddress()).thenReturn("127.0.0.1");
         when(mockConfig.getWebPortalPort()).thenReturn(port);
@@ -54,7 +57,7 @@ class WebServerTest {
         when(mockConfig.isTurtleRequireMaterials()).thenReturn(false);
         when(mockPlugin.getConfigManager()).thenReturn(mockConfig);
 
-        BlueprintManager mockBpManager = mock(BlueprintManager.class);
+        mockBpManager = mock(BlueprintManager.class);
         Blueprint testBp = new Blueprint(
                 "BP-TEST",
                 "Test Castle",
@@ -68,6 +71,7 @@ class WebServerTest {
         );
         when(mockBpManager.getAllBlueprints()).thenReturn(List.of(testBp));
         when(mockBpManager.getBlueprint("BP-TEST")).thenReturn(testBp);
+        this.testBlueprint = testBp;
         when(mockPlugin.getBlueprintManager()).thenReturn(mockBpManager);
 
         TurtleManager mockTurtleManager = mock(TurtleManager.class);
@@ -148,5 +152,56 @@ class WebServerTest {
         assertEquals(200, response.statusCode());
         assertTrue(response.body().contains("T-001"));
         assertTrue(response.body().contains("world"));
+    }
+
+    @Test
+    @DisplayName("POST /api/delete never honours a client-supplied Admin/Server identity")
+    void testDeleteIgnoresClaimedAdminIdentity() throws IOException, InterruptedException {
+        HttpClient client = HttpClient.newHttpClient();
+        String body = "{\"blueprintId\":\"BP-TEST\",\"player\":\"Admin\"}";
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create("http://127.0.0.1:" + port + "/api/delete"))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(body))
+                .build();
+
+        client.send(request, HttpResponse.BodyHandlers.ofString());
+
+        // The privileged "Admin" identity must be downgraded to a non-privileged guest, so a remote
+        // client cannot delete blueprints it does not own by claiming to be an administrator.
+        verify(mockBpManager).deleteBlueprint("BP-TEST", "WebGuest");
+        verify(mockBpManager, never()).deleteBlueprint(eq("BP-TEST"), eq("Admin"));
+    }
+
+    @Test
+    @DisplayName("Write endpoints require the access token when one is configured")
+    void testUploadRequiresTokenWhenConfigured() throws IOException, InterruptedException {
+        when(mockConfig.getWebPortalAccessToken()).thenReturn("s3cret");
+        when(mockBpManager.register(anyString(), any(byte[].class), anyString())).thenReturn(testBlueprint);
+        HttpClient client = HttpClient.newHttpClient();
+        String body = "{\"filename\":\"a.litematic\",\"data\":\"QUJD\",\"player\":\"Bob\"}";
+
+        // No token -> rejected with 401.
+        HttpResponse<String> noToken = client.send(
+                HttpRequest.newBuilder()
+                        .uri(URI.create("http://127.0.0.1:" + port + "/api/upload"))
+                        .header("Content-Type", "application/json")
+                        .POST(HttpRequest.BodyPublishers.ofString(body))
+                        .build(),
+                HttpResponse.BodyHandlers.ofString());
+        assertEquals(401, noToken.statusCode());
+        verify(mockBpManager, never()).register(anyString(), any(byte[].class), anyString());
+
+        // Correct token -> passes authorization (no longer 401/403).
+        HttpResponse<String> withToken = client.send(
+                HttpRequest.newBuilder()
+                        .uri(URI.create("http://127.0.0.1:" + port + "/api/upload"))
+                        .header("Content-Type", "application/json")
+                        .header("X-MVP-Token", "s3cret")
+                        .POST(HttpRequest.BodyPublishers.ofString(body))
+                        .build(),
+                HttpResponse.BodyHandlers.ofString());
+        assertNotEquals(401, withToken.statusCode());
+        assertNotEquals(403, withToken.statusCode());
     }
 }

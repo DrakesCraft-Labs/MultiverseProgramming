@@ -128,4 +128,20 @@ Si `e.getMessage()` contiene comillas o saltos de línea, rompe el JSON (o permi
 3. **M1** (sandbox) — endurecimiento preventivo.
 4. **L1–L3** — limpieza y consistencia.
 
-*Este documento es una revisión; no se modificó código fuente.*
+---
+
+## 6. Correcciones aplicadas (en esta rama)
+
+Todos los hallazgos anteriores se han corregido:
+
+- **H1 (SSRF):** `BlueprintManager.validateUrlAllowed` rechaza URLs no http(s) y destinos no públicos (loopback, link-local, RFC1918, CGNAT `100.64/10`, ULA IPv6, metadatos de nube) resolviendo el host antes de conectar; se valida cada URL candidata antes de descargar. Además, `/mvprog get <url>` por URL directa queda restringido a `multiverseprogramming.admin` (los jugadores siguen pudiendo usar códigos de pastebin e IDs `BP-*`).
+- **H2 (control de acceso web):** el portal nunca confía en una identidad `Server`/`Admin` recibida por HTTP (`sanitizeWebIdentity` la degrada a `WebGuest`), cerrando el borrado de blueprints ajenos y la evasión de cuota. Nuevo `web-portal-access-token` opcional protege `/api/upload` y `/api/delete` (cabecera `X-MVP-Token` o campo `token`), con comparación en tiempo constante.
+- **M1 (sandbox Lua):** `require` se anula; `load`/`loadstring` se envuelven para rechazar *bytecode* precompilado (sólo fuente de texto).
+- **M2 (rendimiento protección):** `checkBuildArea` ahora muestrea la caja envolvente (8 esquinas + centro) en vez de recorrer todos los bloques.
+- **L1 (concurrencia):** `max-concurrent-programs` se aplica con un `Semaphore` en `LuaRunner` (configurado al habilitar y recargar); al superar el límite el programa se rechaza con un mensaje claro.
+- **L2 (JSON):** `PauseHandler`/`CancelHandler` usan Gson para los errores (mensajes correctamente escapados).
+- **L3 (portal público):** `docs/index.html` sincronizado con la lista de bloques peligrosos de `dashboard.html`.
+
+Se añadieron pruebas: guard SSRF (`BlueprintManagerTest`), `require`/`load`/concurrencia (`LuaRunnerTest`) y neutralización de identidad + token (`WebServerTest`).
+
+> **Nota de verificación:** en este entorno sandbox la compilación completa con Maven no puede ejecutarse porque la política de egreso bloquea `repo.papermc.io` (403), de donde proviene `paper-api`. La lógica nueva de `LuaRunner` (API de luaj) y del guard SSRF se validó con compilaciones aisladas; el resto se valida en CI (GitHub Actions / workflow de Modrinth).

@@ -149,4 +149,49 @@ class LuaRunnerTest {
 
         assertTrue(elapsed >= 35, "Sleep should have paused for at least ~40ms, took: " + elapsed);
     }
+
+    @Test
+    @DisplayName("Sandbox removes require and keeps dangerous libraries nil")
+    void testSandboxRemovesRequire() {
+        Globals globals = LuaRunner.sandbox(1000, true);
+        assertTrue(globals.get("require").isnil(), "require must be sandboxed");
+        assertTrue(globals.get("io").isnil());
+        assertTrue(globals.get("os").isnil());
+        assertTrue(globals.get("package").isnil());
+        assertTrue(globals.get("debug").isnil());
+    }
+
+    @Test
+    @DisplayName("load() refuses pre-compiled binary chunks but still accepts text source")
+    void testLoadRejectsBinaryChunks() {
+        Globals globals = LuaRunner.sandbox(1000, true);
+        // Text source still compiles and runs.
+        assertEquals(LuaValue.valueOf(7), globals.get("load").call(LuaValue.valueOf("return 7")).call());
+        // A binary chunk (leading ESC) is rejected with nil + error message.
+        org.luaj.vm2.Varargs r = globals.get("load").invoke(LuaValue.valueOf("\033Luabytecode"));
+        assertTrue(r.arg1().isnil(), "binary chunk must not load");
+        assertTrue(r.arg(2).tojstring().contains("binary chunk"), "should explain binary chunks are blocked");
+    }
+
+    @Test
+    @DisplayName("Concurrency limiter rejects programs once the configured cap is reached")
+    void testConcurrencyLimiter() throws InterruptedException {
+        try {
+            LuaRunner.configureConcurrency(1);
+            // Occupy the single slot with a never-ending streaming program (advanced computers
+            // yield cooperatively on the CPU slice instead of aborting, so this holds the slot).
+            LuaRunner.LuaProgram busy = LuaRunner.runStreaming(
+                    "while true do end", 0, line -> {});
+            // Give the worker a moment to acquire the slot.
+            Thread.sleep(200);
+
+            LuaRunner.Result rejected = LuaRunner.execute("print('should not run')", 1000);
+            assertFalse(rejected.ok(), "second program must be rejected while the slot is taken");
+            assertTrue(rejected.output().toLowerCase().contains("busy"));
+
+            busy.cancel();
+        } finally {
+            LuaRunner.configureConcurrency(0); // restore unlimited for other tests
+        }
+    }
 }

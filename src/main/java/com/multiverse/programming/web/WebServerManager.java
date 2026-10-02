@@ -157,10 +157,62 @@ public final class WebServerManager {
         sendResponse(exchange, statusCode, "application/json; charset=utf-8", json.getBytes(StandardCharsets.UTF_8));
     }
 
+    /** Builds a safe {@code {"ok":false,"error":...}} payload with the message properly JSON-escaped. */
+    private String errorJson(Exception e) {
+        JsonObject err = new JsonObject();
+        err.addProperty("ok", false);
+        err.addProperty("error", e.getMessage() != null ? e.getMessage() : e.toString());
+        return gson.toJson(err);
+    }
+
     private static String readBody(HttpExchange exchange) throws IOException {
         try (InputStream is = exchange.getRequestBody()) {
             return new String(is.readAllBytes(), StandardCharsets.UTF_8);
         }
+    }
+
+    /**
+     * Normalises a player identity supplied by an untrusted web client. The reserved privileged
+     * identities ("Server"/"Admin") can never be asserted over HTTP, so a remote client cannot
+     * escalate to delete other players' blueprints or bypass storage quotas. Blank names collapse
+     * to a single shared, non-privileged guest identity.
+     */
+    private static String sanitizeWebIdentity(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return "WebGuest";
+        }
+        String trimmed = raw.trim();
+        if (trimmed.equalsIgnoreCase("Server") || trimmed.equalsIgnoreCase("Admin")) {
+            return "WebGuest";
+        }
+        return trimmed;
+    }
+
+    /**
+     * Enforces the optional write token. When {@code web-portal-access-token} is set, upload and
+     * delete requests must present it via the {@code X-MVP-Token} header or a {@code token} JSON
+     * field. Returns true when the request may proceed; otherwise writes a 401 and returns false.
+     */
+    private boolean authorizeWrite(HttpExchange exchange, JsonObject body) throws IOException {
+        String required = plugin.getConfigManager().getWebPortalAccessToken();
+        if (required == null || required.isBlank()) {
+            return true;
+        }
+        String provided = exchange.getRequestHeaders().getFirst("X-MVP-Token");
+        if ((provided == null || provided.isBlank()) && body != null && body.has("token")) {
+            provided = body.get("token").getAsString();
+        }
+        if (provided != null && constantTimeEquals(provided.trim(), required)) {
+            return true;
+        }
+        sendJsonResponse(exchange, 401,
+                "{\"ok\":false,\"error\":\"Missing or invalid access token for this operation.\"}");
+        return false;
+    }
+
+    private static boolean constantTimeEquals(String a, String b) {
+        return java.security.MessageDigest.isEqual(
+                a.getBytes(StandardCharsets.UTF_8), b.getBytes(StandardCharsets.UTF_8));
     }
 
     // =========================================================================
@@ -241,9 +293,12 @@ public final class WebServerManager {
             try {
                 String body = readBody(exchange);
                 JsonObject json = JsonParser.parseString(body).getAsJsonObject();
+                if (!authorizeWrite(exchange, json)) {
+                    return;
+                }
                 String filename = json.get("filename").getAsString();
                 String base64Data = json.get("data").getAsString();
-                String owner = json.has("player") ? json.get("player").getAsString() : "WebPlayer";
+                String owner = sanitizeWebIdentity(json.has("player") ? json.get("player").getAsString() : null);
 
                 byte[] rawBytes = Base64.getDecoder().decode(base64Data);
                 Blueprint bp = plugin.getBlueprintManager().register(filename, rawBytes, owner);
@@ -425,7 +480,7 @@ public final class WebServerManager {
                 resp.addProperty("status", turtle.getStatus().name());
                 sendJsonResponse(exchange, 200, gson.toJson(resp));
             } catch (Exception e) {
-                sendJsonResponse(exchange, 400, "{\"ok\":false,\"error\":\"" + e.getMessage() + "\"}");
+                sendJsonResponse(exchange, 400, errorJson(e));
             }
         }
     }
@@ -458,7 +513,7 @@ public final class WebServerManager {
                 resp.addProperty("ok", true);
                 sendJsonResponse(exchange, 200, gson.toJson(resp));
             } catch (Exception e) {
-                sendJsonResponse(exchange, 400, "{\"ok\":false,\"error\":\"" + e.getMessage() + "\"}");
+                sendJsonResponse(exchange, 400, errorJson(e));
             }
         }
     }
@@ -472,7 +527,7 @@ public final class WebServerManager {
             }
 
             String query = exchange.getRequestURI().getQuery();
-            String player = "WebPlayer";
+            String player = null;
             if (query != null && query.contains("player=")) {
                 for (String param : query.split("&")) {
                     String[] pair = param.split("=");
@@ -482,6 +537,7 @@ public final class WebServerManager {
                     }
                 }
             }
+            player = sanitizeWebIdentity(player);
 
             long usedBytes = plugin.getBlueprintManager().getPlayerUsageBytes(player);
             double quotaMb = plugin.getConfigManager().getBlueprintPlayerQuotaMb();
@@ -515,8 +571,11 @@ public final class WebServerManager {
             try {
                 String body = readBody(exchange);
                 JsonObject json = JsonParser.parseString(body).getAsJsonObject();
+                if (!authorizeWrite(exchange, json)) {
+                    return;
+                }
                 String blueprintId = json.get("blueprintId").getAsString();
-                String player = json.has("player") ? json.get("player").getAsString() : "WebPlayer";
+                String player = sanitizeWebIdentity(json.has("player") ? json.get("player").getAsString() : null);
 
                 boolean deleted = plugin.getBlueprintManager().deleteBlueprint(blueprintId, player);
                 JsonObject resp = new JsonObject();

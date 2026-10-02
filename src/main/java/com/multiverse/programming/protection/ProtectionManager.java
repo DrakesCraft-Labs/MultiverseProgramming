@@ -109,20 +109,18 @@ public final class ProtectionManager {
             }
         }
 
-        // Sample bounding box corners and blocks
-        for (Blueprint.PlacementBlock block : blueprint.blocks()) {
-            Location checkLoc = origin.clone().add(block.x(), block.y(), block.z());
-            if (!canBuildAt(playerUuid, checkLoc)) {
-                boolean requireStrictOwner = plugin.getConfigManager().isProtectionStonesRequireOwner();
-                if (requireStrictOwner) {
-                    return "Target area contains protected regions (WorldGuard/ProtectionStones/BentoBox). You must be the OWNER of the region/island to build here.";
-                } else {
-                    return "Target area contains protected regions (WorldGuard/ProtectionStones/BentoBox). You must be an OWNER or MEMBER of the region/island to build here.";
-                }
-            }
-        }
-
-        return null;
+        // Sample the blueprint's bounding box (corners + center) instead of every block. A full
+        // per-block scan would issue hundreds of thousands of reflective protection lookups on the
+        // dispatch thread for large blueprints, which is a serious lag/DoS vector.
+        var world = origin.getWorld();
+        Location min = origin.clone();
+        Location max = new Location(
+                world,
+                origin.getBlockX() + Math.max(0, blueprint.sizeX() - 1),
+                origin.getBlockY() + Math.max(0, blueprint.sizeY() - 1),
+                origin.getBlockZ() + Math.max(0, blueprint.sizeZ() - 1)
+        );
+        return checkRegionArea(playerUuid, min, max);
     }
 
     /**
