@@ -145,3 +145,12 @@ Todos los hallazgos anteriores se han corregido:
 Se añadieron pruebas: guard SSRF (`BlueprintManagerTest`), `require`/`load`/concurrencia (`LuaRunnerTest`) y neutralización de identidad + token (`WebServerTest`).
 
 > **Nota de verificación:** en este entorno sandbox la compilación completa con Maven no puede ejecutarse porque la política de egreso bloquea `repo.papermc.io` (403), de donde proviene `paper-api`. La lógica nueva de `LuaRunner` (API de luaj) y del guard SSRF se validó con compilaciones aisladas; el resto se valida en CI (GitHub Actions / workflow de Modrinth).
+
+## 7. Segunda pasada — hallazgos y correcciones adicionales
+
+- **Acceso asíncrono al mundo en `PeripheralManager.findPeripherals` (Media):** los programas Lua de los computadores *estándar* se ejecutan en un hilo asíncrono (`ComputerGUI.pressButton` → `runTaskAsynchronously` → `LuaRunner.execute` → `bindAll` → `findPeripherals`), y el descubrimiento de periféricos leía tipos/estados de bloques adyacentes **fuera del hilo principal**, lo que en Paper es acceso asíncrono inseguro al mundo. *Corregido:* `findPeripherals` ahora envuelve el descubrimiento en `SyncDispatcher.sync` (se ejecuta en línea si ya está en el hilo principal, como en los computadores avanzados y las tortugas). Las operaciones de los periféricos ya usaban `SyncDispatcher`, así que sólo faltaba el descubrimiento.
+- **Amplificación de memoria en `NbtReader` (Baja/endurecimiento):** una `TAG_List` que declarara tipo de elemento `TAG_End` (que no consume bytes por entrada) con una longitud grande podía asignar millones de objetos sin disparar el límite de bytes descomprimidos. *Corregido:* se rechaza una lista de `TAG_End` con longitud distinta de cero (una lista de `End` sólo es válida vacía).
+
+Verificado: ambos cambios compilan de forma aislada; el guard de `NbtReader` lanza con longitud>0 y acepta la lista vacía. Pruebas añadidas en `NbtReaderTest`.
+
+Áreas revisadas sin incidencias: ciclo de vida del plugin (`onDisable` cancela web, tortugas, programas, recetas y el pool), cancelación de programas (`cancelAll`/`stopProgramAt`/`stopProgramsByPlayer` cancelan programa + tarea de limpieza), `getProgressPercentage` (protegido contra división por cero), parseo de IDs en `TurtleManager` (con `try/catch`) y la propagación de errores de `SyncDispatcher`.

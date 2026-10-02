@@ -33,10 +33,17 @@ public final class PeripheralManager {
     }
 
     public static Map<String, Peripheral> findPeripherals(MultiverseProgrammingPlugin plugin, Location computerLoc) {
-        Map<String, Peripheral> result = new LinkedHashMap<>();
         if (computerLoc == null || computerLoc.getWorld() == null) {
-            return result;
+            return new LinkedHashMap<>();
         }
+        // Peripheral discovery reads adjacent block types and states. Lua programs on standard
+        // computers run on an async worker thread, so this must hop to the primary thread to avoid
+        // unsafe asynchronous world access (SyncDispatcher runs inline when already on it).
+        return SyncDispatcher.sync(plugin, () -> discoverPeripherals(plugin, computerLoc));
+    }
+
+    private static Map<String, Peripheral> discoverPeripherals(MultiverseProgrammingPlugin plugin, Location computerLoc) {
+        Map<String, Peripheral> result = new LinkedHashMap<>();
 
         ConfigManager config = plugin.getConfigManager();
         Material monitorMat = config != null ? config.getMonitorBlock() : Material.OCHRE_FROGLIGHT;

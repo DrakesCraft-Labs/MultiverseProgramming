@@ -99,6 +99,12 @@ public final class NbtReader {
                 byte elemType = dis.readByte();
                 int len = dis.readInt();
                 validateArrayLength(len);
+                // A TAG_End element type consumes no bytes per entry, so a large declared length
+                // would allocate millions of objects without tripping the byte-size guard. A list
+                // of End tags is only valid when empty.
+                if (elemType == 0 && len > 0) {
+                    throw new IOException("Invalid NBT list: TAG_End element type with non-zero length (" + len + ")");
+                }
                 List<NbtTag> list = new ArrayList<>(Math.min(len, 100_000));
                 for (int i = 0; i < len; i++) {
                     list.add(readTagPayload(dis, elemType));

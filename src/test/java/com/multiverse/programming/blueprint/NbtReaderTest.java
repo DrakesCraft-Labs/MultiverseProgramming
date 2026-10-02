@@ -168,4 +168,22 @@ class NbtReaderTest {
             NbtReader.read(new ByteArrayInputStream(baos.toByteArray()));
         });
     }
+
+    @Test
+    @DisplayName("Rejects a TAG_List of TAG_End with a non-zero length (memory amplification guard)")
+    void testRejectEndListWithLength() {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try (DataOutputStream out = new DataOutputStream(baos)) {
+            out.writeByte(10);           // root compound
+            out.writeUTF("root");
+            out.writeByte(9);            // TAG_List
+            out.writeUTF("evil");
+            out.writeByte(0);            // element type = TAG_End (consumes no bytes per entry)
+            out.writeInt(10_000_000);    // huge declared length
+            out.writeByte(0);            // end root
+        } catch (IOException ignored) {}
+
+        assertThrows(IOException.class, () ->
+                NbtReader.read(new ByteArrayInputStream(baos.toByteArray())));
+    }
 }
