@@ -517,6 +517,10 @@ public final class Turtle {
                 return true;
             }
 
+            if (isFuelRequired() && getFuel() <= 0) {
+                return false; // Out of fuel: the turtle cannot move
+            }
+
             Material mat = currentBlock.getType();
             currentBlock.setType(Material.AIR, false);
 
@@ -537,6 +541,9 @@ public final class Turtle {
                 tm.updateTurtleLocation(this, oldLoc, this.location);
             }
             world.playSound(this.location, Sound.BLOCK_IRON_TRAPDOOR_CLOSE, 0.4f, 1.8f);
+            if (isFuelRequired()) {
+                setFuel(getFuel() - 1);
+            }
             return true;
         });
     }
@@ -582,6 +589,10 @@ public final class Turtle {
                 notifyOwner("§c[Turtle " + id + "] Cannot dig block: target is a Turtle supply chest or terminal.");
                 return false;
             }
+            if (isFuelRequired() && getFuel() <= 0) {
+                notifyOwner("§c[Turtle " + id + "] Out of fuel: cannot dig.");
+                return false;
+            }
 
             Collection<ItemStack> drops = target.getDrops();
             Material oldMat = target.getType();
@@ -597,6 +608,9 @@ public final class Turtle {
                 if (remaining != null && remaining.getAmount() > 0) {
                     target.getWorld().dropItemNaturally(target.getLocation(), remaining);
                 }
+            }
+            if (isFuelRequired()) {
+                setFuel(getFuel() - 1);
             }
             return true;
         });
@@ -861,25 +875,6 @@ public final class Turtle {
                 return;
             }
 
-            // Material Check if required
-            // Upper halves of doors/tall plants or head parts of beds are formed with the lower/foot part,
-            // or should only consume 1 item for the pair.
-            if (requireMaterials) {
-                Material itemMat = getItemMaterialForBlock(blockMat);
-                boolean isUpper = pb.material().contains("half=upper") || pb.material().contains("part=head");
-                if (!isUpper && itemMat.isItem()) {
-                    if (!consumeMaterial(itemMat)) {
-                        this.status = Status.PAUSED;
-                        this.statusMessage = "Paused: Missing material " + itemMat.name();
-                        if (onError != null) {
-                            onError.accept("Turtle is missing required material: " + itemMat.name());
-                        }
-                        updateConstructionHologramMissing(itemMat);
-                        return;
-                    }
-                }
-            }
-
             int targetX = buildOrigin.getBlockX() + pb.x();
             int targetY = buildOrigin.getBlockY() + pb.y();
             int targetZ = buildOrigin.getBlockZ() + pb.z();
@@ -898,6 +893,28 @@ public final class Turtle {
                     world.loadChunk(chunkX, chunkZ, false);
                 }
                 return;
+            }
+
+            // Material Check if required. This MUST come after the out-of-bounds and chunk-loaded
+            // guards above: those paths skip or retry the current block, and consuming before them
+            // would drop an item on a skipped block or consume one on every retry tick until the
+            // chunk loads. Here the block is guaranteed to be placed this tick.
+            // Upper halves of doors/tall plants or head parts of beds are formed with the lower/foot
+            // part, so they should only consume 1 item for the pair.
+            if (requireMaterials) {
+                Material itemMat = getItemMaterialForBlock(blockMat);
+                boolean isUpper = pb.material().contains("half=upper") || pb.material().contains("part=head");
+                if (!isUpper && itemMat.isItem()) {
+                    if (!consumeMaterial(itemMat)) {
+                        this.status = Status.PAUSED;
+                        this.statusMessage = "Paused: Missing material " + itemMat.name();
+                        if (onError != null) {
+                            onError.accept("Turtle is missing required material: " + itemMat.name());
+                        }
+                        updateConstructionHologramMissing(itemMat);
+                        return;
+                    }
+                }
             }
 
             if (true) {
@@ -1233,6 +1250,14 @@ public final class Turtle {
             world.playSound(newLoc, Sound.BLOCK_IRON_TRAPDOOR_CLOSE, 0.45f, 1.6f);
             world.spawnParticle(Particle.SMOKE, oldLoc.getX() + 0.5, oldLoc.getY() + 0.5, oldLoc.getZ() + 0.5, 3, 0.08, 0.08, 0.08, 0.01);
         } catch (Throwable ignored) {}
+    }
+
+    /** @return true if manual turtle movement/digging should consume fuel (per {@code turtle-fuel-required}). */
+    private boolean isFuelRequired() {
+        if (plugin instanceof MultiverseProgrammingPlugin mvp && mvp.getConfigManager() != null) {
+            return mvp.getConfigManager().isTurtleFuelRequired();
+        }
+        return false;
     }
 
     private TurtleManager getTurtleManager() {
