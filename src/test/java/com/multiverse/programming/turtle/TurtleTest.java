@@ -489,6 +489,54 @@ class TurtleTest {
     }
 
     @Test
+    @DisplayName("Movement is blocked when fuel is required and the turtle is empty")
+    void testMovementBlockedWhenOutOfFuel() {
+        MultiverseProgrammingPlugin mvp = mock(MultiverseProgrammingPlugin.class);
+        when(mvp.isEnabled()).thenReturn(true);
+        com.multiverse.programming.ConfigManager cfg = mock(com.multiverse.programming.ConfigManager.class);
+        when(mvp.getConfigManager()).thenReturn(cfg);
+        when(cfg.isTurtleFuelRequired()).thenReturn(true);
+
+        Turtle turtle = new Turtle(mvp, "T-001", startLoc, BlockFace.NORTH, null);
+        turtle.setFuel(0);
+
+        Block turtleBlock = mock(Block.class);
+        when(mockWorld.getBlockAt(startLoc)).thenReturn(turtleBlock);
+        Block target = mock(Block.class);
+        when(turtleBlock.getRelative(BlockFace.NORTH)).thenReturn(target);
+        when(target.getType()).thenReturn(Material.AIR); // free to occupy
+
+        assertFalse(turtle.forward(), "Turtle must not move without fuel");
+        assertEquals(0, turtle.getFuel());
+        verify(target, never()).setType(any(), anyBoolean());
+    }
+
+    @Test
+    @DisplayName("A successful move consumes one fuel when fuel is required")
+    void testMovementConsumesFuel() {
+        MultiverseProgrammingPlugin mvp = mock(MultiverseProgrammingPlugin.class);
+        when(mvp.isEnabled()).thenReturn(true);
+        com.multiverse.programming.ConfigManager cfg = mock(com.multiverse.programming.ConfigManager.class);
+        when(mvp.getConfigManager()).thenReturn(cfg);
+        when(cfg.isTurtleFuelRequired()).thenReturn(true);
+
+        Turtle turtle = new Turtle(mvp, "T-001", startLoc, BlockFace.NORTH, null); // starts with 1000 fuel
+
+        Block turtleBlock = mock(Block.class);
+        when(mockWorld.getBlockAt(startLoc)).thenReturn(turtleBlock);
+        when(turtleBlock.getType()).thenReturn(Material.DISPENSER);
+        Block target = mock(Block.class);
+        when(turtleBlock.getRelative(BlockFace.NORTH)).thenReturn(target);
+        when(target.getType()).thenReturn(Material.AIR);
+        Location targetLoc = new Location(mockWorld, 10, 64, 19);
+        when(target.getLocation()).thenReturn(targetLoc);
+
+        assertTrue(turtle.forward(), "Turtle with fuel should move");
+        assertEquals(999, turtle.getFuel(), "Exactly one fuel should be consumed per move");
+        assertEquals(targetLoc, turtle.getLocation());
+    }
+
+    @Test
     @DisplayName("TurtlePeripheral Lua bindings for quarry engine operations")
     void testTurtleLuaQuarryBindings() {
         MultiverseProgrammingPlugin mvPlugin = mock(MultiverseProgrammingPlugin.class);
