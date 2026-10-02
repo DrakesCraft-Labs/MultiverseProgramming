@@ -747,6 +747,13 @@ public final class ComputerCommand implements CommandExecutor, TabCompleter {
         }
 
         String code = args[1];
+        String lowerCode = code.toLowerCase(Locale.ROOT);
+        if ((lowerCode.startsWith("http://") || lowerCode.startsWith("https://"))
+                && !sender.hasPermission("multiverseprogramming.admin")) {
+            sender.sendMessage(plugin.getPrefix() + " §cOnly administrators may download blueprints from an arbitrary URL. "
+                    + "Use a pastebin code or a BP-ID instead.");
+            return;
+        }
         sender.sendMessage(plugin.getPrefix() + (bypass ? " §6[Admin Bypass] §7Downloading blueprint §e" : " §7Downloading blueprint §e") + code + " §7from cloud nexus...");
         String owner = bypass ? "Admin" : ((sender instanceof Player p) ? p.getName() : "Server");
         plugin.getBlueprintManager().getOrDownloadBlueprint(code, owner, bypass)

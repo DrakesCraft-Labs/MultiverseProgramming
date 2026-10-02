@@ -176,4 +176,25 @@ class BlueprintManagerTest {
         assertNull(manager.getBlueprint(bp.id()));
         assertNull(manager.getBlueprint("hut"));
     }
+
+    @Test
+    @DisplayName("SSRF guard blocks non-public, loopback, metadata and non-http blueprint URLs")
+    void testUrlGuardBlocksInternalTargets() {
+        assertThrows(IllegalArgumentException.class, () -> BlueprintManager.validateUrlAllowed("http://127.0.0.1/x"));
+        assertThrows(IllegalArgumentException.class, () -> BlueprintManager.validateUrlAllowed("http://localhost/x"));
+        assertThrows(IllegalArgumentException.class, () -> BlueprintManager.validateUrlAllowed("http://169.254.169.254/latest/meta-data/"));
+        assertThrows(IllegalArgumentException.class, () -> BlueprintManager.validateUrlAllowed("http://10.0.0.5/x"));
+        assertThrows(IllegalArgumentException.class, () -> BlueprintManager.validateUrlAllowed("http://192.168.1.1/x"));
+        assertThrows(IllegalArgumentException.class, () -> BlueprintManager.validateUrlAllowed("http://100.100.0.1/x"));
+        assertThrows(IllegalArgumentException.class, () -> BlueprintManager.validateUrlAllowed("ftp://example.com/x"));
+        assertThrows(IllegalArgumentException.class, () -> BlueprintManager.validateUrlAllowed("not a url"));
+    }
+
+    @Test
+    @DisplayName("SSRF guard allows public addresses")
+    void testUrlGuardAllowsPublicHosts() {
+        // Literal public IPs avoid DNS flakiness while still exercising the public-address path.
+        assertDoesNotThrow(() -> BlueprintManager.validateUrlAllowed("https://8.8.8.8/x/y.litematic"));
+        assertDoesNotThrow(() -> BlueprintManager.validateUrlAllowed("http://1.1.1.1/somekey"));
+    }
 }

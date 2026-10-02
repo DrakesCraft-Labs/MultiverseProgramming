@@ -48,11 +48,35 @@ public final class LuaRunner {
             new ThreadPoolExecutor.CallerRunsPolicy()
     );
 
+    /** Caps the number of user programs running concurrently. Null means unlimited. */
+    private static volatile java.util.concurrent.Semaphore concurrencyLimiter;
+
     private LuaRunner() {
     }
 
     public static void shutdownPool() {
         WORKER_POOL.shutdownNow();
+    }
+
+    /**
+     * Configures the maximum number of Lua programs allowed to run at once (from
+     * {@code max-concurrent-programs}). A value &lt;= 0 disables the limit.
+     */
+    public static void configureConcurrency(int maxConcurrent) {
+        concurrencyLimiter = maxConcurrent > 0 ? new java.util.concurrent.Semaphore(maxConcurrent) : null;
+    }
+
+    /** @return true if a slot was acquired (caller must release), false if the server is at capacity. */
+    private static boolean acquireSlot() {
+        java.util.concurrent.Semaphore sem = concurrencyLimiter;
+        return sem == null || sem.tryAcquire();
+    }
+
+    private static void releaseSlot() {
+        java.util.concurrent.Semaphore sem = concurrencyLimiter;
+        if (sem != null) {
+            sem.release();
+        }
     }
 
     public record Result(boolean ok, String output) {
@@ -142,6 +166,9 @@ public final class LuaRunner {
             PeripheralManager.bindAll(globals, plugin, computerLoc, false);
         }
 
+        if (!acquireSlot()) {
+            return new Result(false, "Server is busy: too many programs are running concurrently. Please try again shortly.");
+        }
         try {
             LuaValue chunk = globals.load(code);
             AtomicBoolean ok = new AtomicBoolean(true);
@@ -178,6 +205,8 @@ public final class LuaRunner {
             return new Result(false, e.getMessage());
         } catch (Throwable t) {
             return new Result(false, "error loading program: " + t.getMessage());
+        } finally {
+            releaseSlot();
         }
     }
 
@@ -229,6 +258,11 @@ public final class LuaRunner {
             globalsConfigurator.accept(globals);
         }
 
+        if (!acquireSlot()) {
+            onLine.accept("Server is busy: too many programs are running concurrently. Please try again shortly.");
+            return new LuaProgram(null, null, null, new AtomicBoolean(true));
+        }
+
         AtomicBoolean done = new AtomicBoolean(false);
         Future<?> taskFuture = WORKER_POOL.submit(() -> {
             try {
@@ -243,6 +277,7 @@ public final class LuaRunner {
                     sink.send("unexpected error: " + t.getMessage());
                 }
             } finally {
+                releaseSlot();
                 done.set(true);
                 sink.flush();
             }
@@ -280,8 +315,39 @@ public final class LuaRunner {
         globals.set("dofile", LuaValue.NIL);
         globals.set("loadfile", LuaValue.NIL);
         globals.set("debug", LuaValue.NIL);
+        globals.set("require", LuaValue.NIL);
+
+        // Harden dynamic chunk loading: forbid pre-compiled bytecode (text-mode only), which luaj's
+        // verifier handles weakly and can be abused to crash or escape the VM.
+        wrapTextOnlyLoader(globals, "load");
+        wrapTextOnlyLoader(globals, "loadstring");
 
         return globals;
+    }
+
+    /**
+     * Replaces a Lua chunk loader (e.g. {@code load}/{@code loadstring}) with a wrapper that rejects
+     * binary (pre-compiled) chunks and only accepts textual source, then delegates to the original.
+     */
+    private static void wrapTextOnlyLoader(Globals globals, String name) {
+        LuaValue original = globals.get(name);
+        if (original.isnil() || !original.isfunction()) {
+            return;
+        }
+        globals.set(name, new VarArgFunction() {
+            @Override
+            public Varargs invoke(Varargs args) {
+                LuaValue first = args.arg1();
+                if (first.isstring()) {
+                    String chunk = first.tojstring();
+                    // Luaj bytecode chunks start with ESC ('\033'); reject them outright.
+                    if (!chunk.isEmpty() && (chunk.charAt(0) == '\033' || chunk.charAt(0) == '\u001b')) {
+                        return varargsOf(LuaValue.NIL, LuaValue.valueOf("binary chunk loading is not allowed"));
+                    }
+                }
+                return original.invoke(args);
+            }
+        });
     }
 
     private static VarArgFunction newPrint(StringBuffer output) {

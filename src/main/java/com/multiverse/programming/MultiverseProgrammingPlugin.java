@@ -21,6 +21,7 @@ public class MultiverseProgrammingPlugin extends JavaPlugin {
 
         configManager = new ConfigManager(this);
         configManager.load();
+        LuaRunner.configureConcurrency(configManager.getMaxConcurrentPrograms());
 
         protectionManager = new com.multiverse.programming.protection.ProtectionManager(this);
 
@@ -90,6 +91,7 @@ public class MultiverseProgrammingPlugin extends JavaPlugin {
     public void reloadPluginConfig() {
         if (configManager != null) {
             configManager.load();
+            LuaRunner.configureConcurrency(configManager.getMaxConcurrentPrograms());
             if (computerListener != null) {
                 computerListener.updateMaterials(
                         configManager.getComputerBlock(),

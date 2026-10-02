@@ -79,6 +79,9 @@ public final class ConfigManager {
      */
     public static final boolean DEFAULT_WEB_PORTAL_REMOTE_DISPATCH = false;
 
+    /** Empty by default: when set, upload/delete web endpoints require a matching access token. */
+    public static final String DEFAULT_WEB_PORTAL_ACCESS_TOKEN = "";
+
     public static final double DEFAULT_BLUEPRINT_PLAYER_QUOTA_MB = 15.0;
     public static final double DEFAULT_BLUEPRINT_MAX_FILE_SIZE_MB = 10.0;
     public static final int DEFAULT_BLUEPRINT_MAX_DIMENSION = 512;
@@ -150,6 +153,7 @@ public final class ConfigManager {
     private String webPortalBindAddress = DEFAULT_WEB_PORTAL_BIND;
     private String webPortalPublicUrl = DEFAULT_WEB_PORTAL_PUBLIC_URL;
     private boolean webPortalRemoteDispatch = DEFAULT_WEB_PORTAL_REMOTE_DISPATCH;
+    private String webPortalAccessToken = DEFAULT_WEB_PORTAL_ACCESS_TOKEN;
 
     private double blueprintPlayerQuotaMb = DEFAULT_BLUEPRINT_PLAYER_QUOTA_MB;
     private double blueprintMaxFileSizeMb = DEFAULT_BLUEPRINT_MAX_FILE_SIZE_MB;
@@ -352,6 +356,8 @@ public final class ConfigManager {
                 ? rawPublicUrl.trim()
                 : DEFAULT_WEB_PORTAL_PUBLIC_URL;
         this.webPortalRemoteDispatch = config.getBoolean("web-portal-remote-dispatch", DEFAULT_WEB_PORTAL_REMOTE_DISPATCH);
+        String rawToken = config.getString("web-portal-access-token", DEFAULT_WEB_PORTAL_ACCESS_TOKEN);
+        this.webPortalAccessToken = rawToken != null ? rawToken.trim() : DEFAULT_WEB_PORTAL_ACCESS_TOKEN;
 
         double rawQuota = config.getDouble("blueprint-player-quota-mb", DEFAULT_BLUEPRINT_PLAYER_QUOTA_MB);
         this.blueprintPlayerQuotaMb = rawQuota > 0 ? rawQuota : DEFAULT_BLUEPRINT_PLAYER_QUOTA_MB;
@@ -491,6 +497,10 @@ public final class ConfigManager {
 
     public String getWebPortalPublicUrl() {
         return webPortalPublicUrl;
+    }
+
+    public String getWebPortalAccessToken() {
+        return webPortalAccessToken;
     }
 
     public boolean isWebPortalRemoteDispatch() {

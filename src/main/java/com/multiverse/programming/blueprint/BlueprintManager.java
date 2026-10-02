@@ -302,6 +302,7 @@ public final class BlueprintManager {
 
             for (String urlStr : candidateUrls) {
                 try {
+                    validateUrlAllowed(urlStr);
                     HttpRequest request = HttpRequest.newBuilder()
                             .uri(URI.create(urlStr))
                             .timeout(Duration.ofSeconds(10))
@@ -352,6 +353,60 @@ public final class BlueprintManager {
                 throw new RuntimeException("Failed to register downloaded blueprint: " + e.getMessage(), e);
             }
         });
+    }
+
+    /**
+     * SSRF guard: only allow fetching from public http(s) endpoints. Rejects any URL whose host
+     * resolves to a loopback, link-local, site-local (RFC1918), unique-local, any-local, multicast,
+     * or cloud-metadata address. Prevents players from making the server probe internal services.
+     *
+     * @throws IllegalArgumentException if the URL scheme is unsupported or the target is non-public.
+     */
+    static void validateUrlAllowed(String urlStr) {
+        final URI uri;
+        try {
+            uri = URI.create(urlStr);
+        } catch (RuntimeException e) {
+            throw new IllegalArgumentException("Malformed blueprint URL.");
+        }
+        String scheme = uri.getScheme();
+        if (scheme == null || !(scheme.equalsIgnoreCase("http") || scheme.equalsIgnoreCase("https"))) {
+            throw new IllegalArgumentException("Only http(s) blueprint URLs are allowed.");
+        }
+        String host = uri.getHost();
+        if (host == null || host.isBlank()) {
+            throw new IllegalArgumentException("Blueprint URL is missing a host.");
+        }
+
+        java.net.InetAddress[] addresses;
+        try {
+            addresses = java.net.InetAddress.getAllByName(host);
+        } catch (java.net.UnknownHostException e) {
+            throw new IllegalArgumentException("Could not resolve blueprint host: " + host);
+        }
+        for (java.net.InetAddress addr : addresses) {
+            if (addr.isLoopbackAddress() || addr.isAnyLocalAddress() || addr.isLinkLocalAddress()
+                    || addr.isSiteLocalAddress() || addr.isMulticastAddress() || isUniqueLocalOrMetadata(addr)) {
+                throw new IllegalArgumentException(
+                        "Refusing to fetch blueprint from a non-public address (" + addr.getHostAddress() + ").");
+            }
+        }
+    }
+
+    private static boolean isUniqueLocalOrMetadata(java.net.InetAddress addr) {
+        byte[] b = addr.getAddress();
+        if (b.length == 4) {
+            // Cloud metadata endpoint 169.254.169.254 (also covered by link-local) and
+            // carrier-grade NAT 100.64.0.0/10, which isSiteLocalAddress() does not flag.
+            int first = b[0] & 0xFF;
+            int second = b[1] & 0xFF;
+            return (first == 100 && second >= 64 && second <= 127);
+        }
+        if (b.length == 16) {
+            // IPv6 unique local addresses fc00::/7.
+            return (b[0] & 0xFE) == 0xFC;
+        }
+        return false;
     }
 
     public synchronized long getPlayerUsageBytes(String owner) {
