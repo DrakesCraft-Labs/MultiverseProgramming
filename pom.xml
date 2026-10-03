@@ -6,7 +6,7 @@
 
     <groupId>com.multiverse</groupId>
     <artifactId>multiverse-programming</artifactId>
-    <version>1.1.8</version>
+    <version>1.2.0</version>
     <packaging>jar</packaging>
     <name>MultiverseProgramming</name>
     <description>Computers with Lua and floppy disks for Purpur/Paper</description>
@@ -14,6 +14,12 @@
     <properties>
         <maven.compiler.release>21</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!--
+            The release jar is built against Paper 1.21.11 with Java 21 bytecode, so the same jar
+            runs on 1.21.11 (Java 21) and on 26.1 / 26.2 (Java 25). The api-26.1 and api-26.2
+            profiles below only swap this version to compile and test against the newer APIs.
+        -->
+        <paper.version>1.21.11-R0.1-SNAPSHOT</paper.version>
     </properties>
 
     <repositories>
@@ -27,8 +33,8 @@
         <dependency>
             <groupId>io.papermc.paper</groupId>
             <artifactId>paper-api</artifactId>
-            <!-- Paper API 1.21.11. Runs on Purpur 1.21.11 (same API). -->
-            <version>1.21.11-R0.1-SNAPSHOT</version>
+            <!-- Paper API 1.21.11 by default (runs on Purpur too); see the api-26.x profiles. -->
+            <version>${paper.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -118,4 +124,29 @@
             </plugin>
         </plugins>
     </build>
+
+    <!--
+        Compatibility profiles. They compile and test the same sources against the Paper API of
+        each newer Minecraft version, so a call missing there fails in CI instead of on a server:
+            mvn -P api-26.1 test
+            mvn -P api-26.2 test
+        Paper 26.x ships Java 25 class files, so these profiles need JDK 25 and release 25.
+        Never publish a jar built with them: it would not load on a Java 21 / 1.21.11 server.
+    -->
+    <profiles>
+        <profile>
+            <id>api-26.1</id>
+            <properties>
+                <paper.version>26.1.2.build.74-stable</paper.version>
+                <maven.compiler.release>25</maven.compiler.release>
+            </properties>
+        </profile>
+        <profile>
+            <id>api-26.2</id>
+            <properties>
+                <paper.version>26.2.build.129-stable</paper.version>
+                <maven.compiler.release>25</maven.compiler.release>
+            </properties>
+        </profile>
+    </profiles>
 </project>

@@ -1,6 +1,6 @@
 # Programación en Lua
 
-El plugin integra **Luaj 3.0** (Lua en Java puro) totalmente aislado y sandboxed para Paper/Purpur 1.21.11.
+El plugin integra **Luaj 3.0** (Lua en Java puro) totalmente aislado y sandboxed para Paper/Purpur 1.21.11, 26.1 y 26.2.
 
 ## Librerías disponibles
 

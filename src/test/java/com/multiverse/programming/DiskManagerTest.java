@@ -71,7 +71,7 @@ class DiskManagerTest {
     @DisplayName("isDisk identifies floppy disk items accurately")
     void testIsDisk() {
         assertFalse(DiskManager.isDisk(null));
-        assertFalse(DiskManager.isDisk(new ItemStack(Material.AIR)));
+        assertFalse(DiskManager.isDisk(BukkitMockHelper.emptyStack()));
         assertFalse(DiskManager.isDisk(new ItemStack(Material.PAPER)));
         assertFalse(DiskManager.isDisk(new ItemStack(Material.LECTERN)));
 

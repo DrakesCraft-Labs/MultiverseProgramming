@@ -1,6 +1,6 @@
 # Lua Scripting
 
-The plugin embeds **Luaj 3.0** (pure Java Lua runtime), fully isolated and sandboxed for Paper/Purpur 1.21.11.
+The plugin embeds **Luaj 3.0** (pure Java Lua runtime), fully isolated and sandboxed for Paper/Purpur 1.21.11, 26.1 and 26.2.
 
 ## Available Libraries
 

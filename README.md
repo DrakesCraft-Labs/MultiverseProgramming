@@ -6,19 +6,23 @@
 
 Programmable computers, autonomous robotic turtles, and automation peripherals with **Lua 5.2** inside your Minecraft server, inspired by ComputerCraft and built natively for high-performance Paper/Purpur architectures.
 
-Part of **Chagui68's Sovereign Multiverse Ecosystem** alongside [MultiverseNets](https://github.com/DrakesCraft-Labs/MultiverseNets) and [MultiverseCreatures](https://github.com/DrakesCraft-Labs/MultiverseCreatures).
+Part of **Chagui68's Sovereign Multiverse Ecosystem** alongside [MultiverseNets](https://github.com/SlimefunNewHorizons/MultiverseNets) and [MultiverseCreatures](https://github.com/SlimefunNewHorizons/MultiverseCreatures).
 
 Place a computer or turtle in the world, insert a **floppy disk**, and validate & execute your Lua code with one click — or orchestrate large-scale automated construction remotely via the **Blueprint Nexus Web Portal**.
 
-Built and verified for **Purpur / Paper 1.21.11** with **Java 21**.
+Supports **Minecraft 1.21.11, 26.1 and 26.2** on **Paper / Purpur** with a single jar (Java 21 bytecode; 26.x servers run on Java 25). Every change is compiled, tested and booted on a real server of each version by the [Compatibility workflow](https://github.com/SlimefunNewHorizons/MultiverseProgramming/actions/workflows/compatibility.yml).
 
-[![Live Web Dashboard](https://img.shields.io/badge/Blueprint%20Nexus-Web%20Portal-38bdf8?style=for-the-badge&logo=googlechrome&logoColor=white)](https://drakescraft-labs.github.io/MultiverseProgramming/)
-[![Java](https://img.shields.io/badge/Java-21-orange?style=for-the-badge&logo=java)](https://www.oracle.com/java/)
+[![Compatibility](https://github.com/SlimefunNewHorizons/MultiverseProgramming/actions/workflows/compatibility.yml/badge.svg?branch=main)](https://github.com/SlimefunNewHorizons/MultiverseProgramming/actions/workflows/compatibility.yml)
+[![Blueprint Nexus](https://github.com/SlimefunNewHorizons/MultiverseProgramming/actions/workflows/pages.yml/badge.svg?branch=main)](https://github.com/SlimefunNewHorizons/MultiverseProgramming/actions/workflows/pages.yml)
+
+[![Minecraft](https://img.shields.io/badge/Minecraft-1.21.11%20%7C%2026.1%20%7C%2026.2-62b47a?style=for-the-badge)](#compatibility)
+[![Live Web Dashboard](https://img.shields.io/badge/Blueprint%20Nexus-Web%20Portal-38bdf8?style=for-the-badge&logo=googlechrome&logoColor=white)](https://slimefunnewhorizons.github.io/MultiverseProgramming/)
+[![Java](https://img.shields.io/badge/Java-21%20%7C%2025-orange?style=for-the-badge&logo=java)](https://www.oracle.com/java/)
 [![CoreProtect](https://img.shields.io/badge/CoreProtect-Audited-f59e0b?style=for-the-badge&logo=shield)](https://coreprotect.net/)
 [![License](https://img.shields.io/badge/License-GPL%203.0-blue?style=for-the-badge)](LICENSE)
 
 > 📖 **Wiki**: [English](wiki/en/Home.md) · [Español](wiki/es/Home.md)  
-> 🌐 **Web Portal**: [Launch Blueprint Nexus](https://drakescraft-labs.github.io/MultiverseProgramming/)
+> 🌐 **Web Portal**: [Launch Blueprint Nexus](https://slimefunnewhorizons.github.io/MultiverseProgramming/)
 
 ---
 
@@ -26,8 +30,8 @@ Built and verified for **Purpur / Paper 1.21.11** with **Java 21**.
 
 `MultiverseProgramming` is part of a dedicated trio of standalone, high-performance plugins engineered by **Chagui68**:
 1. **MultiverseProgramming:** Lua runtime, robotic turtles, peripherals, and blueprint dispatching.
-2. **[MultiverseNets](https://github.com/DrakesCraft-Labs/MultiverseNets):** Standalone digital logistics, item transport cables, and mass storage matrices (independent of Slimefun).
-3. **[MultiverseCreatures](https://github.com/DrakesCraft-Labs/MultiverseCreatures):** Mythic entities, cinematic panteon boss fights, and adaptive battle AI.
+2. **[MultiverseNets](https://github.com/SlimefunNewHorizons/MultiverseNets):** Standalone digital logistics, item transport cables, and mass storage matrices (independent of Slimefun).
+3. **[MultiverseCreatures](https://github.com/SlimefunNewHorizons/MultiverseCreatures):** Mythic entities, cinematic panteon boss fights, and adaptive battle AI.
 
 ---
 
@@ -46,7 +50,7 @@ Built and verified for **Purpur / Paper 1.21.11** with **Java 21**.
 - **Claim Protection Integration**: Complete compatibility with **WorldGuard** and **ProtectionStones** to prevent unauthorized construction in protected plots. Configurable owner-only policy (`protection-stones-require-owner`).
 
 ### 🌐 Blueprint Nexus Web Portal
-- **Online Visualizer & Dispatcher**: Hosted globally via GitHub Pages at [`https://drakescraft-labs.github.io/MultiverseProgramming/`](https://drakescraft-labs.github.io/MultiverseProgramming/) and served locally by your server on port `8080`.
+- **Online Visualizer & Dispatcher**: Hosted globally via GitHub Pages at [`https://slimefunnewhorizons.github.io/MultiverseProgramming/`](https://slimefunnewhorizons.github.io/MultiverseProgramming/) and served locally by your server on port `8080`.
 - **Drag & Drop Upload**: Upload `.litematic` and vanilla structure `.nbt` files directly from your web browser.
 - **Storage Quotas & Pastebin Cloud**: Global and personal storage quota limits per player with administrative bypass (`/mvprog getbypass`).
 - **Remote Construction Dispatch**: Target any active turtle in your world and dispatch autonomous construction at specified X, Y, Z coordinates and orientation.
@@ -75,11 +79,11 @@ Built and verified for **Purpur / Paper 1.21.11** with **Java 21**.
 
 ## Quick Start
 
-1. Drop `MultiverseProgramming-1.0.8.jar` into your server's `plugins/` folder and start the server.
+1. Drop `MultiverseProgramming-<version>.jar` into your server's `plugins/` folder and start the server (Paper/Purpur 1.21.11, 26.1 or 26.2).
 2. Craft a **Floppy Disk** (see [Recipes](wiki/en/Recipes.md)) — fresh disks come preloaded with template code.
 3. Place a **Turtle** or **Computer** and right-click to open its interface.
 4. Insert your disk into the drive slot and click **"✔ Validate Code"** or **"▶ Run Program"**.
-5. Connect your browser to the [Blueprint Nexus Web Portal](https://drakescraft-labs.github.io/MultiverseProgramming/) to upload designs and dispatch construction tasks!
+5. Connect your browser to the [Blueprint Nexus Web Portal](https://slimefunnewhorizons.github.io/MultiverseProgramming/) to upload designs and dispatch construction tasks!
 
 ### Example Lua Construction Program
 
@@ -94,6 +98,24 @@ end
 ```
 
 ---
+
+## Compatibility
+
+| Minecraft | Server | Java | Verified in CI |
+|-----------|--------|------|----------------|
+| 1.21.11 | Paper / Purpur | 21+ | Full test suite + real Paper server boot |
+| 26.1 (26.1.x) | Paper / Purpur | 25 | Full test suite against the 26.1 API + real Paper 26.1.2 boot |
+| 26.2 | Paper / Purpur | 25 | Full test suite against the 26.2 API + real Paper 26.2 boot |
+
+The same release jar is used on all three versions. To compile against a newer API locally (JDK 25):
+
+```bash
+mvn -P api-26.1 test
+```
+
+```bash
+mvn -P api-26.2 test
+```
 
 ## Commands
 
