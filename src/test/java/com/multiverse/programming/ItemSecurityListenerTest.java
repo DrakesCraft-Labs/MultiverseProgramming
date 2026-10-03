@@ -61,7 +61,7 @@ class ItemSecurityListenerTest {
         assertTrue(ItemSecurityListener.isForbiddenItem(new ItemStack(Material.WRITTEN_BOOK)));
         assertTrue(ItemSecurityListener.isForbiddenItem(new ItemStack(Material.WRITABLE_BOOK)));
         assertTrue(ItemSecurityListener.isForbiddenItem(new ItemStack(Material.SHULKER_BOX)));
-        assertFalse(ItemSecurityListener.isForbiddenItem(new ItemStack(Material.AIR)));
+        assertFalse(ItemSecurityListener.isForbiddenItem(BukkitMockHelper.emptyStack()));
     }
 }
 

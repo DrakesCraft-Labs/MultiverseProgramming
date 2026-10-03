@@ -140,7 +140,7 @@ jobs:
       - name: Clonar dependencias DrakesCraft Maven Repo
         run: |
           mkdir -p ~/.m2/repository
-          git clone --depth 1 https://github.com/DrakesCraft-Labs/maven-repo.git /tmp/drakes-maven-repo
+          git clone --depth 1 https://github.com/SlimefunNewHorizons/maven-repo.git /tmp/drakes-maven-repo
           cp -rn /tmp/drakes-maven-repo/com ~/.m2/repository/ || true
           python3 -c "
           import os, shutil
@@ -265,7 +265,11 @@ jobs:
             purpur
             spigot
           game-versions: |
-            1.21.x
+            1.21.11
+            26.1
+            26.1.1
+            26.1.2
+            26.2
           changelog: ${{ needs.decidir.outputs.motivo }}
           # No fallar si algun campo opcional falta.
           modrinth-featured: false

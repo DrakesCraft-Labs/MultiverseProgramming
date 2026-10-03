@@ -186,7 +186,7 @@
     <!-- Badge 2: Platform -->
     <rect x="160" y="0" width="145" height="30" class="badge-bg" stroke="#00F2FE" />
     <circle cx="176" cy="15" r="4" fill="#00F2FE" />
-    <text x="188" y="20" class="badge-text" fill="#38BDF8">PURPUR 1.21.11</text>
+    <text x="188" y="20" class="badge-text" fill="#38BDF8">MC 1.21.11-26.2</text>
 
     <!-- Badge 3: Runtime -->
     <rect x="320" y="0" width="140" height="30" class="badge-bg" stroke="#10B981" />

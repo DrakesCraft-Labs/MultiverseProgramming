@@ -72,7 +72,12 @@ public final class ConfigManager {
     public static final boolean DEFAULT_WEB_PORTAL_ENABLED = true;
     public static final int DEFAULT_WEB_PORTAL_PORT = 8080;
     public static final String DEFAULT_WEB_PORTAL_BIND = "0.0.0.0";
-    public static final String DEFAULT_WEB_PORTAL_PUBLIC_URL = "https://drakescraft-labs.github.io/MultiverseProgramming/";
+    public static final String DEFAULT_WEB_PORTAL_PUBLIC_URL = "https://slimefunnewhorizons.github.io/MultiverseProgramming/";
+    /**
+     * Portal URL used before the repository moved to the SlimefunNewHorizons organization. It now
+     * answers 404, so configs that still carry it are migrated to the current default on load.
+     */
+    static final String LEGACY_WEB_PORTAL_PUBLIC_URL = "https://drakescraft-labs.github.io/MultiverseProgramming/";
     /**
      * Remote build dispatch from the web portal is disabled by default because the endpoints are
      * unauthenticated: anyone able to reach the HTTP port could control any Turtle.
@@ -351,10 +356,8 @@ public final class ConfigManager {
         int rawPort = config.getInt("web-portal-port", DEFAULT_WEB_PORTAL_PORT);
         this.webPortalPort = (rawPort >= 1 && rawPort <= 65535) ? rawPort : DEFAULT_WEB_PORTAL_PORT;
         this.webPortalBindAddress = config.getString("web-portal-bind-address", DEFAULT_WEB_PORTAL_BIND);
-        String rawPublicUrl = config.getString("web-portal-public-url", DEFAULT_WEB_PORTAL_PUBLIC_URL);
-        this.webPortalPublicUrl = (rawPublicUrl != null && !rawPublicUrl.isBlank())
-                ? rawPublicUrl.trim()
-                : DEFAULT_WEB_PORTAL_PUBLIC_URL;
+        this.webPortalPublicUrl = resolveWebPortalPublicUrl(
+                config.getString("web-portal-public-url", DEFAULT_WEB_PORTAL_PUBLIC_URL));
         this.webPortalRemoteDispatch = config.getBoolean("web-portal-remote-dispatch", DEFAULT_WEB_PORTAL_REMOTE_DISPATCH);
         String rawToken = config.getString("web-portal-access-token", DEFAULT_WEB_PORTAL_ACCESS_TOKEN);
         this.webPortalAccessToken = rawToken != null ? rawToken.trim() : DEFAULT_WEB_PORTAL_ACCESS_TOKEN;
@@ -493,6 +496,19 @@ public final class ConfigManager {
 
     public String getWebPortalBindAddress() {
         return webPortalBindAddress;
+    }
+
+    /** Blank or legacy (pre-move, now 404) portal URLs resolve to the current default. */
+    static String resolveWebPortalPublicUrl(String rawUrl) {
+        if (rawUrl == null || rawUrl.isBlank()) {
+            return DEFAULT_WEB_PORTAL_PUBLIC_URL;
+        }
+        String url = rawUrl.trim();
+        String withSlash = url.endsWith("/") ? url : url + "/";
+        if (withSlash.equalsIgnoreCase(LEGACY_WEB_PORTAL_PUBLIC_URL)) {
+            return DEFAULT_WEB_PORTAL_PUBLIC_URL;
+        }
+        return url;
     }
 
     public String getWebPortalPublicUrl() {

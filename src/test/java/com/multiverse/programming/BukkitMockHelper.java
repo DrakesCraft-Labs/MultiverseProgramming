@@ -11,6 +11,7 @@ import org.bukkit.inventory.meta.BookMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -29,7 +30,7 @@ public final class BukkitMockHelper {
         ItemFactory itemFactory = mock(ItemFactory.class);
         UnsafeValues unsafe = mock(UnsafeValues.class);
 
-        when(unsafe.createEmptyStack()).thenReturn(mock(ItemStack.class));
+        stubIfPresent(unsafe, "createEmptyStack", mock(ItemStack.class));
         when(server.getUnsafe()).thenReturn(unsafe);
 
         when(itemFactory.createItemStack(any())).thenAnswer(inv -> {
@@ -80,6 +81,32 @@ public final class BukkitMockHelper {
         }
 
         return server;
+    }
+
+    /**
+     * Stubs a no-arg method only when the running Paper API still declares it. The suite is
+     * compiled against 1.21.11, 26.1 and 26.2 (see the api-26.x profiles), and some internals such
+     * as {@code UnsafeValues#createEmptyStack()} no longer exist in the newer APIs.
+     */
+    private static void stubIfPresent(Object mock, String methodName, Object result) {
+        try {
+            Method method = mock.getClass().getMethod(methodName);
+            when(method.invoke(mock)).thenReturn(result);
+        } catch (NoSuchMethodException ignored) {
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException("Could not stub " + methodName, e);
+        }
+    }
+
+    /**
+     * An empty (AIR) stack. Since Paper 26.2, {@code new ItemStack(Material.AIR)} is built through
+     * the server-side {@code InternalAPIBridge}, which only exists on a running server.
+     */
+    public static ItemStack emptyStack() {
+        ItemStack stack = mock(ItemStack.class);
+        when(stack.getType()).thenReturn(Material.AIR);
+        when(stack.isEmpty()).thenReturn(true);
+        return stack;
     }
 
     public static ItemMeta createMockItemMeta(Material mat) {

@@ -286,14 +286,14 @@ public final class BlueprintManager {
                 candidateUrls.add(target);
             } else if (target.startsWith("BP-") || target.startsWith("bp-")) {
                 String rawName = target.substring(3).toLowerCase(Locale.ROOT).replace('-', '_');
-                candidateUrls.add("https://raw.githubusercontent.com/DrakesCraft-Labs/MultiverseProgramming/main/docs/blueprints/" + rawName + ".litematic");
-                candidateUrls.add("https://raw.githubusercontent.com/DrakesCraft-Labs/MultiverseProgramming/main/docs/blueprints/" + rawName + ".nbt");
-                candidateUrls.add("https://raw.githubusercontent.com/DrakesCraft-Labs/MultiverseProgramming/main/blueprints/" + rawName + ".litematic");
+                candidateUrls.add("https://raw.githubusercontent.com/SlimefunNewHorizons/MultiverseProgramming/main/docs/blueprints/" + rawName + ".litematic");
+                candidateUrls.add("https://raw.githubusercontent.com/SlimefunNewHorizons/MultiverseProgramming/main/docs/blueprints/" + rawName + ".nbt");
+                candidateUrls.add("https://raw.githubusercontent.com/SlimefunNewHorizons/MultiverseProgramming/main/blueprints/" + rawName + ".litematic");
                 candidateUrls.add("https://bytebin.lucko.me/" + target);
             } else {
                 // Typical bytebin key e.g. eIoNTIWqo1
                 candidateUrls.add("https://bytebin.lucko.me/" + target);
-                candidateUrls.add("https://raw.githubusercontent.com/DrakesCraft-Labs/MultiverseProgramming/main/docs/blueprints/" + target + ".litematic");
+                candidateUrls.add("https://raw.githubusercontent.com/SlimefunNewHorizons/MultiverseProgramming/main/docs/blueprints/" + target + ".litematic");
             }
 
             byte[] downloadedBytes = null;

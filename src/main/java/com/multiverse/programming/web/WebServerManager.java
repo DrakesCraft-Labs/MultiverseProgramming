@@ -327,30 +327,38 @@ public final class WebServerManager {
             }
 
             JsonArray arr = new JsonArray();
-            if (plugin.getTurtleManager() != null) {
-                for (Turtle t : plugin.getTurtleManager().getAllTurtles()) {
-                    JsonObject obj = new JsonObject();
-                    obj.addProperty("id", t.getId());
-                    Location loc = t.getLocation();
-                    obj.addProperty("world", loc.getWorld() != null ? loc.getWorld().getName() : "unknown");
-                    obj.addProperty("x", loc.getBlockX());
-                    obj.addProperty("y", loc.getBlockY());
-                    obj.addProperty("z", loc.getBlockZ());
-                    obj.addProperty("facing", t.getFacing().name());
-                    obj.addProperty("fuel", t.getFuel());
-                    obj.addProperty("status", t.getStatus().name());
-                    obj.addProperty("statusMessage", t.getStatusMessage());
+            try {
+                if (plugin.getTurtleManager() != null) {
+                    for (Turtle t : plugin.getTurtleManager().getAllTurtles()) {
+                        JsonObject obj = new JsonObject();
+                        obj.addProperty("id", t.getId());
+                        Location loc = t.getLocation();
+                        obj.addProperty("world", loc.getWorld() != null ? loc.getWorld().getName() : "unknown");
+                        obj.addProperty("x", loc.getBlockX());
+                        obj.addProperty("y", loc.getBlockY());
+                        obj.addProperty("z", loc.getBlockZ());
+                        obj.addProperty("facing", t.getFacing().name());
+                        obj.addProperty("fuel", t.getFuel());
+                        obj.addProperty("status", t.getStatus().name());
+                        obj.addProperty("statusMessage", t.getStatusMessage());
 
-                    JsonObject prog = new JsonObject();
-                    prog.addProperty("active", t.getStatus() == Turtle.Status.BUILDING || t.getStatus() == Turtle.Status.PAUSED);
-                    prog.addProperty("blueprintId", t.getActiveBlueprintId() != null ? t.getActiveBlueprintId() : "");
-                    prog.addProperty("current", t.getCurrentBlockIndex());
-                    prog.addProperty("total", t.getTotalBlocks());
-                    prog.addProperty("percentage", t.getProgressPercentage());
-                    obj.add("progress", prog);
+                        JsonObject prog = new JsonObject();
+                        prog.addProperty("active", t.getStatus() == Turtle.Status.BUILDING || t.getStatus() == Turtle.Status.PAUSED);
+                        prog.addProperty("blueprintId", t.getActiveBlueprintId() != null ? t.getActiveBlueprintId() : "");
+                        prog.addProperty("current", t.getCurrentBlockIndex());
+                        prog.addProperty("total", t.getTotalBlocks());
+                        prog.addProperty("percentage", t.getProgressPercentage());
+                        obj.add("progress", prog);
 
-                    arr.add(obj);
+                        arr.add(obj);
+                    }
                 }
+            } catch (RuntimeException e) {
+                // Without this the HttpServer silently drops the connection and the portal only
+                // sees an empty reply; answer with the cause instead.
+                plugin.getLogger().log(Level.WARNING, "[WebPortal] Failed to list turtles", e);
+                sendJsonResponse(exchange, 500, errorJson(e));
+                return;
             }
             sendJsonResponse(exchange, 200, gson.toJson(arr));
         }

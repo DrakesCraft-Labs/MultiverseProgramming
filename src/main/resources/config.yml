@@ -160,9 +160,9 @@ web-portal-bind-address: "0.0.0.0"
 
 # Public URL displayed to players with /pc web.
 # By default, points to the official Web Dashboard hosted on GitHub Pages:
-# https://drakescraft-labs.github.io/MultiverseProgramming/
+# https://slimefunnewhorizons.github.io/MultiverseProgramming/
 # Players can open this link directly without port forwarding or manual setup.
-web-portal-public-url: "https://drakescraft-labs.github.io/MultiverseProgramming/"
+web-portal-public-url: "https://slimefunnewhorizons.github.io/MultiverseProgramming/"
 
 # Allow the Web Portal to dispatch builds, pause, and cancel tasks on Turtles remotely
 # (endpoints /api/build, /api/pause and /api/cancel).

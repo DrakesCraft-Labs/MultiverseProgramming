@@ -1,0 +1,115 @@
+# Compatibilidad con Minecraft 1.21.11, 26.1 y 26.2.
+#
+# QUE HACE
+#   Un solo jar para las tres versiones: se compila contra Paper 1.21.11 con bytecode de Java 21,
+#   que tambien corre en los servidores 26.x (Java 25). Cada version es un check propio en GitHub
+#   ("Minecraft 1.21.11", "Minecraft 26.1", "Minecraft 26.2") y en cada uno:
+#     1. se compila el jar de release (el mismo que se publica en Modrinth),
+#     2. se compila y ejecuta la suite de tests contra la API de Paper de esa version
+#        (perfiles api-26.1 / api-26.2 del pom; compatibilidad del codigo fuente), y
+#     3. se arranca un servidor Paper real de esa version con ESE jar, se consulta el portal web
+#        y se ejecutan comandos de consola (compatibilidad binaria).
+#
+# POR QUE EXISTE
+#   Que el codigo compile contra una API no garantiza que el jar ya compilado funcione en ese
+#   servidor: un metodo que cambio de firma solo falla al cargar la clase. Arrancar el servidor
+#   con el jar real es la unica prueba que lo detecta. El workflow de Modrinth compila con
+#   -DskipTests: sin esto nada comprobaria los tests antes de publicar.
+name: Compatibilidad
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'pom.xml'
+      - '.github/workflows/compatibility.yml'
+      - '.github/scripts/server-smoke-test.sh'
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'pom.xml'
+      - '.github/workflows/compatibility.yml'
+      - '.github/scripts/server-smoke-test.sh'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: compatibility-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  minecraft:
+    name: Minecraft ${{ matrix.minecraft }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - minecraft: '1.21.11'
+            profile: ''
+            paper: '1.21.11'
+            java: '21'
+          - minecraft: '26.1'
+            profile: 'api-26.1'
+            paper: '26.1.2'
+            java: '25'
+          - minecraft: '26.2'
+            profile: 'api-26.2'
+            paper: '26.2'
+            java: '25'
+    steps:
+      - uses: actions/checkout@v4
+
+      # Se instalan las dos: 21 para el jar de release y la de la version para tests y servidor.
+      # La ultima de la lista queda como la Java por defecto.
+      - name: Preparar Java 21 y ${{ matrix.java }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: |
+            21
+            ${{ matrix.java }}
+          cache: maven
+
+      - name: Compilar el jar de release (Paper 1.21.11, Java 21)
+        run: |
+          set -euo pipefail
+          JAVA_HOME="$JAVA_HOME_21_X64" mvn -B -ntp package -DskipTests
+          mkdir -p dist
+          cp "$(ls target/MultiverseProgramming-*.jar | grep -v original | head -1)" dist/MultiverseProgramming.jar
+          # Bytecode de Java 21 (major 65): si sube, el jar no cargaria en un servidor 1.21.11.
+          MAJOR="$(unzip -p dist/MultiverseProgramming.jar com/multiverse/programming/MultiverseProgrammingPlugin.class | od -An -j6 -N2 -tu1 | awk '{print $1*256+$2}')"
+          echo "Version de clase del jar: $MAJOR"
+          if [ "$MAJOR" -ne 65 ]; then echo "::error::El jar no es bytecode de Java 21 (major $MAJOR)"; exit 1; fi
+
+      - name: Tests contra la API de Paper ${{ matrix.minecraft }}
+        run: |
+          set -euo pipefail
+          PROFILE_ARG=""
+          if [ -n "${{ matrix.profile }}" ]; then PROFILE_ARG="-P ${{ matrix.profile }}"; fi
+          mvn -B -ntp $PROFILE_ARG clean test
+
+      - name: Arrancar Paper ${{ matrix.paper }} con el jar de release
+        run: bash .github/scripts/server-smoke-test.sh "${{ matrix.paper }}" dist/MultiverseProgramming.jar
+
+      - name: Guardar informes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reports-${{ matrix.minecraft }}
+          path: |
+            target/surefire-reports/
+            server-${{ matrix.paper }}/server.log
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Resumen
+        if: always()
+        run: |
+          echo "### Minecraft ${{ matrix.minecraft }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Tests contra la API: perfil \`${{ matrix.profile || 'por defecto (1.21.11)' }}\` con Java ${{ matrix.java }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Servidor real: Paper ${{ matrix.paper }} con el jar de release" >> "$GITHUB_STEP_SUMMARY"

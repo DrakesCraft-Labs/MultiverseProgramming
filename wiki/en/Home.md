@@ -2,6 +2,8 @@
 
 MultiverseProgramming brings **ComputerCraft‑style programmable computers** to your Purpur/Paper server using **Lua** and plain vanilla game mechanics (books, chests and chat).
 
+**Supported versions:** Minecraft **1.21.11**, **26.1** and **26.2** (Paper / Purpur) with the same jar. 1.21.11 runs on Java 21; 26.x servers require Java 25.
+
 ## Pages
 
 - [Getting Started](Getting-Started.md) — install, first computer, first program.
@@ -9,7 +11,7 @@ MultiverseProgramming brings **ComputerCraft‑style programmable computers** to
 - [Recipes](Recipes.md) — visual crafting table recipes for every custom item (including Turtles and peripherals).
 - [Lua Scripting](Lua-Scripting.md) — the sandboxed Lua environment, available libraries (Turtle & Quarry Engine, Monitor, Crafter, Transposer, Speaker, Scanner, Cartographer, Alchemist, Farmer, NPC) and examples.
 - [Configuration](Configuration.md) — `config.yml`, commands and permissions.
-- [Blueprint Nexus Portal](https://drakescraft-labs.github.io/MultiverseProgramming/) — online design visualizer and remote turtle dispatcher.
+- [Blueprint Nexus Portal](https://slimefunnewhorizons.github.io/MultiverseProgramming/) — online design visualizer and remote turtle dispatcher.
 - [Developer Documentation (Architecture & Code Guide)](dev/README.md) — deep technical overview, web server, REST API and internal subsystems.
 
 > 🌐 Spanish version: [wiki/es/Home.md](../es/Home.md)

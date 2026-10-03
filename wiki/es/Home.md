@@ -2,6 +2,8 @@
 
 MultiverseProgramming lleva **computadoras programables estilo ComputerCraft** a tu servidor Purpur/Paper usando **Lua** y mecánicas vanilla del juego (libros, cofres y chat).
 
+**Versiones soportadas:** Minecraft **1.21.11**, **26.1** y **26.2** (Paper / Purpur) con el mismo jar. 1.21.11 corre con Java 21; los servidores 26.x requieren Java 25.
+
 ## Páginas
 
 - [Primeros pasos](Getting-Started.md) — instalación, primera computadora, primer programa.
@@ -9,7 +11,7 @@ MultiverseProgramming lleva **computadoras programables estilo ComputerCraft** a
 - [Recetas](Recipes.md) — recetas visuales de la mesa de crafteo de cada objeto custom (incluyendo Tortugas y periféricos).
 - [Programación en Lua](Lua-Scripting.md) — el entorno Lua, las librerías disponibles (Tortuga y Motor de Cantera, Monitor, Crafter, Transposer, Parlante, Escáner, Cartógrafo, Alquimista, Granjero, NPC) y ejemplos.
 - [Configuración](Configuration.md) — `config.yml`, comandos y permisos.
-- [Portal Blueprint Nexus](https://drakescraft-labs.github.io/MultiverseProgramming/) — visualizador web de planos y despachador de construcción para tortugas.
+- [Portal Blueprint Nexus](https://slimefunnewhorizons.github.io/MultiverseProgramming/) — visualizador web de planos y despachador de construcción para tortugas.
 - [Documentación para Desarrolladores (Arquitectura y Código)](dev/README.md) — guía técnica profunda, servidor web, API REST y subsistemas internos.
 
 > 🌐 Versión en inglés: [wiki/en/Home.md](../en/Home.md)
